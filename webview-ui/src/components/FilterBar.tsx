@@ -10,16 +10,20 @@ import type { CommitFilters, FilterOptions } from '../../../shared/domain';
 import { isValidSearch } from '../../../shared/commitFilter';
 import { useDebounce } from '../hooks/useDebounce';
 import { FilterDropdown } from './FilterDropdown';
+import { ColumnsMenu } from './ColumnsMenu';
+import type { ColumnFlags } from './CommitList';
 
 interface Props {
   filters: CommitFilters;
   options: FilterOptions;
   onChange: (next: CommitFilters) => void;
+  columns: ColumnFlags;
+  onColumnsChange: (next: ColumnFlags) => void;
 }
 
 const BRANCH_ALL = '__all__';
 
-export function FilterBar({ filters, options, onChange }: Props) {
+export function FilterBar({ filters, options, onChange, columns, onColumnsChange }: Props) {
   // 搜索文本 debounce：输入即刻更新 draft，250ms 稳定后提交
   const [searchDraft, setSearchDraft] = useState(filters.search ?? '');
   const debouncedSearch = useDebounce(searchDraft, 250);
@@ -124,6 +128,11 @@ export function FilterBar({ filters, options, onChange }: Props) {
         )}
       </FilterDropdown>
 
+      {/* spacer 将设置按钮推到右端 */}
+      <div className="filter-bar-spacer" />
+
+      {/* 列显示设置 */}
+      <ColumnsMenu columns={columns} onChange={onColumnsChange} />
     </div>
   );
 }

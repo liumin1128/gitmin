@@ -11,7 +11,7 @@ import { useMultiSelect } from './hooks/useMultiSelect';
 import { useContextMenu } from './hooks/useContextMenu';
 import { Toolbar } from './components/Toolbar';
 import { FilterBar } from './components/FilterBar';
-import { CommitList } from './components/CommitList';
+import { CommitList, DEFAULT_COLUMNS, type ColumnFlags } from './components/CommitList';
 import { ChangedFilesPanel } from './components/ChangedFilesPanel';
 import { CommitContextMenu } from './components/CommitContextMenu';
 import type {
@@ -38,6 +38,7 @@ export function App() {
     branches: [],
     authors: [],
   });
+  const [columns, setColumns] = useState<ColumnFlags>(DEFAULT_COLUMNS);
 
   // === 消息订阅 ===
   useIpcListener('repo/info', (m) => {
@@ -162,13 +163,20 @@ export function App() {
   return (
     <div className="app">
       <Toolbar repo={repo} selectedCount={selected.size} onRefresh={handleRefresh} />
-      <FilterBar filters={filters} options={filterOptions} onChange={setFilters} />
+      <FilterBar
+        filters={filters}
+        options={filterOptions}
+        onChange={setFilters}
+        columns={columns}
+        onColumnsChange={setColumns}
+      />
       {error && <div className="error-bar">{error}</div>}
       {busy && <div className="busy-bar">执行中...</div>}
       <div className="split">
         <div className="split-left">
           <CommitList
             commits={commits}
+            columns={columns}
             isSelected={isSelected}
             onItemClick={onItemClick}
             onItemContextMenu={handleContextMenu}

@@ -142,6 +142,30 @@ html, body, #root {
   border-color: var(--vscode-inputOption-activeBorder, transparent);
 }
 
+/* 将后面元素推到右端 */
+.filter-bar-spacer {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* 复选项（列显示设置） */
+.filter-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  cursor: pointer;
+  user-select: none;
+}
+.filter-check:hover {
+  background: var(--vscode-menu-selectionBackground, var(--vscode-list-activeSelectionBackground));
+  color: var(--vscode-menu-selectionForeground, var(--vscode-list-activeSelectionForeground));
+}
+.filter-check input {
+  cursor: pointer;
+  margin: 0;
+}
+
 /* 下拉按钮 */
 .filter-dropdown {
   position: relative;
@@ -325,32 +349,28 @@ html, body, #root {
 .commit-list {
   display: flex;
   flex-direction: column;
-  /* graph 列宽度由 CommitList 通过 style 注入 */
-  --graph-width: 0px;
+  /* --commit-cols 由 CommitList 依据 ColumnFlags + maxLanes 注入 */
 }
 .commit-item {
   display: grid;
-  grid-template-columns: var(--graph-width) 56px 1fr 60px;
-  gap: 6px;
+  grid-template-columns: var(--commit-cols);
+  gap: 8px;
   align-items: center;
   /* 行高严格等于 CommitGraph ROW_H(22)，否则两行 SVG 间会断线 */
   height: 22px;
-  padding: 0 8px;
+  padding: 0 12px;
   cursor: pointer;
   border-bottom: 1px solid transparent;
   user-select: none;
-  font-size: 12px;
+  font-size: inherit;
   line-height: 22px;
 }
-.commit-author { display: none; }
-@media (min-width: 500px) {
+@media (max-width: 499px) {
   .commit-item {
-    grid-template-columns: var(--graph-width) 70px 1fr 140px 90px;
-    gap: 8px;
-    padding: 0 12px;
-    font-size: inherit;
+    gap: 6px;
+    padding: 0 8px;
+    font-size: 12px;
   }
-  .commit-author { display: block; }
 }
 .commit-graph {
   display: block;

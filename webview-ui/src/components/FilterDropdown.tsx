@@ -11,10 +11,20 @@ interface Props {
   active?: boolean;
   disabled?: boolean;
   title?: string;
+  hideCaret?: boolean;
+  className?: string;
   children: (close: () => void) => ReactNode;
 }
 
-export function FilterDropdown({ label, active, disabled, title, children }: Props) {
+export function FilterDropdown({
+  label,
+  active,
+  disabled,
+  title,
+  hideCaret,
+  className,
+  children,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [alignRight, setAlignRight] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -52,7 +62,7 @@ export function FilterDropdown({ label, active, disabled, title, children }: Pro
   }, [open]);
 
   return (
-    <div className="filter-dropdown" ref={rootRef}>
+    <div className={`filter-dropdown${className ? ' ' + className : ''}`} ref={rootRef}>
       <button
         type="button"
         className={`filter-dropdown-btn${active ? ' is-active' : ''}${open ? ' is-open' : ''}`}
@@ -61,7 +71,7 @@ export function FilterDropdown({ label, active, disabled, title, children }: Pro
         title={title ?? label}
       >
         <span>{label}</span>
-        <span className="filter-dropdown-caret">▾</span>
+        {!hideCaret && <span className="filter-dropdown-caret">▾</span>}
       </button>
       {open && (
         <div
