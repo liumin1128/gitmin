@@ -1,0 +1,15 @@
+.vscode/**
+.vscode-test/**
+src/**
+webview-ui/**
+node_modules/**
+!node_modules/simple-git/**
+!node_modules/@kwsites/**
+!node_modules/debug/**
+!node_modules/ms/**
+tsconfig*.json
+esbuild.config.mjs
+.gitignore
+.eslintrc*
+**/*.map
+**/*.ts
