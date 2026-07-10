@@ -5,15 +5,23 @@
  * - 组合 useMultiSelect + useContextMenu
  * - 将纯数据与回调下发给 UI 组件
  */
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { postMessage, useIpcListener } from './hooks/useIpc';
 import { useMultiSelect } from './hooks/useMultiSelect';
 import { useContextMenu } from './hooks/useContextMenu';
 import { Toolbar } from './components/Toolbar';
+import { FilterBar } from './components/FilterBar';
 import { CommitList } from './components/CommitList';
 import { ChangedFilesPanel } from './components/ChangedFilesPanel';
 import { CommitContextMenu } from './components/CommitContextMenu';
-import type { Commit, DiffRange, FileChange, RepoInfo } from '../../shared/domain';
+import type {
+  Commit,
+  CommitFilters,
+  DiffRange,
+  FileChange,
+  FilterOptions,
+  RepoInfo,
+} from '../../shared/domain';
 import type { GitAction } from '../../shared/actions';
 
 export function App() {
@@ -25,6 +33,11 @@ export function App() {
   const [files, setFiles] = useState<FileChange[]>([]);
   const [diffLoading, setDiffLoading] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [filters, setFilters] = useState<CommitFilters>({});
+  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
+    branches: [],
+    authors: [],
+  });
 
   // === 消息订阅 ===
   useIpcListener('repo/info', (m) => {
@@ -40,6 +53,7 @@ export function App() {
     setError(null);
   });
   useIpcListener('commits/error', (m) => setError(m.error));
+  useIpcListener('filters/options', (m) => setFilterOptions(m.options));
   useIpcListener('diff/loaded', (m) => {
     setRange(m.range);
     setFiles(m.files);
@@ -63,6 +77,18 @@ export function App() {
   // === 多选 ===
   const commitHashes = useMemo(() => commits.map((c) => c.hash), [commits]);
   const { selected, isSelected, onItemClick, selectOnly, clear } = useMultiSelect(commitHashes);
+
+  // === filter 变化 → 重新拉取 commits（跳过首次挂载，交给 webview/ready）===
+  const filtersReadyRef = useRef(false);
+  useEffect(() => {
+    if (!filtersReadyRef.current) {
+      filtersReadyRef.current = true;
+      return;
+    }
+    clear();
+    postMessage({ type: 'commits/refresh', limit: 100, filters });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters]);
 
   // 选中是否连续（Squash 需要）
   const contiguous = useMemo(() => {
@@ -113,8 +139,9 @@ export function App() {
 
   const handleRefresh = useCallback(() => {
     clear();
-    postMessage({ type: 'commits/refresh', limit: 100 });
-  }, [clear]);
+    postMessage({ type: 'commits/refresh', limit: 100, filters });
+    postMessage({ type: 'filters/refresh' });
+  }, [clear, filters]);
 
   const handleOpenDiff = useCallback(
     (filePath: string) => {
@@ -135,6 +162,7 @@ export function App() {
   return (
     <div className="app">
       <Toolbar repo={repo} selectedCount={selected.size} onRefresh={handleRefresh} />
+      <FilterBar filters={filters} options={filterOptions} onChange={setFilters} />
       {error && <div className="error-bar">{error}</div>}
       {busy && <div className="busy-bar">执行中...</div>}
       <div className="split">

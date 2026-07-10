@@ -35,3 +35,28 @@ export interface DiffRange {
   head: string;
   contiguous: boolean;
 }
+
+/**
+ * commit 列表过滤条件
+ * - branch/author/date/path 走 git log 原生参数
+ * - search（含 hash 前缀 + message + regex + Cc）走服务端后置过滤
+ */
+export interface CommitFilters {
+  search?: string;
+  searchRegex?: boolean;
+  searchCaseSensitive?: boolean;
+  /** 空字符串或未设置 = 当前 HEAD；'__all__' = 所有分支 */
+  branch?: string;
+  /** 空字符串或未设置 = 所有作者 */
+  author?: string;
+  /** yyyy-MM-dd */
+  dateAfter?: string;
+  /** yyyy-MM-dd */
+  dateBefore?: string;
+}
+
+export interface FilterOptions {
+  branches: string[];
+  authors: string[];
+}
+

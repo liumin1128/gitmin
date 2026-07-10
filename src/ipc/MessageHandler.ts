@@ -5,12 +5,13 @@
  */
 import * as vscode from 'vscode';
 import type { WebviewMessage, ExtensionMessage } from '../../shared/messages';
-import type { Commit, DiffRange } from '../../shared/domain';
+import type { Commit, CommitFilters, DiffRange } from '../../shared/domain';
 import type { GitAction } from '../../shared/actions';
 import { GitService } from '../services/GitService';
 import { GitOpsService, type ResetMode } from '../services/GitOpsService';
 import { getActiveRepo, getGitApi } from '../services/RepoLocator';
 import { computeDiffRange } from '../utils/diffRange';
+import { applySearch } from '../../shared/commitFilter';
 
 export type PostMessage = (msg: ExtensionMessage) => void;
 
@@ -19,6 +20,7 @@ export class MessageHandler {
   private ops: GitOpsService | null = null;
   private commitsCache: Commit[] = [];
   private repoRoot: string | null = null;
+  private lastFilters: CommitFilters | undefined = undefined;
 
   constructor(
     private readonly post: PostMessage,
@@ -32,7 +34,10 @@ export class MessageHandler {
           await this.initRepo();
           break;
         case 'commits/refresh':
-          await this.loadCommits(msg.limit ?? 100);
+          await this.loadCommits(msg.limit ?? 100, msg.filters);
+          break;
+        case 'filters/refresh':
+          await this.loadFilterOptions();
           break;
         case 'diff/request':
           await this.loadDiff(msg.hashes);
@@ -64,16 +69,32 @@ export class MessageHandler {
       info: { rootPath: repo.rootPath, currentBranch: repo.currentBranch, hasCommits: true },
     });
     await this.loadCommits(100);
+    await this.loadFilterOptions();
   }
 
-  private async loadCommits(limit: number): Promise<void> {
+  private async loadCommits(limit: number, filters?: CommitFilters): Promise<void> {
     if (!this.git) return;
     try {
-      const commits = await this.git.getLog(limit);
+      const raw = await this.git.getLog({ limit, filters });
+      const commits = applySearch(raw, filters);
       this.commitsCache = commits;
+      this.lastFilters = filters;
       this.post({ type: 'commits/loaded', commits });
     } catch (e) {
       this.post({ type: 'commits/error', error: e instanceof Error ? e.message : String(e) });
+    }
+  }
+
+  private async loadFilterOptions(): Promise<void> {
+    if (!this.git) return;
+    try {
+      const [branches, authors] = await Promise.all([
+        this.git.getBranches(),
+        this.git.getAuthors(),
+      ]);
+      this.post({ type: 'filters/options', options: { branches, authors } });
+    } catch (e) {
+      console.error('[gitMgr] loadFilterOptions error:', e);
     }
   }
 
@@ -142,7 +163,7 @@ export class MessageHandler {
       }
       this.post({ type: 'action/result', action, ok: true });
       if (action !== 'copy-hash') {
-        await this.loadCommits(100);
+        await this.loadCommits(100, this.lastFilters);
       } else {
         vscode.window.showInformationMessage(`已复制 ${hashes.length} 个 hash 到剪贴板`);
       }

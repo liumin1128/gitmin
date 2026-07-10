@@ -17,6 +17,7 @@ import {
   selectRange,
 } from '../webview-ui/src/utils/selection.ts';
 import { relativeTime, shortHash, firstLine } from '../webview-ui/src/utils/formatters.ts';
+import { applySearch, isValidSearch } from '../shared/commitFilter.ts';
 
 // ===== commitParser =====
 {
@@ -111,6 +112,49 @@ import { relativeTime, shortHash, firstLine } from '../webview-ui/src/utils/form
   const now = new Date('2026-01-01T00:00:00Z');
   assert.equal(relativeTime('2025-12-31T23:59:00Z', now), '1m ago');
   assert.equal(relativeTime('2025-12-31T00:00:00Z', now), '1d ago');
+}
+
+// ===== commitFilter =====
+{
+  const commits = [
+    { hash: 'abc123def456', shortHash: 'abc123d', message: 'feat: add filter bar', author: 'Alice', email: '', date: '', parents: [] },
+    { hash: 'def456abc789', shortHash: 'def456a', message: 'fix: search bug', author: 'Bob', email: '', date: '', parents: [] },
+    { hash: '9990001112', shortHash: '9990001', message: 'FIX: capitalise', author: 'Carol', email: '', date: '', parents: [] },
+  ];
+  // 空 filter → 全部
+  assert.equal(applySearch(commits).length, 3);
+  assert.equal(applySearch(commits, {}).length, 3);
+  assert.equal(applySearch(commits, { search: '   ' }).length, 3);
+
+  // 子串匹配 message（默认忽略大小写）
+  assert.deepEqual(
+    applySearch(commits, { search: 'fix' }).map((c) => c.shortHash),
+    ['def456a', '9990001']
+  );
+
+  // Cc 大小写敏感
+  assert.deepEqual(
+    applySearch(commits, { search: 'fix', searchCaseSensitive: true }).map((c) => c.shortHash),
+    ['def456a']
+  );
+
+  // hash 前缀命中
+  assert.deepEqual(
+    applySearch(commits, { search: 'abc123' }).map((c) => c.shortHash),
+    ['abc123d']
+  );
+
+  // 正则
+  assert.deepEqual(
+    applySearch(commits, { search: '^(feat|fix):', searchRegex: true }).map((c) => c.shortHash),
+    ['abc123d', 'def456a', '9990001']
+  );
+
+  // 非法正则 → 退化为全部
+  assert.equal(applySearch(commits, { search: '(', searchRegex: true }).length, 3);
+  assert.equal(isValidSearch('(', true), false);
+  assert.equal(isValidSearch('(', false), true);
+  assert.equal(isValidSearch('feat', true), true);
 }
 
 console.log('✅ all sanity checks passed');
