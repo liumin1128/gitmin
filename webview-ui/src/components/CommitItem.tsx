@@ -9,13 +9,18 @@ interface Props {
   commit: Commit;
   selected: boolean;
   onClick: (item: string, event: MouseEvent) => void;
+  onContextMenu: (item: string, event: MouseEvent) => void;
 }
 
-export function CommitItem({ commit, selected, onClick }: Props) {
+export function CommitItem({ commit, selected, onClick, onContextMenu }: Props) {
   return (
     <div
       className={`commit-item${selected ? ' is-selected' : ''}`}
       onClick={(e) => onClick(commit.hash, e)}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        onContextMenu(commit.hash, e);
+      }}
       title={commit.message}
     >
       <span className="commit-hash">{shortHash(commit.hash)}</span>

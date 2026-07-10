@@ -10,9 +10,10 @@ interface Props {
   commits: Commit[];
   isSelected: (hash: string) => boolean;
   onItemClick: (hash: string, event: MouseEvent) => void;
+  onItemContextMenu: (hash: string, event: MouseEvent) => void;
 }
 
-export function CommitList({ commits, isSelected, onItemClick }: Props) {
+export function CommitList({ commits, isSelected, onItemClick, onItemContextMenu }: Props) {
   if (commits.length === 0) {
     return <div className="empty-hint">暂无 commit</div>;
   }
@@ -24,6 +25,7 @@ export function CommitList({ commits, isSelected, onItemClick }: Props) {
           commit={c}
           selected={isSelected(c.hash)}
           onClick={onItemClick}
+          onContextMenu={onItemContextMenu}
         />
       ))}
     </div>

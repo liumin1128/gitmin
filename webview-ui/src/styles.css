@@ -216,3 +216,51 @@ html, body, #root {
   text-align: center;
   font-size: 0.9em;
 }
+
+/* ===== Busy indicator ===== */
+.busy-bar {
+  padding: 4px 12px;
+  font-size: 0.85em;
+  background: var(--vscode-statusBarItem-warningBackground, #6b5b1f);
+  color: var(--vscode-statusBarItem-warningForeground, #fff);
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+/* ===== Context menu ===== */
+.ctx-menu {
+  position: fixed;
+  min-width: 200px;
+  background: var(--vscode-menu-background, var(--vscode-editor-background));
+  color: var(--vscode-menu-foreground, var(--vscode-foreground));
+  border: 1px solid var(--vscode-menu-border, var(--vscode-panel-border));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  padding: 4px 0;
+  font-size: 12px;
+  border-radius: 3px;
+}
+.ctx-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 5px 14px;
+  background: transparent;
+  color: inherit;
+  border: none;
+  cursor: pointer;
+  font-size: inherit;
+  font-family: inherit;
+}
+.ctx-item:not(:disabled):hover {
+  background: var(--vscode-menu-selectionBackground, var(--vscode-list-activeSelectionBackground));
+  color: var(--vscode-menu-selectionForeground, var(--vscode-list-activeSelectionForeground));
+}
+.ctx-item:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.ctx-sep {
+  height: 1px;
+  background: var(--vscode-menu-separatorBackground, var(--vscode-panel-border));
+  margin: 4px 0;
+}

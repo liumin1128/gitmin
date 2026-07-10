@@ -21,7 +21,7 @@ export class GitPanelViewProvider implements vscode.WebviewViewProvider {
 
     const handler = new MessageHandler((msg) => {
       view.webview.postMessage(msg);
-    });
+    }, this.extensionUri);
     const sub = view.webview.onDidReceiveMessage((raw: WebviewMessage) => {
       void handler.handle(raw);
     });

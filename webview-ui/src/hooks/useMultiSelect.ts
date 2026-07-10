@@ -10,6 +10,7 @@ export interface MultiSelectAPI {
   selected: Set<string>;
   isSelected: (item: string) => boolean;
   onItemClick: (item: string, event: MouseEvent) => void;
+  selectOnly: (item: string) => void;
   clear: () => void;
 }
 
@@ -38,10 +39,15 @@ export function useMultiSelect(items: readonly string[]): MultiSelectAPI {
 
   const isSelected = useCallback((item: string) => selected.has(item), [selected]);
 
+  const selectOnly = useCallback((item: string) => {
+    setSelected(selectSingle(item));
+    anchorRef.current = item;
+  }, []);
+
   const clear = useCallback(() => {
     setSelected(new Set());
     anchorRef.current = null;
   }, []);
 
-  return { selected, isSelected, onItemClick, clear };
+  return { selected, isSelected, onItemClick, selectOnly, clear };
 }
