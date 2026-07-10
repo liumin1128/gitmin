@@ -19,11 +19,19 @@ interface Props {
   onChange: (next: CommitFilters) => void;
   columns: ColumnFlags;
   onColumnsChange: (next: ColumnFlags) => void;
+  onRefresh: () => void;
 }
 
 const BRANCH_ALL = '__all__';
 
-export function FilterBar({ filters, options, onChange, columns, onColumnsChange }: Props) {
+export function FilterBar({
+  filters,
+  options,
+  onChange,
+  columns,
+  onColumnsChange,
+  onRefresh,
+}: Props) {
   // 搜索文本 debounce：输入即刻更新 draft，250ms 稳定后提交
   const [searchDraft, setSearchDraft] = useState(filters.search ?? '');
   const debouncedSearch = useDebounce(searchDraft, 250);
@@ -130,6 +138,16 @@ export function FilterBar({ filters, options, onChange, columns, onColumnsChange
 
       {/* spacer 将设置按钮推到右端 */}
       <div className="filter-bar-spacer" />
+
+      <button
+        type="button"
+        className="toolbar-icon-button"
+        onClick={onRefresh}
+        title="刷新 commit 列表"
+        aria-label="刷新 commit 列表"
+      >
+        ↻
+      </button>
 
       {/* 列显示设置 */}
       <ColumnsMenu columns={columns} onChange={onColumnsChange} />

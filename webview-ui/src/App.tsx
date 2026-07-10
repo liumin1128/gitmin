@@ -9,7 +9,6 @@ import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { postMessage, useIpcListener } from './hooks/useIpc';
 import { useMultiSelect } from './hooks/useMultiSelect';
 import { useContextMenu } from './hooks/useContextMenu';
-import { Toolbar } from './components/Toolbar';
 import { FilterBar } from './components/FilterBar';
 import { CommitList, DEFAULT_COLUMNS, type ColumnFlags } from './components/CommitList';
 import { ChangedFilesPanel } from './components/ChangedFilesPanel';
@@ -20,12 +19,10 @@ import type {
   DiffRange,
   FileChange,
   FilterOptions,
-  RepoInfo,
 } from '../../shared/domain';
 import type { GitAction } from '../../shared/actions';
 
 export function App() {
-  const [repo, setRepo] = useState<RepoInfo | null>(null);
   const [repoError, setRepoError] = useState<string | null>(null);
   const [commits, setCommits] = useState<Commit[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -41,12 +38,10 @@ export function App() {
   const [columns, setColumns] = useState<ColumnFlags>(DEFAULT_COLUMNS);
 
   // === 消息订阅 ===
-  useIpcListener('repo/info', (m) => {
-    setRepo(m.info);
+  useIpcListener('repo/info', () => {
     setRepoError(null);
   });
   useIpcListener('repo/none', (m) => {
-    setRepo(null);
     setRepoError(m.reason);
   });
   useIpcListener('commits/loaded', (m) => {
@@ -162,13 +157,13 @@ export function App() {
 
   return (
     <div className="app">
-      <Toolbar repo={repo} selectedCount={selected.size} onRefresh={handleRefresh} />
       <FilterBar
         filters={filters}
         options={filterOptions}
         onChange={setFilters}
         columns={columns}
         onColumnsChange={setColumns}
+        onRefresh={handleRefresh}
       />
       {error && <div className="error-bar">{error}</div>}
       {busy && <div className="busy-bar">执行中...</div>}
