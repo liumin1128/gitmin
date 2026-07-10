@@ -3,16 +3,27 @@
  */
 import type { MouseEvent } from 'react';
 import type { Commit } from '../../../shared/domain';
+import type { GraphRow } from '../utils/commitGraph';
 import { relativeTime, firstLine, shortHash } from '../utils/formatters';
+import { CommitGraph } from './CommitGraph';
 
 interface Props {
   commit: Commit;
+  graphRow: GraphRow;
+  maxLanes: number;
   selected: boolean;
   onClick: (item: string, event: MouseEvent) => void;
   onContextMenu: (item: string, event: MouseEvent) => void;
 }
 
-export function CommitItem({ commit, selected, onClick, onContextMenu }: Props) {
+export function CommitItem({
+  commit,
+  graphRow,
+  maxLanes,
+  selected,
+  onClick,
+  onContextMenu,
+}: Props) {
   return (
     <div
       className={`commit-item${selected ? ' is-selected' : ''}`}
@@ -23,6 +34,7 @@ export function CommitItem({ commit, selected, onClick, onContextMenu }: Props) 
       }}
       title={commit.message}
     >
+      <CommitGraph row={graphRow} maxLanes={maxLanes} />
       <span className="commit-hash">{shortHash(commit.hash)}</span>
       <span className="commit-message">{firstLine(commit.message)}</span>
       <span className="commit-author">{commit.author}</span>

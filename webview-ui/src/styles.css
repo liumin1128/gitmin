@@ -322,27 +322,40 @@ html, body, #root {
 }
 
 /* ===== Commit list ===== */
-.commit-list { display: flex; flex-direction: column; }
+.commit-list {
+  display: flex;
+  flex-direction: column;
+  /* graph 列宽度由 CommitList 通过 style 注入 */
+  --graph-width: 0px;
+}
 .commit-item {
   display: grid;
-  grid-template-columns: 56px 1fr 60px;
+  grid-template-columns: var(--graph-width) 56px 1fr 60px;
   gap: 6px;
   align-items: center;
-  padding: 3px 8px;
+  /* 行高严格等于 CommitGraph ROW_H(22)，否则两行 SVG 间会断线 */
+  height: 22px;
+  padding: 0 8px;
   cursor: pointer;
   border-bottom: 1px solid transparent;
   user-select: none;
   font-size: 12px;
+  line-height: 22px;
 }
 .commit-author { display: none; }
 @media (min-width: 500px) {
   .commit-item {
-    grid-template-columns: 70px 1fr 140px 90px;
+    grid-template-columns: var(--graph-width) 70px 1fr 140px 90px;
     gap: 8px;
-    padding: 4px 12px;
+    padding: 0 12px;
     font-size: inherit;
   }
   .commit-author { display: block; }
+}
+.commit-graph {
+  display: block;
+  flex-shrink: 0;
+  overflow: visible;
 }
 .commit-item:hover {
   background: var(--vscode-list-hoverBackground);

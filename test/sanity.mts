@@ -18,6 +18,7 @@ import {
 } from '../webview-ui/src/utils/selection.ts';
 import { relativeTime, shortHash, firstLine } from '../webview-ui/src/utils/formatters.ts';
 import { applySearch, isValidSearch } from '../shared/commitFilter.ts';
+import { layoutCommits } from '../webview-ui/src/utils/commitGraph.ts';
 
 // ===== commitParser =====
 {
@@ -155,6 +156,72 @@ import { applySearch, isValidSearch } from '../shared/commitFilter.ts';
   assert.equal(isValidSearch('(', true), false);
   assert.equal(isValidSearch('(', false), true);
   assert.equal(isValidSearch('feat', true), true);
+}
+
+// ===== commitGraph =====
+{
+  const mk = (hash: string, parents: string[]) => ({
+    hash, shortHash: hash, message: '', author: '', email: '', date: '', parents,
+  });
+
+  // 线性：全部 lane 0
+  {
+    const { rows, maxLanes } = layoutCommits([
+      mk('c', ['b']), mk('b', ['a']), mk('a', []),
+    ]);
+    assert.equal(maxLanes, 1);
+    assert.deepEqual(rows.map((r) => r.commitLane), [0, 0, 0]);
+    // 中间 commit 应有一条上边线 + 一条下边线
+    assert.equal(rows[1]!.topEdges.length, 1);
+    assert.equal(rows[1]!.bottomEdges.length, 1);
+    // 根 commit 无 parent → 无下边线
+    assert.equal(rows[2]!.bottomEdges.length, 0);
+    // 尖端 commit 无上边线（activeLanes 之前是空）
+    assert.equal(rows[0]!.topEdges.length, 0);
+  }
+
+  // 分叉 + merge：main（c → a）与 side（c → b → a），c 是 merge
+  //   c
+  //   |\
+  //   | b
+  //   |/
+  //   a
+  {
+    const { rows, maxLanes } = layoutCommits([
+      mk('c', ['a', 'b']),   // merge
+      mk('b', ['a']),        // side branch tip
+      mk('a', []),           // 根
+    ]);
+    assert.equal(maxLanes, 2);
+    assert.equal(rows[0]!.commitLane, 0);
+    // merge 行 bottomEdges 应含 lane 0 → 0 和 0 → 1（斜出到 side）
+    const rowCEdges = rows[0]!.bottomEdges.map((e) => `${e.fromLane}->${e.toLane}`).sort();
+    assert.deepEqual(rowCEdges, ['0->0', '0->1']);
+    // b 位于 lane 1
+    assert.equal(rows[1]!.commitLane, 1);
+    // b 合流到 a：a 已经在 lane 0 上，所以 b 的 parent[0]=a 复用 lane 0；
+    // 这里 lane 1 应该在 b 之后消失（after=[a, null]）
+    // b 行 bottomEdges 应含 lane 0 直下（a 穿过） 但不含 lane 1 出
+    // a 位于 lane 0
+    assert.equal(rows[2]!.commitLane, 0);
+  }
+
+  // 截断 parent：只提供 c, b，但 b 的 parent a 不在数组
+  {
+    const { rows, maxLanes } = layoutCommits([
+      mk('c', ['b']), mk('b', ['a']),
+    ]);
+    assert.equal(maxLanes, 1);
+    // b 行有 bottomEdge（期待 a 出去），即使 a 不在列表
+    assert.equal(rows[1]!.bottomEdges.length, 1);
+  }
+
+  // 空输入
+  {
+    const { rows, maxLanes } = layoutCommits([]);
+    assert.equal(rows.length, 0);
+    assert.equal(maxLanes, 0);
+  }
 }
 
 console.log('✅ all sanity checks passed');
