@@ -5,7 +5,7 @@
  * 组件职责：受控展示 + 用户交互；搜索输入内部 debounce
  * 不含任何 git 调用，业务在父组件通过 onChange 触发
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { CommitFilters, FilterOptions } from '../../../shared/domain';
 import { isValidSearch } from '../../../shared/commitFilter';
 import { useDebounce } from '../hooks/useDebounce';
@@ -20,6 +20,7 @@ interface Props {
   columns: ColumnFlags;
   onColumnsChange: (next: ColumnFlags) => void;
   onRefresh: () => void;
+  actions?: ReactNode;
 }
 
 const BRANCH_ALL = '__all__';
@@ -31,6 +32,7 @@ export function FilterBar({
   columns,
   onColumnsChange,
   onRefresh,
+  actions,
 }: Props) {
   // 搜索文本 debounce：输入即刻更新 draft，250ms 稳定后提交
   const [searchDraft, setSearchDraft] = useState(filters.search ?? '');
@@ -151,6 +153,7 @@ export function FilterBar({
 
       {/* 列显示设置 */}
       <ColumnsMenu columns={columns} onChange={onColumnsChange} />
+      {actions}
     </div>
   );
 }

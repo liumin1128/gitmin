@@ -32,14 +32,6 @@ export function ChangedFilesPanel({ range, files, loading, onOpenDiff }: Props) 
   }
   return (
     <div className="files-panel">
-      <div className="files-header">
-        <span>{files.length} 个文件</span>
-        {!range.contiguous && (
-          <span className="warn-tag" title="选中的 commit 不连续，diff 范围包含未选中的 commit 修改">
-            ⚠ 不连续选择
-          </span>
-        )}
-      </div>
       <div className="files-list">
         {files.map((f) => (
           <div

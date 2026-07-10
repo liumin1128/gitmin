@@ -9,10 +9,14 @@ import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { postMessage, useIpcListener } from './hooks/useIpc';
 import { useMultiSelect } from './hooks/useMultiSelect';
 import { useContextMenu } from './hooks/useContextMenu';
+import { useWorkbenchLayout } from './hooks/useWorkbenchLayout';
 import { FilterBar } from './components/FilterBar';
 import { CommitList, DEFAULT_COLUMNS, type ColumnFlags } from './components/CommitList';
 import { ChangedFilesPanel } from './components/ChangedFilesPanel';
 import { CommitContextMenu } from './components/CommitContextMenu';
+import { ResizableSplitView } from './components/ResizableSplitView';
+import { ViewSection } from './components/ViewSection';
+import { ViewVisibilityMenu } from './components/ViewVisibilityMenu';
 import type {
   Commit,
   CommitFilters,
@@ -36,6 +40,7 @@ export function App() {
     authors: [],
   });
   const [columns, setColumns] = useState<ColumnFlags>(DEFAULT_COLUMNS);
+  const { layout, setRatio, setVisible, setCollapsed } = useWorkbenchLayout();
 
   // === 消息订阅 ===
   useIpcListener('repo/info', () => {
@@ -164,28 +169,70 @@ export function App() {
         columns={columns}
         onColumnsChange={setColumns}
         onRefresh={handleRefresh}
+        actions={
+          <ViewVisibilityMenu
+            commitsVisible={layout.views.commits.visible}
+            filesVisible={layout.views.files.visible}
+            onCommitsVisibleChange={(visible) => setVisible('commits', visible)}
+            onFilesVisibleChange={(visible) => setVisible('files', visible)}
+          />
+        }
       />
       {error && <div className="error-bar">{error}</div>}
       {busy && <div className="busy-bar">执行中...</div>}
-      <div className="split">
-        <div className="split-left">
-          <CommitList
-            commits={commits}
-            columns={columns}
-            isSelected={isSelected}
-            onItemClick={onItemClick}
-            onItemContextMenu={handleContextMenu}
-          />
-        </div>
-        <div className="split-right">
-          <ChangedFilesPanel
-            range={range}
-            files={files}
-            loading={diffLoading}
-            onOpenDiff={handleOpenDiff}
-          />
-        </div>
-      </div>
+      <ResizableSplitView
+        ratio={layout.splitRatio}
+        firstVisible={layout.views.commits.visible}
+        firstCollapsed={layout.views.commits.collapsed}
+        secondVisible={layout.views.files.visible}
+        secondCollapsed={layout.views.files.collapsed}
+        onRatioChange={setRatio}
+        first={
+          <ViewSection
+            id="commits"
+            title="提交"
+            count={commits.length}
+            visible={layout.views.commits.visible}
+            collapsed={layout.views.commits.collapsed}
+            onCollapsedChange={(collapsed) => setCollapsed('commits', collapsed)}
+          >
+            <CommitList
+              commits={commits}
+              columns={columns}
+              isSelected={isSelected}
+              onItemClick={onItemClick}
+              onItemContextMenu={handleContextMenu}
+            />
+          </ViewSection>
+        }
+        second={
+          <ViewSection
+            id="files"
+            title="更改的文件"
+            count={range ? files.length : undefined}
+            visible={layout.views.files.visible}
+            collapsed={layout.views.files.collapsed}
+            onCollapsedChange={(collapsed) => setCollapsed('files', collapsed)}
+            actions={
+              range && !range.contiguous ? (
+                <span
+                  className="warn-tag"
+                  title="选中的 commit 不连续，diff 范围包含未选中的 commit 修改"
+                >
+                  ⚠
+                </span>
+              ) : undefined
+            }
+          >
+            <ChangedFilesPanel
+              range={range}
+              files={files}
+              loading={diffLoading}
+              onOpenDiff={handleOpenDiff}
+            />
+          </ViewSection>
+        }
+      />
       {menu.pos && (
         <CommitContextMenu
           x={menu.pos.x}

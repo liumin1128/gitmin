@@ -25,6 +25,14 @@ export function postMessage(msg: WebviewMessage): void {
   getApi().postMessage(msg);
 }
 
+export function getWebviewState<T>(): T | undefined {
+  return getApi().getState<T>();
+}
+
+export function setWebviewState<T>(state: T): void {
+  getApi().setState(state);
+}
+
 /**
  * 订阅某一类型的 extension 消息
  * 用 ref 保持最新 handler 引用，避免重复注册
