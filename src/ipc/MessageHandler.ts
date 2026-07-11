@@ -8,6 +8,7 @@ import type { WebviewMessage, ExtensionMessage } from '../../shared/messages';
 import type { Commit, CommitFilters, DiffRange, FileChange } from '../../shared/domain';
 import type { GitAction } from '../../shared/actions';
 import { GitService, normalizeLogPagination } from '../services/GitService';
+import { CommitRequestGuard } from './CommitRequestGuard';
 import { GitOpsService, type ResetMode } from '../services/GitOpsService';
 import { FileDiffNavigator } from '../services/FileDiffNavigator';
 import { getActiveRepo } from '../services/RepoLocator';
@@ -41,7 +42,7 @@ export class MessageHandler implements vscode.Disposable {
   private commitsCache: Commit[] = [];
   private repoRoot: string | null = null;
   private lastFilters: CommitFilters | undefined = undefined;
-  private activeCommitRequestId: number | null = null;
+  private readonly commitRequestGuard = new CommitRequestGuard();
   private commitContinuation: CommitContinuation | null = null;
   private diffCache: { range: DiffRange; files: FileChange[] } | null = null;
   private readonly disposables: vscode.Disposable[] = [];
@@ -73,15 +74,15 @@ export class MessageHandler implements vscode.Disposable {
       switch (msg.type) {
         case 'webview/ready': {
           const request = this.normalizeCommitRequest({ ...msg, offset: 0 });
-          this.activateCommitRequest(request);
+          if (!this.reserveCommitRequest(request)) return;
           await this.initRepo(request);
           break;
         }
         case 'commits/refresh': {
           const request = this.normalizeCommitRequest(msg);
-          if (!this.activateCommitRequest(request)) return;
+          if (!this.reserveCommitRequest(request)) return;
           await this.persistFilters(request.filters);
-          if (!this.isActiveCommitRequest(request.requestId)) return;
+          if (!this.isReservedCommitRequest(request)) return;
           await this.loadCommits(request);
           break;
         }
@@ -109,9 +110,10 @@ export class MessageHandler implements vscode.Disposable {
 
   private async initRepo(ready: CommitLoadRequest): Promise<void> {
     const repo = await getActiveRepo();
-    if (!this.isActiveCommitRequest(ready.requestId)) return;
+    if (!this.isReservedCommitRequest(ready)) return;
     if (!repo) {
       this.post({ type: 'repo/none', reason: '当前工作区未检测到 git 仓库' });
+      this.commitRequestGuard.release(ready.requestId, ready.offset);
       return;
     }
     this.repoRoot = repo.rootPath;
@@ -124,7 +126,7 @@ export class MessageHandler implements vscode.Disposable {
     );
     if (storedFilters === undefined && ready.filters) {
       await this.persistFilters(filters);
-      if (!this.isActiveCommitRequest(ready.requestId)) return;
+      if (!this.isReservedCommitRequest(ready)) return;
     }
     this.post({
       type: 'repo/info',
@@ -153,17 +155,20 @@ export class MessageHandler implements vscode.Disposable {
   }
 
   private async loadCommits(request: CommitLoadRequest): Promise<void> {
-    if (!this.isActiveCommitRequest(request.requestId)) return;
+    if (!this.isReservedCommitRequest(request)) return;
     this.lastFilters = request.filters;
-    if (!this.git) return;
+    if (!this.git) {
+      this.commitRequestGuard.release(request.requestId, request.offset);
+      return;
+    }
     try {
       const result = await this.readCommitPage(request);
-      if (!result || !this.isActiveCommitRequest(request.requestId)) return;
+      if (!result || !this.isReservedCommitRequest(request)) return;
 
       const hasMore = result.commits.length > 0
         ? await this.prepareContinuation(request, result.nextOffset)
         : false;
-      if (hasMore === undefined || !this.isActiveCommitRequest(request.requestId)) return;
+      if (hasMore === undefined || !this.isReservedCommitRequest(request)) return;
 
       if (request.offset === 0) {
         this.commitsCache = result.commits;
@@ -179,13 +184,15 @@ export class MessageHandler implements vscode.Disposable {
         hasMore,
       };
       this.post({ type: 'commits/loaded', page });
+      this.commitRequestGuard.complete(request.requestId, request.offset, result.nextOffset);
     } catch (e) {
-      if (!this.isActiveCommitRequest(request.requestId)) return;
+      if (!this.isReservedCommitRequest(request)) return;
       this.post({
         type: 'commits/error',
         requestId: request.requestId,
         error: e instanceof Error ? e.message : String(e),
       });
+      this.commitRequestGuard.release(request.requestId, request.offset);
     }
   }
 
@@ -194,17 +201,16 @@ export class MessageHandler implements vscode.Disposable {
     return { ...request, limit, offset };
   }
 
-  private activateCommitRequest(request: CommitLoadRequest): boolean {
-    if (request.offset === 0) {
-      this.activeCommitRequestId = request.requestId;
+  private reserveCommitRequest(request: CommitLoadRequest): boolean {
+    const isReserved = this.commitRequestGuard.reserve(request.requestId, request.offset);
+    if (isReserved && request.offset === 0) {
       this.commitContinuation = null;
-      return true;
     }
-    return this.isActiveCommitRequest(request.requestId);
+    return isReserved;
   }
 
-  private isActiveCommitRequest(requestId: number): boolean {
-    return this.activeCommitRequestId === requestId;
+  private isReservedCommitRequest(request: CommitLoadRequest): boolean {
+    return this.commitRequestGuard.isReserved(request.requestId, request.offset);
   }
 
   private async readCommitPage(
@@ -235,7 +241,7 @@ export class MessageHandler implements vscode.Disposable {
         limit: request.limit,
         filters: request.filters,
       });
-      if (!this.isActiveCommitRequest(request.requestId)) return undefined;
+      if (!this.isReservedCommitRequest(request)) return undefined;
       commits = applySearch(raw, request.filters);
       rawOffset += raw.length;
     } while (commits.length === 0 && raw.length === request.limit);
@@ -255,7 +261,7 @@ export class MessageHandler implements vscode.Disposable {
         limit: request.limit,
         filters: request.filters,
       });
-      if (!this.isActiveCommitRequest(request.requestId)) return undefined;
+      if (!this.isReservedCommitRequest(request)) return undefined;
 
       if (applySearch(raw, request.filters).length > 0) {
         this.commitContinuation = {
