@@ -5,10 +5,10 @@
 import type { Commit, FileChange, FileStatus } from '../../shared/domain';
 
 /** git log --pretty=format 分隔符使用 \x00（NUL），避免 message 中的字符冲突 */
-export const LOG_FORMAT = '%H%x00%h%x00%s%x00%an%x00%ae%x00%aI%x00%P';
+export const LOG_FORMAT = '%H%x00%h%x00%s%x00%an%x00%ae%x00%aI%x00%P%x00%D';
 
 export function parseLogLine(line: string): Commit {
-  const [hash, shortHash, message, author, email, date, parentsRaw] = line.split('\x00');
+  const [hash, shortHash, message, author, email, date, parentsRaw, refsRaw] = line.split('\x00');
   return {
     hash: hash ?? '',
     shortHash: shortHash ?? '',
@@ -17,7 +17,16 @@ export function parseLogLine(line: string): Commit {
     email: email ?? '',
     date: date ?? '',
     parents: parentsRaw ? parentsRaw.split(' ').filter(Boolean) : [],
+    refs: parseCommitRefs(refsRaw ?? ''),
   };
+}
+
+function parseCommitRefs(raw: string): string[] {
+  if (!raw || raw.trim().length === 0) return [];
+  return raw
+    .split(',')
+    .map((r) => r.trim())
+    .filter((r) => r.length > 0);
 }
 
 export function parseLogOutput(output: string): Commit[] {

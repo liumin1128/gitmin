@@ -60,21 +60,27 @@ function laneX(lane: number): number {
 }
 
 /**
- * 颜色循环取模：CSS 变量优先，无值时回退硬编码色
- * 用 var() + fallback 实现"变量存在就取变量，否则用备用色"
+ * 颜色循环取模：前 6 色复用 VSCode 主题变量，后续自定义色保证可区分性
  */
-const PALETTE: Array<[string, string]> = [
-  ['--vscode-charts-red', '#f14c4c'],
-  ['--vscode-charts-blue', '#3794ff'],
-  ['--vscode-charts-yellow', '#e2c08d'],
-  ['--vscode-charts-orange', '#d18616'],
-  ['--vscode-charts-green', '#89d185'],
-  ['--vscode-charts-purple', '#b180d7'],
-  ['--vscode-charts-foreground', '#cccccc'],
-  ['--vscode-charts-lines', '#8b8b8b'],
+const PALETTE: Array<{ cssVar?: string; color: string }> = [
+  { cssVar: '--vscode-charts-red',    color: '#f14c4c' },
+  { cssVar: '--vscode-charts-blue',   color: '#3794ff' },
+  { cssVar: '--vscode-charts-green',  color: '#89d185' },
+  { cssVar: '--vscode-charts-orange', color: '#d18616' },
+  { cssVar: '--vscode-charts-purple', color: '#b180d7' },
+  { cssVar: '--vscode-charts-yellow', color: '#cca700' },
+  { color: '#33b2b2' },
+  { color: '#e879b4' },
+  { color: '#7ecf7e' },
+  { color: '#b59a6b' },
+  { color: '#6cb6ff' },
+  { color: '#d484ff' },
 ];
 
 function laneColor(colorId: number): string {
-  const [varName, fallback] = PALETTE[colorId % PALETTE.length]!;
-  return `var(${varName}, ${fallback})`;
+  const entry = PALETTE[colorId % PALETTE.length]!;
+  if (entry.cssVar) {
+    return `var(${entry.cssVar}, ${entry.color})`;
+  }
+  return entry.color;
 }

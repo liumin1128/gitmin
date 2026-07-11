@@ -15,6 +15,7 @@ const ITEMS: Array<{ key: keyof ColumnFlags; label: string }> = [
   { key: 'hash', label: 'Hash' },
   { key: 'author', label: '作者' },
   { key: 'time', label: '时间' },
+  { key: 'tags', label: '标签' },
 ];
 
 export function ColumnsMenu({ columns, onChange }: Props) {

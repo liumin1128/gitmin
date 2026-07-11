@@ -71,7 +71,7 @@ export class GitService {
  * - search 不在这里处理（服务端后置纯函数负责）
  */
 function buildLogArgs(limit: number, filters?: CommitFilters): string[] {
-  const args = ['log', `--pretty=format:${LOG_FORMAT}`, '-n', String(limit)];
+  const args = ['log', `--pretty=format:${LOG_FORMAT}`, '--decorate=short', '-n', String(limit)];
   if (!filters) return args;
 
   if (filters.branch === '__all__') {

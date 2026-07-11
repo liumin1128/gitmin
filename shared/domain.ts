@@ -11,6 +11,8 @@ export interface Commit {
   email: string;
   date: string;
   parents: string[];
+  /** 当前 commit 上的 ref 名称列表（tag: xxx, origin/main 等） */
+  refs: string[];
 }
 
 export type FileStatus = 'A' | 'M' | 'D' | 'R' | 'C' | 'U' | '?';

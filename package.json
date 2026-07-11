@@ -2,7 +2,7 @@
   "name": "git-managment",
   "displayName": "Git Managment",
   "description": "WebStorm-like Git commit management panel for VSCode",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "local",
   "engines": {
     "vscode": "^1.85.0"

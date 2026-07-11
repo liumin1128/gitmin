@@ -6,7 +6,7 @@
 import { useMemo, type CSSProperties, type MouseEvent } from 'react';
 import type { Commit } from '../../../shared/domain';
 import { layoutCommits } from '../utils/commitGraph';
-import { measurePx, shortHash, relativeTime } from '../utils/formatters';
+import { measurePx, shortHash, relativeTime, tagListText } from '../utils/formatters';
 import { CommitItem } from './CommitItem';
 
 /** 列可见性；message 恒可见故不列 */
@@ -15,6 +15,7 @@ export interface ColumnFlags {
   hash: boolean;
   author: boolean;
   time: boolean;
+  tags: boolean;
 }
 
 export const DEFAULT_COLUMNS: ColumnFlags = {
@@ -22,6 +23,7 @@ export const DEFAULT_COLUMNS: ColumnFlags = {
   hash: false,
   author: true,
   time: true,
+  tags: true,
 };
 
 interface Props {
@@ -48,6 +50,7 @@ export function CommitList({
     let hashW = 0;
     let authorW = 0;
     let timeW = 0;
+    let tagsW = 0;
 
     for (const c of commits) {
       if (columns.hash) {
@@ -59,9 +62,12 @@ export function CommitList({
       if (columns.time) {
         timeW = Math.max(timeW, measurePx(relativeTime(c.date), '11.7px -apple-system, sans-serif'));
       }
+      if (columns.tags && c.refs.length > 0) {
+        tagsW = Math.max(tagsW, measurePx(tagListText(c.refs), '10px -apple-system, sans-serif'));
+      }
     }
 
-    return { hashW, authorW, timeW };
+    return { hashW, authorW, timeW, tagsW };
   }, [commits, columns]);
 
   if (commits.length === 0) {
@@ -74,6 +80,7 @@ export function CommitList({
     columns.author ? `${Math.ceil(colWidths.authorW) + PAD}px` : null,
     columns.hash ? `${Math.ceil(colWidths.hashW) + PAD}px` : null,
     columns.time ? `${Math.ceil(colWidths.timeW) + PAD}px` : null,
+    columns.tags ? `${Math.ceil(colWidths.tagsW) + PAD * 2}px` : null,
   ]
     .filter(Boolean)
     .join(' ');

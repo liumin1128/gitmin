@@ -57,3 +57,7 @@ export function measurePx(text: string, font: string): number {
   ctx.font = font;
   return ctx.measureText(text).width;
 }
+
+export function tagListText(refs: string[]): string {
+  return refs.join(' ');
+}

@@ -541,6 +541,22 @@ html, body, #root {
   text-align: left;
 }
 .commit-item.is-selected .commit-time { color: inherit; }
+.commit-tags {
+  display: flex;
+  gap: 3px;
+  overflow: hidden;
+}
+.commit-tag {
+  display: inline-block;
+  padding: 0 4px;
+  font-size: 10px;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  border-radius: 3px;
+  line-height: 16px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
 
 /* ===== Files panel ===== */
 .files-panel { display: flex; flex-direction: column; height: 100%; }
