@@ -39,9 +39,9 @@ export function CommitItem({
       title={commit.message}
     >
       {columns.graph && <CommitGraph row={graphRow} maxLanes={maxLanes} />}
-      {columns.hash && <span className="commit-hash">{shortHash(commit.hash)}</span>}
       <span className="commit-message">{firstLine(commit.message)}</span>
       {columns.author && <span className="commit-author">{commit.author}</span>}
+      {columns.hash && <span className="commit-hash">{shortHash(commit.hash)}</span>}
       {columns.time && <span className="commit-time">{relativeTime(commit.date)}</span>}
     </div>
   );

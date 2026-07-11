@@ -31,8 +31,6 @@ interface Props {
   onItemContextMenu: (hash: string, event: MouseEvent) => void;
 }
 
-const LANE_W = 12;
-
 export function CommitList({
   commits,
   columns,
@@ -46,12 +44,14 @@ export function CommitList({
     return <div className="empty-hint">暂无 commit</div>;
   }
 
+  const LANE_W = 12;
+
   const gridTemplate = [
     columns.graph ? `${maxLanes * LANE_W}px` : null,
-    columns.hash ? 'auto' : null,
     '1fr',
-    columns.author ? 'auto' : null,
-    columns.time ? 'auto' : null,
+    columns.author ? '80px' : null,
+    columns.hash ? '72px' : null,
+    columns.time ? '76px' : null,
   ]
     .filter(Boolean)
     .join(' ');

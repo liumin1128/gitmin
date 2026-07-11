@@ -8,25 +8,32 @@ export function shortHash(hash: string): string {
 }
 
 /**
- * 相对时间：如 "3 minutes ago" / "2 days ago"
- * 无国际化，MVP 阶段简单实现
+ * 相对时间：如 "3m ago" / "2h ago"，超过阈值显示日期
+ * @param iso   ISO 时间字符串
+ * @param now   当前时间（便于测试）
+ * @param maxDays 超过此天数直接显示日期，默认 7 天
  */
-export function relativeTime(iso: string, now: Date = new Date()): string {
+export function relativeTime(iso: string, now: Date = new Date(), maxDays = 7): string {
   const then = new Date(iso).getTime();
   const diffSec = Math.floor((now.getTime() - then) / 1000);
   if (Number.isNaN(diffSec)) return iso;
+
+  const day = Math.floor(diffSec / 86400);
+
+  if (day >= maxDays) {
+    const d = new Date(iso);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dt = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dt}`;
+  }
 
   if (diffSec < 60) return `${diffSec}s ago`;
   const min = Math.floor(diffSec / 60);
   if (min < 60) return `${min}m ago`;
   const hour = Math.floor(min / 60);
   if (hour < 24) return `${hour}h ago`;
-  const day = Math.floor(hour / 24);
-  if (day < 30) return `${day}d ago`;
-  const month = Math.floor(day / 30);
-  if (month < 12) return `${month}mo ago`;
-  const year = Math.floor(day / 365);
-  return `${year}y ago`;
+  return `${day}d ago`;
 }
 
 /** commit message 只取第一行 */
