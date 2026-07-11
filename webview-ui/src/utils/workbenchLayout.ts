@@ -8,12 +8,16 @@ export interface WorkbenchViewState {
 export interface WorkbenchLayoutState {
   version: 1;
   splitRatio: number;
+  detailsSplitRatio: number;
   views: Record<WorkbenchViewId, WorkbenchViewState>;
 }
+
+export type WorkbenchPaneSizes = Record<WorkbenchViewId, number>;
 
 export const DEFAULT_WORKBENCH_LAYOUT: WorkbenchLayoutState = {
   version: 1,
   splitRatio: 60,
+  detailsSplitRatio: 70,
   views: {
     commits: { visible: true, collapsed: false },
     files: { visible: true, collapsed: false },
@@ -47,6 +51,7 @@ export function parseWorkbenchLayout(value: unknown): WorkbenchLayoutState {
   const state = value as {
     version?: unknown;
     splitRatio?: unknown;
+    detailsSplitRatio?: unknown;
     views?: Record<string, unknown>;
   };
   if (
@@ -62,6 +67,10 @@ export function parseWorkbenchLayout(value: unknown): WorkbenchLayoutState {
   return {
     version: 1,
     splitRatio: clampSplitRatio(state.splitRatio),
+    detailsSplitRatio:
+      typeof state.detailsSplitRatio === 'number' && Number.isFinite(state.detailsSplitRatio)
+        ? clampSplitRatio(state.detailsSplitRatio)
+        : DEFAULT_WORKBENCH_LAYOUT.detailsSplitRatio,
     views: {
       commits: { ...state.views.commits },
       files: { ...state.views.files },
@@ -77,6 +86,37 @@ export function setSplitRatio(
   splitRatio: number
 ): WorkbenchLayoutState {
   return { ...state, splitRatio: clampSplitRatio(splitRatio) };
+}
+
+export function setDetailsSplitRatio(
+  state: WorkbenchLayoutState,
+  detailsSplitRatio: number
+): WorkbenchLayoutState {
+  return { ...state, detailsSplitRatio: clampSplitRatio(detailsSplitRatio) };
+}
+
+export function getWorkbenchPaneSizes(state: WorkbenchLayoutState): WorkbenchPaneSizes {
+  const commits = (state.detailsSplitRatio * state.splitRatio) / 100;
+  return {
+    commits,
+    files: state.detailsSplitRatio - commits,
+    details: 100 - state.detailsSplitRatio,
+  };
+}
+
+export function setWorkbenchPaneSizes(
+  state: WorkbenchLayoutState,
+  sizes: WorkbenchPaneSizes
+): WorkbenchLayoutState {
+  const total = sizes.commits + sizes.files + sizes.details;
+  const main = sizes.commits + sizes.files;
+  if (total <= 0 || main <= 0) return state;
+
+  return {
+    ...state,
+    detailsSplitRatio: clampSplitRatio((main / total) * 100),
+    splitRatio: clampSplitRatio((sizes.commits / main) * 100),
+  };
 }
 
 export function setViewVisible(

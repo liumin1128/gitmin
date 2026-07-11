@@ -18,9 +18,10 @@ import { ChangedFilesPanel } from './components/ChangedFilesPanel';
 import { CommitDetailsPanel } from './components/CommitDetailsPanel';
 import { CommitContextMenu } from './components/CommitContextMenu';
 import { SquashModal } from './components/SquashModal';
-import { ResizableSplitView } from './components/ResizableSplitView';
+import { ResizablePanelStack } from './components/ResizablePanelStack';
 import { ViewSection } from './components/ViewSection';
 import { ViewVisibilityMenu } from './components/ViewVisibilityMenu';
+import { getWorkbenchPaneSizes } from './utils/workbenchLayout';
 import { COMMIT_PAGE_SIZE, type CommitPage } from '../../shared/commitPagination';
 import type {
   Commit,
@@ -189,7 +190,7 @@ export function App() {
     authors: [],
   });
   const [columns, setColumns] = useState<ColumnFlags>(DEFAULT_COLUMNS);
-  const { layout, setRatio, setVisible, setCollapsed } = useWorkbenchLayout();
+  const { layout, setPaneSizes, setVisible, setCollapsed } = useWorkbenchLayout();
   const filtersReadyRef = useRef(false);
   const restoringFiltersRef = useRef(false);
   const commitRequestIdRef = useRef(0);
@@ -450,91 +451,106 @@ export function App() {
       />
       {(commitPageError ?? error) && <div className="error-bar">{commitPageError ?? error}</div>}
       {busy && <div className="busy-bar">执行中...</div>}
-      <ResizableSplitView
-        ratio={layout.splitRatio}
-        firstVisible={layout.views.commits.visible}
-        firstCollapsed={layout.views.commits.collapsed}
-        secondVisible={layout.views.files.visible}
-        secondCollapsed={layout.views.files.collapsed}
-        onRatioChange={setRatio}
-        first={
-          <ViewSection
-            id="commits"
-            title="提交"
-            count={commits.length}
-            visible={layout.views.commits.visible}
-            collapsed={layout.views.commits.collapsed}
-            onCollapsedChange={(collapsed) => setCollapsed('commits', collapsed)}
-            actions={
-              commitPageError ? (
-                <button
-                  type="button"
-                  className="toolbar-icon-button"
-                  title="重试加载 commit"
-                  aria-label="重试加载 commit"
-                  onClick={retryFailedCommitPageRequest}
-                >
-                  ↻
-                </button>
-              ) : undefined
-            }
-          >
-            <CommitList
-              commits={commits}
-              columns={columns}
-              isSelected={isSelected}
-              onItemClick={onItemClick}
-              onItemContextMenu={handleContextMenu}
-              hasMore={hasMore}
-              loadingMore={loadingMore}
-              automaticLoadEnabled={!commitPageError}
-              onLoadMore={loadMoreCommits}
-            />
-          </ViewSection>
-        }
-        second={
-          <ViewSection
-            id="files"
-            title="更改的文件"
-            count={range ? files.length : undefined}
-            visible={layout.views.files.visible}
-            collapsed={layout.views.files.collapsed}
-            onCollapsedChange={(collapsed) => setCollapsed('files', collapsed)}
-            actions={
-              range && !range.contiguous ? (
-                <span
-                  className="warn-tag"
-                  title="选中的 commit 不连续，diff 范围包含未选中的 commit 修改"
-                >
-                  ⚠
-                </span>
-              ) : undefined
-            }
-          >
-            <ChangedFilesPanel
-              range={range}
-              files={files}
-              activeFilePath={activeFilePath}
-              loading={diffLoading}
-              onOpenDiff={handleOpenDiff}
-            />
-          </ViewSection>
-        }
+      <ResizablePanelStack
+        sizes={getWorkbenchPaneSizes(layout)}
+        onSizesChange={setPaneSizes}
+        panes={[
+          {
+            id: 'commits',
+            visible: layout.views.commits.visible,
+            collapsed: layout.views.commits.collapsed,
+            content: (
+              <ViewSection
+                id="commits"
+                title="提交"
+                count={commits.length}
+                visible={layout.views.commits.visible}
+                collapsed={layout.views.commits.collapsed}
+                onCollapsedChange={(collapsed) => setCollapsed('commits', collapsed)}
+                actions={
+                  commitPageError ? (
+                    <button
+                      type="button"
+                      className="toolbar-icon-button"
+                      title="重试加载 commit"
+                      aria-label="重试加载 commit"
+                      onClick={retryFailedCommitPageRequest}
+                    >
+                      ↻
+                    </button>
+                  ) : undefined
+                }
+              >
+                <CommitList
+                  commits={commits}
+                  columns={columns}
+                  isSelected={isSelected}
+                  onItemClick={onItemClick}
+                  onItemContextMenu={handleContextMenu}
+                  hasMore={hasMore}
+                  loadingMore={loadingMore}
+                  automaticLoadEnabled={!commitPageError}
+                  onLoadMore={loadMoreCommits}
+                />
+              </ViewSection>
+            ),
+          },
+          {
+            id: 'files',
+            visible: layout.views.files.visible,
+            collapsed: layout.views.files.collapsed,
+            content: (
+              <ViewSection
+                id="files"
+                title="更改的文件"
+                count={range ? files.length : undefined}
+                visible={layout.views.files.visible}
+                collapsed={layout.views.files.collapsed}
+                onCollapsedChange={(collapsed) => setCollapsed('files', collapsed)}
+                actions={
+                  range && !range.contiguous ? (
+                    <span
+                      className="warn-tag"
+                      title="选中的 commit 不连续，diff 范围包含未选中的 commit 修改"
+                    >
+                      ⚠
+                    </span>
+                  ) : undefined
+                }
+              >
+                <ChangedFilesPanel
+                  range={range}
+                  files={files}
+                  activeFilePath={activeFilePath}
+                  loading={diffLoading}
+                  onOpenDiff={handleOpenDiff}
+                />
+              </ViewSection>
+            ),
+          },
+          {
+            id: 'details',
+            visible: layout.views.details.visible,
+            collapsed: layout.views.details.collapsed,
+            content: (
+              <ViewSection
+                id="details"
+                title="Commit 详细信息"
+                count={commitDetails.hashes.length}
+                visible={layout.views.details.visible}
+                collapsed={layout.views.details.collapsed}
+                onCollapsedChange={(collapsed) => setCollapsed('details', collapsed)}
+              >
+                <CommitDetailsPanel
+                  details={commitDetails.details}
+                  loading={commitDetails.loading}
+                  error={commitDetails.error}
+                />
+              </ViewSection>
+            ),
+          },
+        ]}
       />
-      <ViewSection
-        id="details"
-        title="Commit 详细信息"
-        count={commitDetails.hashes.length}
-        visible={layout.views.details.visible}
-        collapsed={layout.views.details.collapsed}
-        onCollapsedChange={(collapsed) => setCollapsed('details', collapsed)}
-      >
-        <CommitDetailsPanel
-          details={commitDetails.details}
-          loading={commitDetails.loading}
-          error={commitDetails.error}
-        />
-      </ViewSection>
       {menu.pos && (
         <CommitContextMenu
           x={menu.pos.x}

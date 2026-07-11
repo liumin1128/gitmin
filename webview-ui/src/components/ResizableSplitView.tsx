@@ -11,11 +11,14 @@ import {
 import { clampSplitRatio } from '../utils/workbenchLayout';
 
 interface Props {
+  orientation?: 'responsive' | 'horizontal' | 'vertical';
   ratio: number;
   firstVisible: boolean;
   firstCollapsed: boolean;
+  firstCollapsedSize?: number;
   secondVisible: boolean;
   secondCollapsed: boolean;
+  secondCollapsedSize?: number;
   onRatioChange: (ratio: number) => void;
   first: ReactNode;
   second: ReactNode;
@@ -38,11 +41,14 @@ function useWideLayout(): boolean {
 }
 
 export function ResizableSplitView({
+  orientation = 'vertical',
   ratio,
   firstVisible,
   firstCollapsed,
+  firstCollapsedSize,
   secondVisible,
   secondCollapsed,
+  secondCollapsedSize,
   onRatioChange,
   first,
   second,
@@ -50,18 +56,19 @@ export function ResizableSplitView({
   const rootRef = useRef<HTMLDivElement>(null);
   const dragCleanupRef = useRef<(() => void) | null>(null);
   const wide = useWideLayout();
+  const horizontal = orientation === 'horizontal' || (orientation === 'responsive' && wide);
   const resizable = firstVisible && !firstCollapsed && secondVisible && !secondCollapsed;
 
   const updateFromPointer = useCallback(
     (clientX: number, clientY: number) => {
       const rect = rootRef.current?.getBoundingClientRect();
       if (!rect) return;
-      const next = wide
+      const next = horizontal
         ? ((clientX - rect.left) / rect.width) * 100
         : ((clientY - rect.top) / rect.height) * 100;
       onRatioChange(clampSplitRatio(next));
     },
-    [onRatioChange, wide]
+    [horizontal, onRatioChange]
   );
 
   const stopDragging = useCallback(() => {
@@ -89,8 +96,8 @@ export function ResizableSplitView({
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     let next = ratio;
-    if ((wide && event.key === 'ArrowLeft') || (!wide && event.key === 'ArrowUp')) next -= 2;
-    else if ((wide && event.key === 'ArrowRight') || (!wide && event.key === 'ArrowDown')) next += 2;
+    if ((horizontal && event.key === 'ArrowLeft') || (!horizontal && event.key === 'ArrowUp')) next -= 2;
+    else if ((horizontal && event.key === 'ArrowRight') || (!horizontal && event.key === 'ArrowDown')) next += 2;
     else if (event.key === 'Home') next = 20;
     else if (event.key === 'End') next = 80;
     else return;
@@ -99,23 +106,35 @@ export function ResizableSplitView({
   };
 
   const style = { '--split-ratio': `${ratio}%` } as CSSProperties;
+  const collapsedStyle = (size: number | undefined) =>
+    size === undefined
+      ? undefined
+      : ({ '--collapsed-pane-size': `${Math.max(26, Math.round(size))}px` } as CSSProperties);
+  if (!firstVisible && !secondVisible) return null;
+
   const classes = [
     'workbench-split',
+    horizontal ? 'is-horizontal' : 'is-vertical',
     firstCollapsed ? 'is-first-collapsed' : '',
     secondCollapsed ? 'is-second-collapsed' : '',
-    !firstVisible ? 'is-first-hidden' : '',
-    !secondVisible ? 'is-second-hidden' : '',
   ].filter(Boolean).join(' ');
 
   return (
     <div ref={rootRef} className={classes} style={style}>
-      {first}
+      {firstVisible && (
+        <div
+          className={`workbench-pane is-first${firstCollapsed ? ' is-collapsed' : ''}`}
+          style={firstCollapsed ? collapsedStyle(firstCollapsedSize) : undefined}
+        >
+          {first}
+        </div>
+      )}
       {resizable && (
         <div
           className="workbench-separator"
           role="separator"
           aria-label="调整板块大小"
-          aria-orientation={wide ? 'vertical' : 'horizontal'}
+          aria-orientation={horizontal ? 'vertical' : 'horizontal'}
           aria-valuemin={20}
           aria-valuemax={80}
           aria-valuenow={ratio}
@@ -124,7 +143,14 @@ export function ResizableSplitView({
           onKeyDown={handleKeyDown}
         />
       )}
-      {second}
+      {secondVisible && (
+        <div
+          className={`workbench-pane is-second${secondCollapsed ? ' is-collapsed' : ''}`}
+          style={secondCollapsed ? collapsedStyle(secondCollapsedSize) : undefined}
+        >
+          {second}
+        </div>
+      )}
     </div>
   );
 }

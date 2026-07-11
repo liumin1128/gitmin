@@ -2,10 +2,13 @@ import { useCallback, useState } from 'react';
 import { getWebviewState, setWebviewState } from './useIpc';
 import {
   parseWorkbenchLayout,
+  setWorkbenchPaneSizes,
+  setDetailsSplitRatio,
   setSplitRatio,
   setViewCollapsed,
   setViewVisible,
   type WorkbenchLayoutState,
+  type WorkbenchPaneSizes,
   type WorkbenchViewId,
 } from '../utils/workbenchLayout';
 import type { PersistedWebviewState } from '../utils/persistedWebviewState';
@@ -30,6 +33,14 @@ export function useWorkbenchLayout() {
     (ratio: number) => update((current) => setSplitRatio(current, ratio)),
     [update]
   );
+  const setDetailsRatio = useCallback(
+    (ratio: number) => update((current) => setDetailsSplitRatio(current, ratio)),
+    [update]
+  );
+  const setPaneSizes = useCallback(
+    (sizes: WorkbenchPaneSizes) => update((current) => setWorkbenchPaneSizes(current, sizes)),
+    [update]
+  );
   const setVisible = useCallback(
     (id: WorkbenchViewId, visible: boolean) =>
       update((current) => setViewVisible(current, id, visible)),
@@ -41,5 +52,5 @@ export function useWorkbenchLayout() {
     [update]
   );
 
-  return { layout, setRatio, setVisible, setCollapsed };
+  return { layout, setRatio, setDetailsRatio, setPaneSizes, setVisible, setCollapsed };
 }
