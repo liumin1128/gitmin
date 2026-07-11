@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { CommitList, DEFAULT_COLUMNS } from '../webview-ui/src/components/CommitList';
+import {
+  CommitList,
+  DEFAULT_COLUMNS,
+  shouldLoadMore,
+} from '../webview-ui/src/components/CommitList';
 
 const props: Parameters<typeof CommitList>[0] = {
   commits: [],
@@ -35,5 +39,10 @@ assert.equal(
   '<div class="empty-hint">暂无 commit</div>',
   'empty commit list markup should remain unchanged'
 );
+
+assert.equal(shouldLoadMore(true, false, 70, 100, 200), true);
+assert.equal(shouldLoadMore(true, false, 69, 100, 200), false);
+assert.equal(shouldLoadMore(false, false, 70, 100, 200), false);
+assert.equal(shouldLoadMore(true, true, 70, 100, 200), false);
 
 console.log('commit list pagination component checks passed');
