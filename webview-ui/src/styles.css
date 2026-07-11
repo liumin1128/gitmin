@@ -51,7 +51,7 @@ html, body, #root {
   border-bottom: 1px solid var(--vscode-panel-border);
   background-color: var(--vscode-sideBar-background);
   flex-shrink: 0;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 /* 搜索框整体（含图标 + input + 两个 toggle） */
@@ -68,10 +68,30 @@ html, body, #root {
   border-radius: 2px;
   height: 24px;
 }
-/* 窄屏：搜索框独占一行，下拉排在下一行 */
-@media (max-width: 500px) {
+/* 过滤项与操作按钮始终保持在同一行 */
+.filter-bar-controls {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 2px;
+}
+.filter-bar-controls > .filter-dropdown {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.filter-bar-controls > .filter-dropdown > .filter-dropdown-btn {
+  width: 100%;
+}
+
+/* 窄屏直接切换为搜索框、工具控件两行布局 */
+@media (max-width: 640px) {
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
   .filter-search {
-    flex-basis: 100%;
+    flex: 0 0 24px;
     max-width: 100%;
   }
 }

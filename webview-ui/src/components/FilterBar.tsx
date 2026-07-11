@@ -85,75 +85,77 @@ export function FilterBar({
         </button>
       </div>
 
-      {/* 分支 */}
-      <FilterDropdown
-        label={`分支: ${branchLabel(filters.branch)}`}
-        active={!!filters.branch}
-        disabled={options.branches.length === 0}
-      >
-        {(close) => (
-          <BranchPanel
-            branches={options.branches}
-            value={filters.branch}
-            onSelect={(v) => {
-              patch({ branch: v });
-              close();
-            }}
-          />
-        )}
-      </FilterDropdown>
+      <div className="filter-bar-controls">
+        {/* 分支 */}
+        <FilterDropdown
+          label={`分支: ${branchLabel(filters.branch)}`}
+          active={!!filters.branch}
+          disabled={options.branches.length === 0}
+        >
+          {(close) => (
+            <BranchPanel
+              branches={options.branches}
+              value={filters.branch}
+              onSelect={(v) => {
+                patch({ branch: v });
+                close();
+              }}
+            />
+          )}
+        </FilterDropdown>
 
-      {/* 用户 */}
-      <FilterDropdown
-        label={`用户: ${filters.author || '全部'}`}
-        active={!!filters.author}
-        disabled={options.authors.length === 0}
-      >
-        {(close) => (
-          <AuthorPanel
-            authors={options.authors}
-            value={filters.author}
-            onSelect={(v) => {
-              patch({ author: v });
-              close();
-            }}
-          />
-        )}
-      </FilterDropdown>
+        {/* 用户 */}
+        <FilterDropdown
+          label={`用户: ${filters.author || '全部'}`}
+          active={!!filters.author}
+          disabled={options.authors.length === 0}
+        >
+          {(close) => (
+            <AuthorPanel
+              authors={options.authors}
+              value={filters.author}
+              onSelect={(v) => {
+                patch({ author: v });
+                close();
+              }}
+            />
+          )}
+        </FilterDropdown>
 
-      {/* 日期 */}
-      <FilterDropdown
-        label={`日期: ${dateLabel(filters.dateAfter, filters.dateBefore)}`}
-        active={!!(filters.dateAfter || filters.dateBefore)}
-      >
-        {(close) => (
-          <DatePanel
-            after={filters.dateAfter ?? ''}
-            before={filters.dateBefore ?? ''}
-            onApply={(after, before) => {
-              patch({ dateAfter: after || undefined, dateBefore: before || undefined });
-              close();
-            }}
-          />
-        )}
-      </FilterDropdown>
+        {/* 日期 */}
+        <FilterDropdown
+          label={`日期: ${dateLabel(filters.dateAfter, filters.dateBefore)}`}
+          active={!!(filters.dateAfter || filters.dateBefore)}
+        >
+          {(close) => (
+            <DatePanel
+              after={filters.dateAfter ?? ''}
+              before={filters.dateBefore ?? ''}
+              onApply={(after, before) => {
+                patch({ dateAfter: after || undefined, dateBefore: before || undefined });
+                close();
+              }}
+            />
+          )}
+        </FilterDropdown>
 
-      {/* spacer 将设置按钮推到右端 */}
-      <div className="filter-bar-spacer" />
+        {/* spacer 将设置按钮推到右端 */}
+        <div className="filter-bar-spacer" />
 
-      <button
-        type="button"
-        className="toolbar-icon-button"
-        onClick={onRefresh}
-        title="刷新 commit 列表"
-        aria-label="刷新 commit 列表"
-      >
-        ↻
-      </button>
+        <button
+          type="button"
+          className="toolbar-icon-button"
+          onClick={onRefresh}
+          title="刷新 commit 列表"
+          aria-label="刷新 commit 列表"
+        >
+          ↻
+        </button>
 
-      {/* 列显示设置 */}
-      <ColumnsMenu columns={columns} onChange={onColumnsChange} />
-      {actions}
+        {/* 列显示设置 */}
+        <ColumnsMenu columns={columns} onChange={onColumnsChange} />
+        {actions}
+      </div>
     </div>
   );
 }
