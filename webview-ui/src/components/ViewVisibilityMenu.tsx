@@ -1,3 +1,4 @@
+import { CheckedMenuItem } from './CheckedMenuItem';
 import { FilterDropdown } from './FilterDropdown';
 
 interface Props {
@@ -25,31 +26,16 @@ export function ViewVisibilityMenu({
       className="view-visibility-menu"
     >
       {() => (
-        <div className="filter-list">
-          <label className="filter-check">
-            <input
-              type="checkbox"
-              checked={commitsVisible}
-              onChange={(event) => onCommitsVisibleChange(event.target.checked)}
-            />
-            <span>提交</span>
-          </label>
-          <label className="filter-check">
-            <input
-              type="checkbox"
-              checked={filesVisible}
-              onChange={(event) => onFilesVisibleChange(event.target.checked)}
-            />
-            <span>更改的文件</span>
-          </label>
-          <label className="filter-check">
-            <input
-              type="checkbox"
-              checked={detailsVisible}
-              onChange={(event) => onDetailsVisibleChange(event.target.checked)}
-            />
-            <span>Commit 详细信息</span>
-          </label>
+        <div className="filter-list" role="menu">
+          <CheckedMenuItem checked={commitsVisible} onChange={onCommitsVisibleChange}>
+            提交
+          </CheckedMenuItem>
+          <CheckedMenuItem checked={filesVisible} onChange={onFilesVisibleChange}>
+            更改的文件
+          </CheckedMenuItem>
+          <CheckedMenuItem checked={detailsVisible} onChange={onDetailsVisibleChange}>
+            Commit 详细信息
+          </CheckedMenuItem>
         </div>
       )}
     </FilterDropdown>

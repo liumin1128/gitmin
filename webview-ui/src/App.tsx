@@ -14,6 +14,7 @@ import { usePersistedFilters } from './hooks/usePersistedFilters';
 import { useCommitDetails } from './hooks/useCommitDetails';
 import { FilterBar } from './components/FilterBar';
 import { CommitList, DEFAULT_COLUMNS, type ColumnFlags } from './components/CommitList';
+import { ColumnsMenu } from './components/ColumnsMenu';
 import { ChangedFilesPanel } from './components/ChangedFilesPanel';
 import { CommitDetailsPanel } from './components/CommitDetailsPanel';
 import { CommitContextMenu } from './components/CommitContextMenu';
@@ -435,8 +436,6 @@ export function App() {
         filters={filters}
         options={filterOptions}
         onChange={setFilters}
-        columns={columns}
-        onColumnsChange={setColumns}
         onRefresh={handleRefresh}
         actions={
           <ViewVisibilityMenu
@@ -468,17 +467,20 @@ export function App() {
                 collapsed={layout.views.commits.collapsed}
                 onCollapsedChange={(collapsed) => setCollapsed('commits', collapsed)}
                 actions={
-                  commitPageError ? (
-                    <button
-                      type="button"
-                      className="toolbar-icon-button"
-                      title="重试加载 commit"
-                      aria-label="重试加载 commit"
-                      onClick={retryFailedCommitPageRequest}
-                    >
-                      ↻
-                    </button>
-                  ) : undefined
+                  <>
+                    {commitPageError && (
+                      <button
+                        type="button"
+                        className="toolbar-icon-button"
+                        title="重试加载 commit"
+                        aria-label="重试加载 commit"
+                        onClick={retryFailedCommitPageRequest}
+                      >
+                        ↻
+                      </button>
+                    )}
+                    <ColumnsMenu columns={columns} onChange={setColumns} />
+                  </>
                 }
               >
                 <CommitList

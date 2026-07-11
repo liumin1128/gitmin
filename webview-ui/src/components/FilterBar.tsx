@@ -10,15 +10,11 @@ import type { CommitFilters, FilterOptions } from '../../../shared/domain';
 import { isValidSearch } from '../../../shared/commitFilter';
 import { useDebounce } from '../hooks/useDebounce';
 import { FilterDropdown } from './FilterDropdown';
-import { ColumnsMenu } from './ColumnsMenu';
-import type { ColumnFlags } from './CommitList';
 
 interface Props {
   filters: CommitFilters;
   options: FilterOptions;
   onChange: (next: CommitFilters) => void;
-  columns: ColumnFlags;
-  onColumnsChange: (next: ColumnFlags) => void;
   onRefresh: () => void;
   actions?: ReactNode;
 }
@@ -29,8 +25,6 @@ export function FilterBar({
   filters,
   options,
   onChange,
-  columns,
-  onColumnsChange,
   onRefresh,
   actions,
 }: Props) {
@@ -152,8 +146,6 @@ export function FilterBar({
           ↻
         </button>
 
-        {/* 列显示设置 */}
-        <ColumnsMenu columns={columns} onChange={onColumnsChange} />
         {actions}
       </div>
     </div>
