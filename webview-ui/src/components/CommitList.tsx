@@ -3,8 +3,9 @@
  * 多选状态由父组件通过 useMultiSelect 提供
  * 图布局由 layoutCommits 一次算出，grid-template-columns 由 columns 可见性动态生成
  */
-import { useMemo, type CSSProperties, type MouseEvent } from 'react';
+import { useMemo, type CSSProperties, type MouseEvent, type UIEvent } from 'react';
 import type { Commit } from '../../../shared/domain';
+import { isNearCommitListBottom } from '../../../shared/commitPagination';
 import { layoutCommits } from '../utils/commitGraph';
 import { measurePx, shortHash, relativeTime, tagListText } from '../utils/formatters';
 import { CommitItem } from './CommitItem';
@@ -32,6 +33,9 @@ interface Props {
   isSelected: (hash: string) => boolean;
   onItemClick: (hash: string, event: MouseEvent) => void;
   onItemContextMenu: (hash: string, event: MouseEvent) => void;
+  hasMore: boolean;
+  loadingMore: boolean;
+  onLoadMore: () => void;
 }
 
 export function CommitList({
@@ -40,6 +44,9 @@ export function CommitList({
   isSelected,
   onItemClick,
   onItemContextMenu,
+  hasMore,
+  loadingMore,
+  onLoadMore,
 }: Props) {
   const { rows, maxLanes } = useMemo(() => layoutCommits(commits), [commits]);
 
@@ -87,8 +94,15 @@ export function CommitList({
 
   const style = { '--commit-cols': gridTemplate } as CSSProperties;
 
+  const handleScroll = (event: UIEvent<HTMLDivElement>) => {
+    const { scrollTop, clientHeight, scrollHeight } = event.currentTarget;
+    if (hasMore && !loadingMore && isNearCommitListBottom(scrollTop, clientHeight, scrollHeight)) {
+      onLoadMore();
+    }
+  };
+
   return (
-    <div className="commit-list" style={style}>
+    <div className="commit-list" style={style} onScroll={handleScroll}>
       {commits.map((c, i) => (
         <CommitItem
           key={c.hash}
