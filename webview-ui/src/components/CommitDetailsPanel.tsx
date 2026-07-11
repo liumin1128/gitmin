@@ -33,21 +33,12 @@ function CommitDetailItem({ detail }: { detail: CommitDetails }) {
     <article className="commit-detail-item">
       <header className="commit-detail-header">
         <h3>{detail.subject || '(无提交主题)'}</h3>
-        <code>{detail.shortHash}</code>
       </header>
 
       {detail.body.trim() && <pre className="commit-detail-body">{detail.body}</pre>}
 
       <dl className="commit-detail-grid">
         <DetailRow label="Hash"><code>{detail.hash}</code></DetailRow>
-        <DetailRow label="Tree"><code>{detail.treeHash}</code></DetailRow>
-        <DetailRow label="父提交">
-          {detail.parents.length > 0 ? (
-            <span className="commit-detail-values">
-              {detail.parents.map((parent) => <code key={parent}>{parent}</code>)}
-            </span>
-          ) : '无（根提交）'}
-        </DetailRow>
         <DetailRow label="Refs">
           {detail.refs.length > 0 ? (
             <span className="commit-detail-refs">
@@ -56,18 +47,12 @@ function CommitDetailItem({ detail }: { detail: CommitDetails }) {
           ) : '无'}
         </DetailRow>
         <DetailRow label="作者">{formatCommitIdentity(detail.author)}</DetailRow>
-        <DetailRow label="作者时间">
-          <time dateTime={detail.author.date} title={detail.author.date}>
-            {formatCommitDate(detail.author.date)}
-          </time>
-        </DetailRow>
         <DetailRow label="提交者">{formatCommitIdentity(detail.committer)}</DetailRow>
         <DetailRow label="提交时间">
           <time dateTime={detail.committer.date} title={detail.committer.date}>
             {formatCommitDate(detail.committer.date)}
           </time>
         </DetailRow>
-        <DetailRow label="编码">{detail.encoding || 'UTF-8'}</DetailRow>
         <DetailRow label="签名">
           <span>{signatureStatusLabel(detail.signature.status)}</span>
           {detail.signature.signer && <span> · {detail.signature.signer}</span>}

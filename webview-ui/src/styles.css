@@ -666,13 +666,9 @@ html, body, #root {
   font-size: 13px;
   font-weight: 600;
 }
-.commit-detail-header code,
 .commit-detail-grid code {
   font-family: var(--vscode-editor-font-family, monospace);
   font-size: 0.9em;
-}
-.commit-detail-header code {
-  color: var(--vscode-textLink-foreground);
 }
 .commit-detail-body {
   margin: 0 0 10px;
@@ -705,7 +701,6 @@ html, body, #root {
   margin: 0;
   overflow-wrap: anywhere;
 }
-.commit-detail-values,
 .commit-detail-refs {
   display: flex;
   flex-wrap: wrap;
