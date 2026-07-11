@@ -1,5 +1,5 @@
 /**
- * 变更文件列表面板：展示累积 diff 的文件、点击打开详细 diff
+ * Changed files panel: displays cumulative diff file list, click to open detailed diff
  */
 import { useEffect, useRef } from 'react';
 import type { DiffRange, FileChange, FileStatus } from '../../../shared/domain';
@@ -24,13 +24,13 @@ const STATUS_LABEL: Record<FileStatus, string> = {
 
 export function ChangedFilesPanel({ range, files, activeFilePath, loading, onOpenDiff }: Props) {
   if (loading) {
-    return <div className="empty-hint">加载 diff 中...</div>;
+    return <div className="empty-hint">Loading diff...</div>;
   }
   if (!range) {
-    return <div className="empty-hint">从左侧选择一个或多个 commit 查看累积变更</div>;
+    return <div className="empty-hint">Select one or more commits from the left to view cumulative changes</div>;
   }
   if (files.length === 0) {
-    return <div className="empty-hint">无文件变更</div>;
+    return <div className="empty-hint">No file changes</div>;
   }
   return (
     <div className="files-panel">

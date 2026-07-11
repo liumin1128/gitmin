@@ -24,7 +24,7 @@ export function ViewSection({
   if (!visible) return null;
 
   const contentId = `${id}-section-content`;
-  const actionLabel = `${collapsed ? '展开' : '折叠'}${title}`;
+  const actionLabel = `${collapsed ? 'Expand' : 'Collapse'}${title}`;
   const stopPropagation = (event: MouseEvent) => event.stopPropagation();
 
   return (

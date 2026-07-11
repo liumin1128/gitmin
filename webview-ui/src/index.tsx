@@ -1,5 +1,5 @@
 /**
- * React 入口：挂载 App 到 #root
+ * React entry point: mounts App to #root
  */
 import { createRoot } from 'react-dom/client';
 import { App } from './App';

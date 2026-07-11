@@ -133,7 +133,7 @@ export function ResizableSplitView({
         <div
           className="workbench-separator"
           role="separator"
-          aria-label="调整板块大小"
+          aria-label="Resize panel"
           aria-orientation={horizontal ? 'vertical' : 'horizontal'}
           aria-valuemin={20}
           aria-valuemax={80}

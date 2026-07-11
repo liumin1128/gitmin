@@ -1,4 +1,4 @@
-/* 复用 VSCode 主题 CSS 变量，自动适配 light/dark/hc */
+/* Reuse VSCode theme CSS variables, auto-adapt light/dark/hc */
 
 * {
   box-sizing: border-box;
@@ -54,7 +54,7 @@ html, body, #root {
   flex-wrap: nowrap;
 }
 
-/* 搜索框整体（含图标 + input + 两个 toggle） */
+/* Search box (icon + input + two toggles) */
 .filter-search {
   display: flex;
   align-items: center;
@@ -68,7 +68,7 @@ html, body, #root {
   border-radius: 2px;
   height: 24px;
 }
-/* 过滤项与操作按钮始终保持在同一行 */
+/* Filters and action buttons stay on a single row */
 .filter-bar-controls {
   display: flex;
   align-items: center;
@@ -90,7 +90,7 @@ html, body, #root {
   flex: 0 0 24px;
 }
 
-/* 窄屏直接切换为搜索框、工具控件两行布局 */
+/* Narrow screen switches directly to two-row layout: search bar, tool controls */
 @media (max-width: 640px) {
   .filter-bar {
     flex-direction: column;
@@ -148,7 +148,7 @@ html, body, #root {
   border-color: var(--vscode-inputOption-activeBorder, transparent);
 }
 
-/* 将后面元素推到右端 */
+/* Push trailing items to the right */
 .filter-bar-spacer {
   flex: 1 1 auto;
   min-width: 0;
@@ -190,7 +190,7 @@ html, body, #root {
   min-width: 170px;
 }
 
-/* VS Code 风格的选中菜单项 */
+/* VS Code-style checked menu item */
 .checked-menu-item {
   display: grid;
   grid-template-columns: 16px minmax(0, 1fr);
@@ -227,7 +227,7 @@ html, body, #root {
   white-space: nowrap;
 }
 
-/* 下拉按钮 */
+/* Dropdown button */
 .filter-dropdown {
   display: inline-flex;
   align-items: center;
@@ -294,7 +294,7 @@ html, body, #root {
   font-size: 12px;
 }
 
-/* 下拉面板 */
+/* Dropdown panel */
 .filter-dropdown-panel {
   position: absolute;
   top: calc(100% + 2px);
@@ -314,7 +314,7 @@ html, body, #root {
   right: 0;
 }
 
-/* 面板内单选列表 */
+/* Single-select list in panel */
 .filter-list {
   display: flex;
   flex-direction: column;
@@ -348,7 +348,7 @@ html, body, #root {
   margin: 4px 0;
 }
 
-/* 面板内表单（日期 / 路径） */
+/* In-panel form (date / path) */
 .filter-form {
   padding: 6px 10px;
   display: flex;

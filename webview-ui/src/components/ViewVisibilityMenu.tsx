@@ -21,20 +21,20 @@ export function ViewVisibilityMenu({
   return (
     <FilterDropdown
       label={<span className="codicon codicon-more" aria-hidden="true" />}
-      title="管理视图"
+      title="Manage views"
       hideCaret
       className="view-visibility-menu"
     >
       {() => (
         <div className="filter-list" role="menu">
           <CheckedMenuItem checked={commitsVisible} onChange={onCommitsVisibleChange}>
-            提交
+            Commits
           </CheckedMenuItem>
           <CheckedMenuItem checked={filesVisible} onChange={onFilesVisibleChange}>
-            更改的文件
+            Changed Files
           </CheckedMenuItem>
           <CheckedMenuItem checked={detailsVisible} onChange={onDetailsVisibleChange}>
-            Commit 详细信息
+            Commit Details
           </CheckedMenuItem>
         </div>
       )}

@@ -1,22 +1,22 @@
 /**
- * diff range 计算：从选中的 commit hash 列表推导出 base..head
- * 纯函数，可单测
+ * Diff range computation: derive base..head from selected commit hashes
+ * Pure function, unit-testable
  */
 import type { Commit, DiffRange } from '../../shared/domain';
 
-/** git 空树 hash，用于根 commit 的父节点 diff */
+/** Git empty tree hash, used as parent for root commit diffs */
 export const EMPTY_TREE_HASH = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
 
 /**
- * @param selectedHashes 用户选中的 commit hash 集合（顺序无关）
- * @param allCommits    完整 commit 列表，按 git log 顺序（新的在前）
- * @returns 计算出的 diff range；无选中时返回 null
+ * @param selectedHashes User-selected commit hash set (order-independent)
+ * @param allCommits    Full commit list in git log order (newest first)
+ * @returns Computed diff range; null when no selection
  *
- * 规则：
- *   - N=1：base = commit.parents[0]（若为根 commit 则用空树），head = commit
- *   - N>1：找选中集合中"最老"的 commit（在列表中索引最大者），base = 其父节点；
- *          "最新"的 commit（索引最小者），head = 其 hash
- *   - contiguous: 选中的索引是否连续（用于 UI 提示"含未选中 commit"）
+ * Rules:
+ *   - N=1: base = commit.parents[0] (empty tree for root), head = commit
+ *   - N>1: Find the "oldest" commit in the selection (highest index in list), base = its parent;
+ *          "newest" commit (lowest index), head = its hash
+ *   - contiguous: Whether selected indices are consecutive (for UI hint about unselected commits)
  */
 export function computeDiffRange(
   selectedHashes: string[],

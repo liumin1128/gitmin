@@ -1,10 +1,10 @@
 /**
- * commit DAG 布局：贪心 lane 分配 + 颜色继承
- * - 第一父提交继承当前线路颜色
- * - 其他父提交创建独立颜色线路
- * - 无关联历史使用不同颜色并保持断开
- * - 只绘制当前列表中可见的父子关系
- * 纯函数，无副作用
+ * Commit DAG layout: greedy lane assignment + color inheritance
+ * - First parent inherits current lane color
+ * - Other parents create independent color lanes
+ * - Unrelated histories use different colors and stay disconnected
+ * - Only draws parent-child relationships visible in the current list
+ * Pure function, no side effects
  */
 import type { Commit } from '../../../shared/domain';
 

@@ -1,8 +1,8 @@
 /**
- * 通用下拉：按钮 + 展开面板
- * - 内部管理 open 状态
- * - 点击按钮切换、点击外部/ESC 关闭
- * - 面板内容由 children 决定（选项列表 / 日期表单 / 路径输入）
+ * Generic dropdown: button + expandable panel
+ * - Manages open state internally
+ * - Toggle on button click, close on outside click / ESC
+ * - Panel content determined by children (option list / date form / path input)
  */
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 
@@ -26,7 +26,7 @@ export function FilterDropdown({
   hideCaret,
   className,
   onClear,
-  clearLabel = '清除筛选',
+  clearLabel = 'Clear filter',
   children,
 }: Props) {
   const [open, setOpen] = useState(false);
@@ -54,7 +54,7 @@ export function FilterDropdown({
     };
   }, [open, close]);
 
-  // 打开时若面板右溢出视口，切换为右对齐；关闭时复位
+  // If panel overflows viewport on the right, switch to right-aligned; reset on close
   useLayoutEffect(() => {
     if (!open) {
       setAlignRight(false);

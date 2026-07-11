@@ -1,6 +1,6 @@
 /**
- * 通用 debounce hook：返回延迟 delay ms 后稳定下来的 value
- * value 高频变化时只在最后一次变更后 delay ms 更新
+ * Generic debounce hook: returns value stabilized after delay ms
+ * Rapid value changes only trigger update after the last change + delay ms
  */
 import { useEffect, useState } from 'react';
 

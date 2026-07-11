@@ -1,6 +1,6 @@
 /**
- * 列可见性设置：更多操作按钮 + VS Code 风格的选中菜单
- * message 恒可见故不在配置项中
+ * Column visibility settings: more options button + VS Code-style checked menu
+ * Message is always visible so not included in config items
  */
 import type { ColumnFlags } from './CommitList';
 import { CheckedMenuItem } from './CheckedMenuItem';
@@ -12,18 +12,18 @@ interface Props {
 }
 
 const ITEMS: Array<{ key: keyof ColumnFlags; label: string }> = [
-  { key: 'graph', label: '分支图' },
+  { key: 'graph', label: 'Graph' },
   { key: 'hash', label: 'Hash' },
-  { key: 'author', label: '作者' },
-  { key: 'time', label: '时间' },
-  { key: 'tags', label: '标签' },
+  { key: 'author', label: 'Author' },
+  { key: 'time', label: 'Time' },
+  { key: 'tags', label: 'Tags' },
 ];
 
 export function ColumnsMenu({ columns, onChange }: Props) {
   return (
     <FilterDropdown
       label={<span className="codicon codicon-more" aria-hidden="true" />}
-      title="显示列"
+      title="Display columns"
       hideCaret
       className="columns-menu"
     >

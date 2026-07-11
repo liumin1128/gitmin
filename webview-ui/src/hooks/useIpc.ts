@@ -1,7 +1,7 @@
 /**
- * Webview <-> Extension 消息通道封装
- * - postMessage: 类型安全的发消息
- * - useIpcListener: 类型安全订阅某类消息
+ * Webview <-> Extension message channel wrapper
+ * - postMessage: type-safe message sending
+ * - useIpcListener: type-safe subscription to a message type
  */
 import { useEffect, useRef } from 'react';
 import type { ExtensionMessage, WebviewMessage } from '../../../shared/messages';
@@ -14,7 +14,7 @@ interface VsCodeApi {
 
 declare function acquireVsCodeApi(): VsCodeApi;
 
-// 只能调用一次，缓存单例
+// Can only be called once, cache singleton
 let vscodeApi: VsCodeApi | null = null;
 function getApi(): VsCodeApi {
   if (!vscodeApi) vscodeApi = acquireVsCodeApi();
@@ -34,8 +34,8 @@ export function setWebviewState<T>(state: T): void {
 }
 
 /**
- * 订阅某一类型的 extension 消息
- * 用 ref 保持最新 handler 引用，避免重复注册
+ * Subscribe to a specific type of extension message
+ * Uses ref to keep the latest handler reference, avoiding repeated registration
  */
 export function useIpcListener<T extends ExtensionMessage['type']>(
   type: T,

@@ -1,7 +1,7 @@
 /**
- * Webview 消息分发中枢
- * 单一入口 handle()，按 type 路由到对应业务方法
- * 业务方法内的错误统一转成 *error / action/result 消息回传
+ * Webview message dispatch hub
+ * Single entry point handle(), routes by type to corresponding business methods
+ * Errors in business methods are uniformly converted to *error / action/result messages
  */
 import * as vscode from 'vscode';
 import type { WebviewMessage, ExtensionMessage } from '../../shared/messages';
@@ -112,7 +112,7 @@ export class MessageHandler implements vscode.Disposable {
     const repo = await getActiveRepo();
     if (!this.isReservedCommitRequest(ready)) return;
     if (!repo) {
-      this.post({ type: 'repo/none', reason: '当前工作区未检测到 git 仓库' });
+      this.post({ type: 'repo/none', reason: 'No git repository detected in the current workspace' });
       this.commitRequestGuard.release(ready.requestId, ready.offset);
       return;
     }
@@ -342,16 +342,16 @@ export class MessageHandler implements vscode.Disposable {
     if (!this.ops) return;
     const { action, hashes } = msg;
 
-    // reset --hard 二次确认（可能丢失工作区改动）
+    // reset --hard second confirmation (may lose working tree changes)
     if (action === 'reset-hard') {
       const short = hashes[0]?.slice(0, 7) ?? '?';
       const answer = await vscode.window.showWarningMessage(
-        `即将 git reset --hard 到 ${short}，会丢弃当前工作区所有未 commit 改动。确认？`,
+        `About to git reset --hard to ${short}, which will discard all uncommitted changes in the working tree. Continue?`,
         { modal: true },
-        '继续'
+        'Continue'
       );
-      if (answer !== '继续') {
-        this.post({ type: 'action/result', action, ok: false, message: '已取消' });
+      if (answer !== 'Continue') {
+        this.post({ type: 'action/result', action, ok: false, message: 'Cancelled' });
         return;
       }
     }
@@ -373,7 +373,7 @@ export class MessageHandler implements vscode.Disposable {
         case 'reset-soft':
         case 'reset-mixed':
         case 'reset-hard': {
-          if (hashes.length !== 1) throw new Error('reset 只支持单选');
+          if (hashes.length !== 1) throw new Error('reset requires single selection');
           const mode = action.slice('reset-'.length) as ResetMode;
           await this.ops.reset(mode, hashes[0]!);
           break;
@@ -381,12 +381,12 @@ export class MessageHandler implements vscode.Disposable {
       }
       this.post({ type: 'action/result', action, ok: true });
       if (action === 'copy-hash') {
-        vscode.window.showInformationMessage(`已复制 ${hashes.length} 个 hash 到剪贴板`);
+        vscode.window.showInformationMessage(`Copied ${hashes.length} hash(es) to clipboard`);
       }
     } catch (e) {
       const err = e instanceof Error ? e.message : String(e);
       this.post({ type: 'action/result', action, ok: false, message: err });
-      vscode.window.showErrorMessage(`Git 操作失败：${err}`);
+      vscode.window.showErrorMessage(`Git operation failed: ${err}`);
     }
   }
 }

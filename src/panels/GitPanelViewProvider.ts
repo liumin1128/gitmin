@@ -1,6 +1,6 @@
 /**
- * Sidebar 内的 Webview view provider
- * 主入口：Activity Bar 点击图标即可看到 commit 列表
+ * Sidebar Webview view provider
+ * Main entry point: clicking the icon in the Activity Bar shows the commit list
  */
 import * as vscode from 'vscode';
 import { MessageHandler } from '../ipc/MessageHandler';

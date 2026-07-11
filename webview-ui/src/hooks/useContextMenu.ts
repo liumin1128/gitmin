@@ -1,8 +1,8 @@
 /**
- * 右键菜单状态管理
- * - open(x, y) 打开
- * - close() 关闭
- * - 点击外部/按 ESC 自动关闭
+ * Right-click context menu state management
+ * - open(x, y) opens
+ * - close() closes
+ * - Auto-close on outside click / ESC
  */
 import { useCallback, useEffect, useState } from 'react';
 
@@ -28,10 +28,10 @@ export function useContextMenu(): ContextMenuAPI {
     const onDocClick = () => close();
     const onEsc = (e: KeyboardEvent) => e.key === 'Escape' && close();
     const onContextMenu = (e: MouseEvent) => {
-      // 其他地方右键 → 关闭当前菜单，让新菜单可以打开
+      // Other right-clicks → close current menu so a new one can open
       close();
     };
-    // 用 setTimeout 避免刚打开时被同一次点击关闭
+    // setTimeout avoids the menu being closed by the same click that opened it
     const t = setTimeout(() => {
       window.addEventListener('click', onDocClick);
       window.addEventListener('contextmenu', onContextMenu);

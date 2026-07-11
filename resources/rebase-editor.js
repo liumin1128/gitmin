@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 /**
- * git rebase -i 交互编辑器替代脚本
- * 通过环境变量控制对 pick 行的改写：
+ * git rebase -i interactive editor replacement script
+ * Controlled via environment variables to modify pick lines:
  *   GITMGR_REBASE_ACTION: 'fixup' | 'drop'
- *   GITMGR_TARGET_HASHES: 逗号分隔的目标 commit hash（长/短均可）
+ *   GITMGR_TARGET_HASHES: comma-separated target commit hashes (long or short)
  *
- * fixup：将目标中"最老"的保留 pick，其余目标改为 fixup（合并入前一个 pick）
- * drop： 将所有目标改为 drop
+ * fixup: keep the "oldest" target as pick, change remaining targets to fixup (merged into previous pick)
+ * drop:  change all targets to drop
  */
 const fs = require('fs');
 
 const file = process.argv[2];
 if (!file) {
-  console.error('rebase-editor: 缺少 todo 文件路径');
+  console.error('rebase-editor: missing todo file path');
   process.exit(1);
 }
 

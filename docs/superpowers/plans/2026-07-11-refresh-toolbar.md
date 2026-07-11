@@ -47,8 +47,8 @@ const props = {
 };
 
 const html = renderToStaticMarkup(<FilterBar {...props} />);
-const refreshIndex = html.indexOf('aria-label="刷新 commit 列表"');
-const columnsIndex = html.indexOf('title="显示列"');
+const refreshIndex = html.indexOf('aria-label="Refresh commit list"');
+const columnsIndex = html.indexOf('title="Display columns"');
 
 assert.notEqual(refreshIndex, -1, 'filter toolbar should render refresh action');
 assert.notEqual(columnsIndex, -1, 'filter toolbar should retain column settings');
@@ -97,8 +97,8 @@ Render the icon action after the spacer and immediately before `ColumnsMenu`:
   type="button"
   className="toolbar-icon-button"
   onClick={onRefresh}
-  title="刷新 commit 列表"
-  aria-label="刷新 commit 列表"
+  title="Refresh commit list"
+  aria-label="Refresh commit list"
 >
   ↻
 </button>

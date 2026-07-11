@@ -1,6 +1,6 @@
 /**
- * commitGraph 纯函数布局测试
- * 运行：node --experimental-strip-types test/commitGraph.mts
+ * commitGraph pure function layout tests
+ * Run: node --experimental-strip-types test/commitGraph.mts
  */
 import assert from 'node:assert/strict';
 import { layoutCommits } from '../webview-ui/src/utils/commitGraph.ts';
@@ -14,7 +14,7 @@ function laneOf(rows: { commitLane: number }[]): number[] {
   return rows.map((r) => r.commitLane);
 }
 
-// ===== 线性历史 =====
+// ===== Linear history =====
 {
   const commits = [mk('c3', ['c2']), mk('c2', ['c1']), mk('c1', [])];
   const { rows, maxLanes } = layoutCommits(commits);
@@ -28,7 +28,7 @@ function laneOf(rows: { commitLane: number }[]): number[] {
   assert.equal(rows[2]!.bottomEdges.length, 0);
 }
 
-// ===== 分支 + merge =====
+// ===== Branch + merge =====
 //   c3 (merge of c2, b2)
 //   |\
 //   | b2
@@ -39,20 +39,20 @@ function laneOf(rows: { commitLane: number }[]): number[] {
   const { rows, maxLanes } = layoutCommits(commits);
   assert.equal(maxLanes, 2);
 
-  // c3 行：分支
+  // c3 row: branch
   const c3Edges = rows[0]!.bottomEdges;
   assert.equal(c3Edges.length, 2);
   const branch = c3Edges.find((e) => e.type === 'branch')!;
   assert.ok(branch);
   assert.equal(branch.fromLane, rows[0]!.commitLane);
 
-  // b2 行：merge
+  // b2 row: merge
   const b2Edges = rows[1]!.bottomEdges;
   const merge = b2Edges.find((e) => e.type === 'merge')!;
   assert.ok(merge);
 }
 
-// ===== 父提交不可见时结束当前片段 =====
+// ===== Parent not visible → end current segment =====
 {
   const commits = [mk('c2', ['c1'])];
   const { rows } = layoutCommits(commits);
@@ -60,7 +60,7 @@ function laneOf(rows: { commitLane: number }[]): number[] {
     'missing parents must not produce a dangling edge');
 }
 
-// ===== 不可见的 merge parent 不应覆盖可见主线 =====
+// ===== Invisible merge parent should not override visible mainline =====
 {
   const commits = [mk('merge', ['main', 'hidden-side']), mk('main', [])];
   const { rows } = layoutCommits(commits);
@@ -71,21 +71,21 @@ function laneOf(rows: { commitLane: number }[]): number[] {
   );
 }
 
-// ===== 无关联历史（多个根，不同颜色，无连接） =====
+// ===== Unrelated histories (multiple roots, different colors, no connection) =====
 {
   const commits = [mk('r2', ['r1']), mk('r1', []), mk('s1', [])];
   const { rows } = layoutCommits(commits);
 
-  // r1 和 s1 是相邻行但无关，应有 null 安全
+  // r1 and s1 are adjacent but unrelated, should be null-safe
   assert.ok(rows[1]!.commitColor !== rows[2]!.commitColor,
     'unrelated roots should have different colors');
-  // r1 无 bottomEdge（根），s1 无 topEdge（新根）
+  // r1 has no bottomEdge (root), s1 has no topEdge (new root)
   assert.equal(rows[1]!.bottomEdges.length, 0);
   assert.equal(rows[2]!.topEdges.length, 0);
 }
 
-// ===== lane 回收 + 颜色不继承 =====
-//   分支 A 结束后，新分支 B 复用 lane 应有新颜色
+// ===== Lane recycling + no color inheritance =====
+//   After branch A ends, new branch B reuses lane but gets a new color
 {
   const commits = [
     mk('merge', ['main', 'side']),
@@ -97,15 +97,15 @@ function laneOf(rows: { commitLane: number }[]): number[] {
   ];
   const { rows } = layoutCommits(commits);
 
-  // side 分支在 merge 后结束，其 lane 可回收
-  // other 是另一条历史，不应继承 side 的颜色
+  // side branch ends after merge, its lane can be recycled
+  // other is a different history, should not inherit side's color
   const others = rows.filter((r, i) => commits[i]!.hash === 'other');
   const sides = rows.filter((r, i) => commits[i]!.hash === 'side');
   assert.ok(sides.length > 0 && others.length > 0);
   assert.notEqual(sides[0]!.commitColor, others[0]!.commitColor);
 }
 
-// ===== octopus merge（3 个父提交） =====
+// ===== Octopus merge (3 parents) =====
 {
   const commits = [mk('octo', ['a', 'b', 'c']), mk('c', []), mk('b', []), mk('a', [])];
   const { rows, maxLanes } = layoutCommits(commits);
@@ -113,22 +113,22 @@ function laneOf(rows: { commitLane: number }[]): number[] {
   assert.ok(maxLanes >= 3);
 }
 
-// ===== 过滤后断层（中间 commit 被过滤，不连线） =====
-//   c5 → c4 → [c3 过滤] → c2 → c1
+// ===== Filtered gap (middle commit filtered, no connection) =====
+//   c5 → c4 → [c3 filtered] → c2 → c1
 {
   const commits = [mk('c5', ['c4']), mk('c4', ['c3']), mk('c2', ['c1']), mk('c1', [])];
   const { rows } = layoutCommits(commits);
 
-  // c4 的 parent c3 不在列表中，因此该颜色片段在 c4 结束
+  // c4's parent c3 is not in the list, so this color segment ends at c4
   const c4Row = rows[1]!;
   assert.equal(c4Row.bottomEdges.length, 0);
 
-  // c2 不应从 c4 连线，因为没有等待 c2 的 lane
+  // c2 should not connect from c4, because there is no lane waiting for c2
   const c2Row = rows[2]!;
   assert.equal(c2Row.topEdges.length, 0, 'c2 should not connect to filtered c4 row');
 }
 
-// ===== 颜色稳定性（相同输入 → 相同颜色） =====
+// ===== Color stability (same input → same colors) =====
 {
   const commits = [mk('f', ['e']), mk('e', ['d']), mk('d', [])];
   const r1 = layoutCommits(commits);
@@ -140,7 +140,7 @@ function laneOf(rows: { commitLane: number }[]): number[] {
   }
 }
 
-// ===== 空输入 =====
+// ===== Empty input =====
 {
   const { rows, maxLanes } = layoutCommits([]);
   assert.equal(rows.length, 0);

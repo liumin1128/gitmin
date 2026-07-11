@@ -125,7 +125,7 @@ export function ResizablePanelStack({ panes, sizes, onSizesChange }: Props) {
               <div
                 className="workbench-separator"
                 role="separator"
-                aria-label={`调整${pane.id}与${nextPane.id}板块大小`}
+                aria-label={`Resize ${pane.id} and ${nextPane.id} panel`}
                 aria-orientation="horizontal"
                 aria-valuemin={20}
                 aria-valuemax={80}

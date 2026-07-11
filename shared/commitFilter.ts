@@ -1,8 +1,8 @@
 /**
- * commit 搜索纯函数
- * - 只处理 search + searchRegex + searchCaseSensitive
- * - 匹配范围：commit.message 与 commit.hash（含前缀）
- * - 非法正则退化为返回全部（不抛错，UI 层可用 isValidSearch 提示）
+ * Commit search pure functions
+ * - Only handles search + searchRegex + searchCaseSensitive
+ * - Matches against: commit.message and commit.hash (including prefix)
+ * - Invalid regex degrades to returning all (no error thrown, UI can use isValidSearch for hints)
  */
 import type { Commit, CommitFilters } from './domain';
 
@@ -17,7 +17,7 @@ export function applySearch(commits: Commit[], filters?: CommitFilters): Commit[
   return commits.filter((c) => matcher(c.message) || matcher(c.hash) || matcher(c.shortHash));
 }
 
-/** 搜索关键字是否是合法输入（非空 + 若开启 regex 则可编译） */
+/** Check if search input is valid (non-empty + if regex enabled, must compile) */
 export function isValidSearch(q: string, useRegex: boolean): boolean {
   if (!q) return true;
   if (!useRegex) return true;

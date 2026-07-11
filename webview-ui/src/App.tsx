@@ -1,9 +1,9 @@
 /**
- * 顶层容器：
- * - 挂载后通知 extension（webview/ready）
- * - 订阅所有 extension 消息，维护 repo/commits/diff/action 状态
- * - 组合 useMultiSelect + useContextMenu
- * - 将纯数据与回调下发给 UI 组件
+ * Top-level container:
+ * - Notifies extension on mount (webview/ready)
+ * - Subscribes to all extension messages, manages repo/commits/diff/action state
+ * - Composes useMultiSelect + useContextMenu
+ * - Passes pure data and callbacks down to UI components
  */
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { postMessage, useIpcListener } from './hooks/useIpc';
@@ -215,7 +215,7 @@ export function App() {
     queuedFiltersRef: queuedCommitResetFiltersRef,
   };
 
-  // === 消息订阅 ===
+  // === Message subscriptions ===
   useIpcListener('repo/info', () => {
     setRepoError(null);
   });
@@ -258,15 +258,16 @@ export function App() {
     setError(m.error);
     setDiffLoading(false);
   });
-  // === 生命周期：挂载即通知 ===
+  // === Lifecycle: notify on mount ===
   useEffect(() => {
     const requestId = startCommitPageSession(pagination);
     postMessage({ type: 'webview/ready', requestId, limit: COMMIT_PAGE_SIZE, filters });
-    // 恢复后的 filters 只用于首次握手，后续变化由下方 effect 刷新。
+    // Restored filters are only used for the initial handshake; subsequent
+    // filter changes trigger refresh via the useEffect below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // === 多选 ===
+  // === Multi-select ===
   const commitHashes = useMemo(() => commits.map((c) => c.hash), [commits]);
   const { selected, isSelected, onItemClick, selectOnly, clear } = useMultiSelect(commitHashes);
   const commitDetails = useCommitDetails(commits, selected);
@@ -308,7 +309,7 @@ export function App() {
     }
   }, []);
 
-  // === filter 变化 → 重新拉取 commits（跳过首次挂载，交给 webview/ready）===
+  // === Filter changes → re-fetch commits (skip initial mount, handled by webview/ready) ===
   useEffect(() => {
     if (!filtersReadyRef.current) {
       filtersReadyRef.current = true;
@@ -324,7 +325,7 @@ export function App() {
   useIpcListener('action/result', (m) => {
     setBusy(false);
     if (!m.ok) {
-      setError(m.message ?? '操作失败');
+      setError(m.message ?? 'Operation failed');
       return;
     }
 
@@ -332,7 +333,7 @@ export function App() {
     if (m.action !== 'copy-hash') resetCommits(filtersRef.current);
   });
 
-  // 选中是否连续（Squash 需要）
+  // Whether selected commits are contiguous (Squash requires)
   const contiguous = useMemo(() => {
     if (selected.size <= 1) return true;
     const indexMap = new Map(commits.map((c, i) => [c.hash, i]));
@@ -345,7 +346,7 @@ export function App() {
     return max - min + 1 === indices.length;
   }, [selected, commits]);
 
-  // === 选择变化 → 请求 diff ===
+  // === Selection change → request diff ===
   const selectionKey = useMemo(() => [...selected].sort().join('|'), [selected]);
   useEffect(() => {
     if (selected.size === 0) {
@@ -359,7 +360,7 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectionKey]);
 
-  // === 右键菜单 ===
+  // === Context menu ===
   const menu = useContextMenu();
   const handleContextMenu = useCallback(
     (hash: string, event: React.MouseEvent) => {
@@ -449,7 +450,7 @@ export function App() {
         }
       />
       {(commitPageError ?? error) && <div className="error-bar">{commitPageError ?? error}</div>}
-      {busy && <div className="busy-bar">执行中...</div>}
+      {busy && <div className="busy-bar">Executing...</div>}
       <ResizablePanelStack
         sizes={getWorkbenchPaneSizes(layout)}
         onSizesChange={setPaneSizes}
@@ -461,7 +462,7 @@ export function App() {
             content: (
               <ViewSection
                 id="commits"
-                title="提交"
+                title="Commits"
                 count={commits.length}
                 visible={layout.views.commits.visible}
                 collapsed={layout.views.commits.collapsed}
@@ -472,8 +473,8 @@ export function App() {
                       <button
                         type="button"
                         className="toolbar-icon-button"
-                        title="重试加载 commit"
-                        aria-label="重试加载 commit"
+                        title="Retry loading commits"
+                        aria-label="Retry loading commits"
                         onClick={retryFailedCommitPageRequest}
                       >
                         <span className="codicon codicon-refresh" aria-hidden="true" />
@@ -504,7 +505,7 @@ export function App() {
             content: (
               <ViewSection
                 id="files"
-                title="更改的文件"
+                title="Changed Files"
                 count={range ? files.length : undefined}
                 visible={layout.views.files.visible}
                 collapsed={layout.views.files.collapsed}
@@ -513,7 +514,7 @@ export function App() {
                   range && !range.contiguous ? (
                     <span
                       className="warn-tag"
-                      title="选中的 commit 不连续，diff 范围包含未选中的 commit 修改"
+                      title="Selected commits are not contiguous; the diff range includes changes from unselected commits"
                     >
                       ⚠
                     </span>
@@ -537,7 +538,7 @@ export function App() {
             content: (
               <ViewSection
                 id="details"
-                title="Commit 详细信息"
+                title="Commit Details"
                 count={commitDetails.hashes.length}
                 visible={layout.views.details.visible}
                 collapsed={layout.views.details.collapsed}

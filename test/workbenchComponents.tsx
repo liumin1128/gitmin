@@ -12,7 +12,7 @@ import { ViewVisibilityMenu } from '../webview-ui/src/components/ViewVisibilityM
 const first = (
   <ViewSection
     id="commits"
-    title="提交"
+    title="Commits"
     count={12}
     visible
     collapsed={false}
@@ -24,7 +24,7 @@ const first = (
 const second = (
   <ViewSection
     id="files"
-    title="更改的文件"
+    title="Changed Files"
     visible
     collapsed={false}
     onCollapsedChange={() => undefined}
@@ -35,7 +35,7 @@ const second = (
 const details = (
   <ViewSection
     id="details"
-    title="Commit 详细信息"
+    title="Commit Details"
     count={2}
     visible
     collapsed={false}
@@ -69,14 +69,14 @@ const html = renderToStaticMarkup(
   </>
 );
 
-assert.match(html, /aria-label="折叠提交"/);
+assert.match(html, /aria-label="CollapseCommits"/);
 assert.match(html, /role="separator"/);
 assert.match(html, /aria-orientation="horizontal"/);
-assert.match(html, /title="管理视图"/);
-assert.match(html, />提交</);
-assert.match(html, />更改的文件</);
-assert.match(html, />Commit 详细信息</);
-assert.match(html, /aria-label="折叠Commit 详细信息"/);
+assert.match(html, /title="Manage views"/);
+assert.match(html, />Commits</);
+assert.match(html, />Changed Files</);
+assert.match(html, />Commit Details</);
+assert.match(html, /aria-label="CollapseCommit Details"/);
 
 const collapsedHtml = renderToStaticMarkup(
   <ResizableSplitView
@@ -89,7 +89,7 @@ const collapsedHtml = renderToStaticMarkup(
     first={
       <ViewSection
         id="commits"
-        title="提交"
+        title="Commits"
         visible
         collapsed
         onCollapsedChange={() => undefined}

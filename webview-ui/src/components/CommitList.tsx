@@ -1,7 +1,7 @@
 /**
- * commit 列表容器：只负责渲染 + 滚动触底事件上报
- * 多选状态由父组件通过 useMultiSelect 提供
- * 图布局由 layoutCommits 一次算出，grid-template-columns 由 columns 可见性动态生成
+ * Commit list container: only handles rendering + scroll-to-bottom event reporting
+ * Multi-select state provided by parent via useMultiSelect
+ * Graph layout computed once by layoutCommits, grid-template-columns dynamically generated from column visibility
  */
 import { useEffect, useMemo, useRef, type CSSProperties, type MouseEvent } from 'react';
 import type { Commit } from '../../../shared/domain';
@@ -10,7 +10,7 @@ import { layoutCommits } from '../utils/commitGraph';
 import { measurePx, shortHash, relativeTime, tagListText } from '../utils/formatters';
 import { CommitItem } from './CommitItem';
 
-/** 列可见性；message 恒可见故不列 */
+/** Column visibility; message always visible so not listed */
 export interface ColumnFlags {
   graph: boolean;
   hash: boolean;
@@ -173,7 +173,7 @@ export function CommitList({
   }, [automaticLoadEnabled, columns, commits, hasMore, loadingMore, onLoadMore]);
 
   if (commits.length === 0) {
-    return <div className="empty-hint">暂无 commit</div>;
+    return <div className="empty-hint">No commits</div>;
   }
 
   const gridTemplate = [

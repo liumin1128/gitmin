@@ -14,18 +14,18 @@ const props = {
 };
 
 const html = renderToStaticMarkup(<FilterBar {...props} />);
-const refreshIndex = html.indexOf('aria-label="刷新 commit 列表"');
+const refreshIndex = html.indexOf('aria-label="Refresh commit list"');
 
 assert.equal(DEFAULT_COLUMNS.tags, false, 'tag column should be hidden by default');
 assert.notEqual(refreshIndex, -1, 'filter toolbar should render refresh action');
-assert.doesNotMatch(html, /title="显示列"/, 'column settings belongs to the commit panel header');
+assert.doesNotMatch(html, /title="Display columns"/, 'column settings belongs to the commit panel header');
 assert.match(html, /codicon-search/, 'search should use the VS Code search icon');
 assert.match(html, /codicon-refresh/, 'refresh should use the VS Code refresh icon');
 assert.doesNotMatch(html, /🔍/, 'toolbar should not render emoji icons');
-assert.doesNotMatch(html, /aria-label="清除/, 'inactive filters should not render clear actions');
+assert.doesNotMatch(html, /aria-label="Clear/, 'inactive filters should not render clear actions');
 assert.match(
   html,
-  /class="filter-bar-controls"[\s\S]*aria-label="刷新 commit 列表"/,
+  /class="filter-bar-controls"[\s\S]*aria-label="Refresh commit list"/,
   'filters and toolbar actions should stay in one controls row'
 );
 
@@ -73,13 +73,13 @@ const activeFiltersHtml = renderToStaticMarkup(
     options={{ branches: ['main'], authors: ['Alice'] }}
   />
 );
-assert.match(activeFiltersHtml, /aria-label="清除分支筛选"/);
-assert.match(activeFiltersHtml, /aria-label="清除用户筛选"/);
-assert.match(activeFiltersHtml, /aria-label="清除日期筛选"/);
+assert.match(activeFiltersHtml, /aria-label="Clear branch filter"/);
+assert.match(activeFiltersHtml, /aria-label="Clear author filter"/);
+assert.match(activeFiltersHtml, /aria-label="Clear date filter"/);
 assert.equal((activeFiltersHtml.match(/codicon-close/g) ?? []).length, 3);
 
 const checkedItemHtml = renderToStaticMarkup(
-  <CheckedMenuItem checked onChange={() => undefined}>作者</CheckedMenuItem>
+  <CheckedMenuItem checked onChange={() => undefined}>Author</CheckedMenuItem>
 );
 assert.match(checkedItemHtml, /role="menuitemcheckbox"/);
 assert.match(checkedItemHtml, /aria-checked="true"/);

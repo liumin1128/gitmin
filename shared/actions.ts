@@ -1,6 +1,6 @@
 /**
- * 修改历史类的操作枚举
- * 独立成文件，与消息协议分离
+ * Git history modification action enum
+ * Standalone file, decoupled from message protocol
  */
 
 export type GitAction =
@@ -13,16 +13,16 @@ export type GitAction =
   | 'reset-hard';
 
 export const ACTION_LABEL: Record<GitAction, string> = {
-  'copy-hash': '复制 Hash',
+  'copy-hash': 'Copy Hash',
   revert: 'Revert',
-  squash: 'Squash（压缩为一个）',
-  drop: 'Drop（删除）',
-  'reset-soft': 'Reset --soft 到此',
-  'reset-mixed': 'Reset --mixed 到此',
-  'reset-hard': 'Reset --hard 到此',
+  squash: 'Squash',
+  drop: 'Drop',
+  'reset-soft': 'Reset --soft to here',
+  'reset-mixed': 'Reset --mixed to here',
+  'reset-hard': 'Reset --hard to here',
 };
 
-/** 判断某 action 在当前选择下是否可用 */
+/** Check if an action is available given the current selection */
 export function canPerform(
   action: GitAction,
   selectedCount: number,

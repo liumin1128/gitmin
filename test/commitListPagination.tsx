@@ -39,7 +39,7 @@ execFileSync(
 
 assert.equal(
   renderToStaticMarkup(<CommitList {...props} />),
-  '<div class="empty-hint">暂无 commit</div>',
+  '<div class="empty-hint">No commits</div>',
   'empty commit list markup should remain unchanged'
 );
 

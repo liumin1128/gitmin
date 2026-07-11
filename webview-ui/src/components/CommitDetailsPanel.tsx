@@ -13,10 +13,10 @@ interface Props {
 }
 
 export function CommitDetailsPanel({ details, loading, error }: Props) {
-  if (loading) return <div className="empty-hint">正在加载 Commit 详细信息...</div>;
+  if (loading) return <div className="empty-hint">Loading commit details...</div>;
   if (error) return <div className="commit-details-error">{error}</div>;
   if (details.length === 0) {
-    return <div className="empty-hint">选择一个或多个 commit 查看详细信息</div>;
+    return <div className="empty-hint">Select one or more commits to view details</div>;
   }
 
   return (
@@ -32,7 +32,7 @@ function CommitDetailItem({ detail }: { detail: CommitDetails }) {
   return (
     <article className="commit-detail-item">
       <header className="commit-detail-header">
-        <h3>{detail.subject || '(无提交主题)'}</h3>
+        <h3>{detail.subject || '(no subject)'}</h3>
       </header>
 
       {detail.body.trim() && <pre className="commit-detail-body">{detail.body}</pre>}
@@ -44,16 +44,16 @@ function CommitDetailItem({ detail }: { detail: CommitDetails }) {
             <span className="commit-detail-refs">
               {detail.refs.map((ref) => <span className="commit-tag" key={ref}>{ref}</span>)}
             </span>
-          ) : '无'}
+          ) : 'None'}
         </DetailRow>
-        <DetailRow label="作者">{formatCommitIdentity(detail.author)}</DetailRow>
-        <DetailRow label="提交者">{formatCommitIdentity(detail.committer)}</DetailRow>
-        <DetailRow label="提交时间">
+        <DetailRow label="Author">{formatCommitIdentity(detail.author)}</DetailRow>
+        <DetailRow label="Committer">{formatCommitIdentity(detail.committer)}</DetailRow>
+        <DetailRow label="Commit Date">
           <time dateTime={detail.committer.date} title={detail.committer.date}>
             {formatCommitDate(detail.committer.date)}
           </time>
         </DetailRow>
-        <DetailRow label="签名">
+        <DetailRow label="Signature">
           <span>{signatureStatusLabel(detail.signature.status)}</span>
           {detail.signature.signer && <span> · {detail.signature.signer}</span>}
           {detail.signature.key && <span> · <code>{detail.signature.key}</code></span>}

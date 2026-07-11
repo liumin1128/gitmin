@@ -1,10 +1,10 @@
 /**
- * git 输出解析纯函数集合
- * 全部为无副作用纯函数，便于单测
+ * Git output parsing pure function collection
+ * All pure functions with no side effects, easy to unit test
  */
 import type { Commit, FileChange, FileStatus } from '../../shared/domain';
 
-/** git log --pretty=format 分隔符使用 \x00（NUL），避免 message 中的字符冲突 */
+/** git log --pretty=format separator uses \x00 (NUL) to avoid conflicts with message content */
 export const LOG_FORMAT = '%H%x00%h%x00%s%x00%an%x00%ae%x00%aI%x00%P%x00%D';
 
 export function parseLogLine(line: string): Commit {
@@ -37,8 +37,8 @@ export function parseLogOutput(output: string): Commit[] {
 }
 
 /**
- * 解析 git diff --name-status 输出
- * 格式:
+ * Parse git diff --name-status output
+ * Format:
  *   A\tpath
  *   M\tpath
  *   D\tpath
@@ -71,9 +71,9 @@ export function parseNameStatus(output: string): Map<string, StatusEntry> {
 }
 
 /**
- * 解析 git diff --numstat 输出
- * 格式: insertions\tdeletions\tpath
- * 二进制文件 insertions/deletions 都为 "-"
+ * Parse git diff --numstat output
+ * Format: insertions\tdeletions\tpath
+ * Binary files have insertions/deletions as "-"
  */
 export interface NumstatEntry {
   insertions: number;
@@ -100,7 +100,7 @@ export function parseNumstat(output: string): Map<string, NumstatEntry> {
 }
 
 /**
- * 合并 name-status 与 numstat 结果为 FileChange 列表
+ * Merge name-status and numstat results into a FileChange list
  */
 export function mergeFileChanges(
   statusMap: Map<string, StatusEntry>,
@@ -120,7 +120,7 @@ export function mergeFileChanges(
       binary: n?.binary ?? false,
     });
   }
-  // 按 path 稳定排序
+  // Stable sort by path
   result.sort((a, b) => a.path.localeCompare(b.path));
   return result;
 }

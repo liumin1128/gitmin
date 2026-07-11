@@ -19,11 +19,11 @@ const detail: CommitDetails = {
 
 assert.match(
   renderToStaticMarkup(<CommitDetailsPanel details={[]} loading={false} error={null} />),
-  /选择一个或多个 commit/
+  /Select one or more commits/
 );
 assert.match(
   renderToStaticMarkup(<CommitDetailsPanel details={[]} loading error={null} />),
-  /正在加载 Commit 详细信息/
+  /Loading commit details/
 );
 assert.match(
   renderToStaticMarkup(<CommitDetailsPanel details={[]} loading={false} error="load failed" />),
@@ -40,15 +40,15 @@ assert.match(html, /abcdef1234567890/);
 assert.match(html, /HEAD -&gt; main/);
 assert.match(html, /Alice &lt;alice@example.com&gt;/);
 assert.match(html, /Bob &lt;bob@example.com&gt;/);
-assert.match(html, /有效签名/);
+assert.match(html, /Good signature/);
 assert.match(html, /Alice Signer/);
 assert.match(html, /ABC123/);
 const headers = html.match(/<header class="commit-detail-header">[\s\S]*?<\/header>/g) ?? [];
 assert.equal(headers.length, 2);
 headers.forEach((header) => assert.doesNotMatch(header, /<code>/));
 assert.doesNotMatch(html, /<dt>Tree<\/dt>/);
-assert.doesNotMatch(html, /<dt>父提交<\/dt>/);
-assert.doesNotMatch(html, /<dt>作者时间<\/dt>/);
-assert.doesNotMatch(html, /<dt>编码<\/dt>/);
+assert.doesNotMatch(html, /<dt>Parents<\/dt>/);
+assert.doesNotMatch(html, /<dt>Author Date<\/dt>/);
+assert.doesNotMatch(html, /<dt>Encoding<\/dt>/);
 
 console.log('commit details panel checks passed');

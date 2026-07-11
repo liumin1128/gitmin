@@ -1,6 +1,6 @@
 /**
- * Extension <-> Webview IPC 协议
- * 采用 discriminated union，两端类型一致
+ * Extension <-> Webview IPC protocol
+ * Uses discriminated union, consistent types on both ends
  */
 import type {
   CommitDetails,

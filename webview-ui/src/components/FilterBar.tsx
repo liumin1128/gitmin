@@ -1,9 +1,9 @@
 /**
- * WebStorm 风格 commit 过滤栏：
- *  [搜索 文本或哈希        .*  Cc]  [分支▼] [用户▼] [日期▼] [路径▼]
+ * WebStorm-style commit filter bar:
+ *  [Search text or hash        .*  Cc]  [Branch▼] [Author▼] [Date▼] [Path▼]
  *
- * 组件职责：受控展示 + 用户交互；搜索输入内部 debounce
- * 不含任何 git 调用，业务在父组件通过 onChange 触发
+ * Component responsibility: controlled display + user interaction; search input has internal debounce
+ * No git calls, business logic triggered via onChange in parent component
  */
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { CommitFilters, FilterOptions } from '../../../shared/domain';
@@ -28,7 +28,7 @@ export function FilterBar({
   onRefresh,
   actions,
 }: Props) {
-  // 搜索文本 debounce：输入即刻更新 draft，250ms 稳定后提交
+  // Search text debounce: update draft immediately, commit after 250ms
   const [searchDraft, setSearchDraft] = useState(filters.search ?? '');
   const debouncedSearch = useDebounce(searchDraft, 250);
 
@@ -51,20 +51,20 @@ export function FilterBar({
 
   return (
     <div className="filter-bar">
-      {/* 搜索框 */}
+      {/* Search box */}
       <div className={`filter-search${!searchValid ? ' is-invalid' : ''}`}>
         <span className="filter-search-icon codicon codicon-search" aria-hidden="true" />
         <input
           className="filter-search-input"
           type="text"
           value={searchDraft}
-          placeholder="文本或哈希"
+          placeholder="Text or hash"
           onChange={(e) => setSearchDraft(e.target.value)}
         />
         <button
           type="button"
           className={`filter-toggle${filters.searchRegex ? ' is-active' : ''}`}
-          title="正则表达式"
+          title="Regex"
           onClick={() => patch({ searchRegex: !filters.searchRegex })}
         >
           .*
@@ -72,7 +72,7 @@ export function FilterBar({
         <button
           type="button"
           className={`filter-toggle${filters.searchCaseSensitive ? ' is-active' : ''}`}
-          title="大小写敏感"
+          title="Case sensitive"
           onClick={() => patch({ searchCaseSensitive: !filters.searchCaseSensitive })}
         >
           Cc
@@ -80,13 +80,13 @@ export function FilterBar({
       </div>
 
       <div className="filter-bar-controls">
-        {/* 分支 */}
+        {/* Branch */}
         <FilterDropdown
-          label={`分支: ${branchLabel(filters.branch)}`}
+          label={`Branch: ${branchLabel(filters.branch)}`}
           active={!!filters.branch}
           disabled={options.branches.length === 0}
           onClear={() => patch({ branch: undefined })}
-          clearLabel="清除分支筛选"
+          clearLabel="Clear branch filter"
         >
           {(close) => (
             <BranchPanel
@@ -100,13 +100,13 @@ export function FilterBar({
           )}
         </FilterDropdown>
 
-        {/* 用户 */}
+        {/* Author */}
         <FilterDropdown
-          label={`用户: ${filters.author || '全部'}`}
+          label={`Author: ${filters.author || 'All'}`}
           active={!!filters.author}
           disabled={options.authors.length === 0}
           onClear={() => patch({ author: undefined })}
-          clearLabel="清除用户筛选"
+          clearLabel="Clear author filter"
         >
           {(close) => (
             <AuthorPanel
@@ -120,12 +120,12 @@ export function FilterBar({
           )}
         </FilterDropdown>
 
-        {/* 日期 */}
+        {/* Date */}
         <FilterDropdown
-          label={`日期: ${dateLabel(filters.dateAfter, filters.dateBefore)}`}
+          label={`Date: ${dateLabel(filters.dateAfter, filters.dateBefore)}`}
           active={!!(filters.dateAfter || filters.dateBefore)}
           onClear={() => patch({ dateAfter: undefined, dateBefore: undefined })}
-          clearLabel="清除日期筛选"
+          clearLabel="Clear date filter"
         >
           {(close) => (
             <DatePanel
@@ -139,15 +139,15 @@ export function FilterBar({
           )}
         </FilterDropdown>
 
-        {/* spacer 将设置按钮推到右端 */}
+        {/* Spacer pushes the settings button to the right */}
         <div className="filter-bar-spacer" />
 
         <button
           type="button"
           className="toolbar-icon-button"
           onClick={onRefresh}
-          title="刷新 commit 列表"
-          aria-label="刷新 commit 列表"
+          title="Refresh commit list"
+          aria-label="Refresh commit list"
         >
           <span className="codicon codicon-refresh" aria-hidden="true" />
         </button>
@@ -158,7 +158,7 @@ export function FilterBar({
   );
 }
 
-// ===== 子面板 =====
+// ===== Sub-panels =====
 
 interface BranchPanelProps {
   branches: string[];
@@ -173,14 +173,14 @@ function BranchPanel({ branches, value, onSelect }: BranchPanelProps) {
         className={`filter-list-item${!value ? ' is-selected' : ''}`}
         onClick={() => onSelect(undefined)}
       >
-        HEAD（当前分支）
+        HEAD (current branch)
       </button>
       <button
         type="button"
         className={`filter-list-item${value === BRANCH_ALL ? ' is-selected' : ''}`}
         onClick={() => onSelect(BRANCH_ALL)}
       >
-        所有分支
+        All branches
       </button>
       <div className="filter-list-sep" />
       {branches.map((b) => (
@@ -210,7 +210,7 @@ function AuthorPanel({ authors, value, onSelect }: AuthorPanelProps) {
         className={`filter-list-item${!value ? ' is-selected' : ''}`}
         onClick={() => onSelect(undefined)}
       >
-        全部
+        All
       </button>
       <div className="filter-list-sep" />
       {authors.map((a) => (
@@ -238,35 +238,35 @@ function DatePanel({ after, before, onApply }: DatePanelProps) {
   return (
     <div className="filter-form">
       <label className="filter-form-row">
-        <span>从</span>
+        <span>From</span>
         <input type="date" value={a} onChange={(e) => setA(e.target.value)} />
       </label>
       <label className="filter-form-row">
-        <span>到</span>
+        <span>To</span>
         <input type="date" value={b} onChange={(e) => setB(e.target.value)} />
       </label>
       <div className="filter-form-actions">
         <button type="button" className="btn-secondary" onClick={() => onApply('', '')}>
-          清除
-        </button>
-        <button type="button" className="btn" onClick={() => onApply(a, b)}>
-          应用
+            Clear
+          </button>
+          <button type="button" className="btn" onClick={() => onApply(a, b)}>
+            Apply
         </button>
       </div>
     </div>
   );
 }
 
-// ===== 展示辅助 =====
+// ===== Display helpers =====
 
 function branchLabel(v?: string): string {
   if (!v) return 'HEAD';
-  if (v === BRANCH_ALL) return '所有';
+  if (v === BRANCH_ALL) return 'All';
   return v;
 }
 
 function dateLabel(after?: string, before?: string): string {
-  if (!after && !before) return '全部';
+  if (!after && !before) return 'All';
   if (after && before) return `${after} ~ ${before}`;
   if (after) return `≥ ${after}`;
   return `≤ ${before}`;

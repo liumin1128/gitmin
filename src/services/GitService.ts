@@ -1,6 +1,6 @@
 /**
- * simple-git 封装：只暴露业务需要的方法
- * 全部返回 shared/domain 中定义的领域类型
+ * simple-git wrapper: only exposes business-needed methods
+ * All return values use domain types from shared/domain
  */
 import { simpleGit, type SimpleGit } from 'simple-git';
 import type { Commit, CommitDetails, CommitFilters, FileChange } from '../../shared/domain';
@@ -24,7 +24,7 @@ export class GitService {
     this.git = simpleGit(rootPath);
   }
 
-  /** 拉取最近 limit 条 commit，可按 filter 缩小范围（不含 search） */
+  /** Fetch recent commits, optionally filtered (excluding search) */
   async getLog(
     opts: { offset?: number; limit?: number; filters?: CommitFilters } = {}
   ): Promise<Commit[]> {
@@ -45,7 +45,7 @@ export class GitService {
     return parseCommitDetailsOutput(output);
   }
 
-  /** 累积 diff 的变更文件列表（含 A/M/D/R 状态 + 增删行数） */
+  /** Cumulative diff file list (with A/M/D/R status + line counts) */
   async getDiffSummary(base: string, head: string): Promise<FileChange[]> {
     const range = `${base}..${head}`;
     const [nameStatusOut, numstatOut] = await Promise.all([
@@ -55,7 +55,7 @@ export class GitService {
     return mergeFileChanges(parseNameStatus(nameStatusOut), parseNumstat(numstatOut));
   }
 
-  /** 本地 + 远程分支名（去重、去掉 HEAD 指向别名） */
+  /** Local + remote branch names (deduped, no HEAD alias) */
   async getBranches(): Promise<string[]> {
     const summary = await this.git.branch(['-a']);
     const set = new Set<string>();
@@ -66,7 +66,7 @@ export class GitService {
     return [...set].sort((a, b) => a.localeCompare(b));
   }
 
-  /** 从近 500 条 log 中提取作者列表（去重、按字母排序） */
+  /** Extract author list from the last ~500 log entries (deduped, alpha sorted) */
   async getAuthors(sampleSize: number = 500): Promise<string[]> {
     const output = await this.git.raw([
       'log',
@@ -85,8 +85,8 @@ export class GitService {
 }
 
 /**
- * 组装 git log 参数
- * - search 不在这里处理（服务端后置纯函数负责）
+ * Build git log arguments
+ * - search is not handled here (server-side pure function handles it)
  */
 export function buildLogArgs(
   limit: number,

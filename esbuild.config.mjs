@@ -3,7 +3,7 @@ import * as esbuild from 'esbuild';
 const isWatch = process.argv.includes('--watch');
 const isProd = process.env.NODE_ENV === 'production';
 
-/** Extension host bundle (Node/CJS，external vscode) */
+/** Extension host bundle (Node/CJS, external vscode) */
 const extensionConfig = {
   entryPoints: ['src/extension.ts'],
   bundle: true,
@@ -17,7 +17,7 @@ const extensionConfig = {
   logLevel: 'info',
 };
 
-/** Webview bundle (Browser/IIFE，含 React) */
+/** Webview bundle (Browser/IIFE, with React) */
 const webviewConfig = {
   entryPoints: ['webview-ui/src/index.tsx'],
   bundle: true,
@@ -25,7 +25,7 @@ const webviewConfig = {
   platform: 'browser',
   target: 'es2022',
   format: 'iife',
-  jsx: 'automatic', // React 17+ 自动 JSX runtime，无需 import React
+  jsx: 'automatic', // React 17+ automatic JSX runtime, no need to import React
   sourcemap: !isProd,
   minify: isProd,
   loader: {

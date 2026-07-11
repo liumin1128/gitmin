@@ -1,6 +1,6 @@
 /**
- * WebviewPanel 单例：在编辑区打开更宽敞的 commit 面板
- * 侧边栏窄时的备用大屏入口
+ * WebviewPanel singleton: opens a wider commit panel in the editor area
+ * Alternative large-screen entry point when the sidebar is too narrow
  */
 import * as vscode from 'vscode';
 import { MessageHandler } from '../ipc/MessageHandler';

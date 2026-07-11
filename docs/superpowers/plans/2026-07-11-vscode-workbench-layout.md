@@ -187,12 +187,12 @@ Expected: `workbench layout checks passed` and both TypeScript projects pass.
 Create `test/workbenchComponents.tsx` using `renderToStaticMarkup`. Render two `ViewSection` elements inside `ResizableSplitView`, plus `ViewVisibilityMenu`, and assert:
 
 ```tsx
-assert.match(html, /aria-label="折叠提交"/);
+assert.match(html, /aria-label="CollapseCommits"/);
 assert.match(html, /role="separator"/);
 assert.match(html, /aria-orientation="vertical"/);
-assert.match(html, /title="管理视图"/);
-assert.match(html, />提交</);
-assert.match(html, />更改的文件</);
+assert.match(html, /title="Manage views"/);
+assert.match(html, />Commits</);
+assert.match(html, />Changed Files</);
 ```
 
 Supply no-op callbacks and a layout where both views are visible and expanded. Print `workbench component checks passed` on success.
@@ -224,7 +224,7 @@ interface Props {
 }
 ```
 
-Return `null` when hidden. Otherwise render `.view-section`, a button-based `.view-section-header` with `aria-expanded`, an accessible label such as `折叠提交` or `展开提交`, count and actions, then render `.view-section-content` only while expanded. Action clicks must not toggle the section.
+Return `null` when hidden. Otherwise render `.view-section`, a button-based `.view-section-header` with `aria-expanded`, an accessible label such as `CollapseCommits` or `ExpandCommits`, count and actions, then render `.view-section-content` only while expanded. Action clicks must not toggle the section.
 
 - [ ] **Step 4: Implement `ResizableSplitView`**
 
@@ -249,7 +249,7 @@ Render a `.workbench-split` with CSS variable `--split-ratio`. Render the separa
 <div
   className="workbench-separator"
   role="separator"
-  aria-label="调整板块大小"
+  aria-label="Resize panel"
   aria-orientation="vertical"
   aria-valuemin={20}
   aria-valuemax={80}
@@ -262,7 +262,7 @@ Pointer movement calculates a horizontal ratio at widths `>= 700px` and a vertic
 
 - [ ] **Step 5: Implement `ViewVisibilityMenu`**
 
-Reuse `FilterDropdown` with `label="⋯"`, `title="管理视图"`, `hideCaret`, and right-aligned menu styling. Use checked checkboxes for `提交` and `更改的文件` and this interface:
+Reuse `FilterDropdown` with `label="⋯"`, `title="Manage views"`, `hideCaret`, and right-aligned menu styling. Use checked checkboxes for `Commits` and `Changed Files` and this interface:
 
 ```tsx
 interface Props {
@@ -315,7 +315,7 @@ Initialize `useWorkbenchLayout`, pass `ViewVisibilityMenu` as the filter-bar act
   first={
     <ViewSection
       id="commits"
-      title="提交"
+      title="Commits"
       count={commits.length}
       visible={layout.views.commits.visible}
       collapsed={layout.views.commits.collapsed}
@@ -327,12 +327,12 @@ Initialize `useWorkbenchLayout`, pass `ViewVisibilityMenu` as the filter-bar act
   second={
     <ViewSection
       id="files"
-      title="更改的文件"
+      title="Changed Files"
       count={range ? files.length : undefined}
       visible={layout.views.files.visible}
       collapsed={layout.views.files.collapsed}
       onCollapsedChange={(value) => setCollapsed('files', value)}
-      actions={range && !range.contiguous ? <span className="warn-tag" title="选中的 commit 不连续">⚠</span> : undefined}
+      actions={range && !range.contiguous ? <span className="warn-tag" title="Selected commits are not contiguous">⚠</span> : undefined}
     >
       <ChangedFilesPanel {...existingChangedFilesProps} />
     </ViewSection>

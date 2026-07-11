@@ -1,6 +1,6 @@
 /**
- * 领域类型：commit / 文件变更 / 仓库信息
- * extension 与 webview 两端共享，不引入任何运行时依赖
+ * Domain types: commit / file changes / repo info
+ * Shared between extension and webview, no runtime dependencies
  */
 
 export interface Commit {
@@ -11,7 +11,7 @@ export interface Commit {
   email: string;
   date: string;
   parents: string[];
-  /** 当前 commit 上的 ref 名称列表（tag: xxx, origin/main 等） */
+  /** Ref names attached to this commit (tags, branches like origin/main, etc.) */
   refs: string[];
 }
 
@@ -65,17 +65,17 @@ export interface DiffRange {
 }
 
 /**
- * commit 列表过滤条件
- * - branch/author/date/path 走 git log 原生参数
- * - search（含 hash 前缀 + message + regex + Cc）走服务端后置过滤
+ * Commit list filter criteria
+ * - branch/author/date/path use git log native parameters
+ * - search (hash prefix + message + regex + case-sensitive) uses server-side post-filtering
  */
 export interface CommitFilters {
   search?: string;
   searchRegex?: boolean;
   searchCaseSensitive?: boolean;
-  /** 空字符串或未设置 = 当前 HEAD；'__all__' = 所有分支 */
+  /** Empty or unset = current HEAD; '__all__' = all branches */
   branch?: string;
-  /** 空字符串或未设置 = 所有作者 */
+  /** Empty or unset = all authors */
   author?: string;
   /** yyyy-MM-dd */
   dateAfter?: string;

@@ -1,6 +1,6 @@
 /**
- * 生成用于 CSP script nonce 的随机字符串
- * 纯函数，无副作用
+ * Generate a random string for CSP script nonce
+ * Pure function, no side effects
  */
 export function getNonce(length: number = 32): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';

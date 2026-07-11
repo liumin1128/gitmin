@@ -16,20 +16,20 @@
     "commands": [
       {
         "command": "gitMgr.openPanel",
-        "title": "Git Mgr: 在编辑区打开面板",
+        "title": "Git Mgr: Open Panel in Editor",
         "category": "Git Mgr",
         "icon": "$(link-external)"
       },
       {
         "command": "gitMgr.previousFileDiff",
-        "title": "Git Mgr: 上一个文件 Diff",
+        "title": "Git Mgr: Previous File Diff",
         "category": "Git Mgr",
         "icon": "$(arrow-left)",
         "enablement": "gitMgr.fileDiffActive"
       },
       {
         "command": "gitMgr.nextFileDiff",
-        "title": "Git Mgr: 下一个文件 Diff",
+        "title": "Git Mgr: Next File Diff",
         "category": "Git Mgr",
         "icon": "$(arrow-right)",
         "enablement": "gitMgr.fileDiffActive"

@@ -13,7 +13,7 @@ function row(props: Partial<GraphRow> & { commitLane: number; commitColor: numbe
   };
 }
 
-// ===== 独立节点（圆点上下都有短端帽，无拓扑连接线） =====
+// ===== Isolated node (short caps above and below dot, no topology lines) =====
 {
   const html = renderToStaticMarkup(
     <CommitGraph row={row({ commitLane: 0, commitColor: 0 })} maxLanes={1} />
@@ -34,7 +34,7 @@ function row(props: Partial<GraphRow> & { commitLane: number; commitColor: numbe
   assert.doesNotMatch(html, /<path/, 'no path when no edges');
 }
 
-// ===== 普通连线 =====
+// ===== Normal edge =====
 {
   const r = row({
     commitLane: 0,
@@ -49,7 +49,7 @@ function row(props: Partial<GraphRow> & { commitLane: number; commitColor: numbe
   assert.equal(lineCount, 2, 'connected node should only have its 2 graph lines');
 }
 
-// ===== 片段首节点（顶部端帽 + 向下真实连线） =====
+// ===== Segment first node (top cap + downward real edge) =====
 {
   const r = row({
     commitLane: 0,
@@ -61,7 +61,7 @@ function row(props: Partial<GraphRow> & { commitLane: number; commitColor: numbe
   assert.equal((html.match(/<line/g) || []).length, 2, 'top cap plus bottom graph line');
 }
 
-// ===== 分支线（path） =====
+// ===== Branch line (path) =====
 {
   const r = row({
     commitLane: 0,
@@ -73,7 +73,7 @@ function row(props: Partial<GraphRow> & { commitLane: number; commitColor: numbe
   assert.match(html, /<path/, 'branch edges should use path');
 }
 
-// ===== merge 线 =====
+// ===== Merge line =====
 {
   const r = row({
     commitLane: 1,
@@ -85,7 +85,7 @@ function row(props: Partial<GraphRow> & { commitLane: number; commitColor: numbe
   assert.match(html, /<path/, 'merge edges should use path');
 }
 
-// ===== 多 lane 渲染 =====
+// ===== Multi-lane rendering =====
 {
   const r = row({
     commitLane: 0,
@@ -102,7 +102,7 @@ function row(props: Partial<GraphRow> & { commitLane: number; commitColor: numbe
   assert.match(html, /height="22"/, 'svg height should be ROW_H');
 }
 
-// ===== 颜色输出验证 =====
+// ===== Color output verification =====
 {
   const r = row({ commitLane: 0, commitColor: 0 });
   const html = renderToStaticMarkup(<CommitGraph row={r} maxLanes={1} />);

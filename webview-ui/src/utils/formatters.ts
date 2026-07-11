@@ -1,17 +1,17 @@
 /**
- * 展示格式化纯函数：时间、hash 等
+ * Display formatting pure functions: time, hash, etc.
  */
 
-/** 短 hash：取前 7 位 */
+/** Short hash: take first 7 chars */
 export function shortHash(hash: string): string {
   return hash.slice(0, 7);
 }
 
 /**
- * 相对时间：如 "3m ago" / "2h ago"，超过阈值显示日期
- * @param iso   ISO 时间字符串
- * @param now   当前时间（便于测试）
- * @param maxDays 超过此天数直接显示日期，默认 7 天
+ * Relative time: e.g. "3m ago" / "2h ago", shows full date beyond threshold
+ * @param iso      ISO time string
+ * @param now      Current time (for testability)
+ * @param maxDays  Show full date if older than this many days, default 7
  */
 export function relativeTime(iso: string, now: Date = new Date(), maxDays = 7): string {
   const d = new Date(iso);
@@ -38,7 +38,7 @@ export function relativeTime(iso: string, now: Date = new Date(), maxDays = 7): 
   return `${day}d ago (${hh}:${mm})`;
 }
 
-/** commit message 只取第一行 */
+/** Commit message: take first line only */
 export function firstLine(msg: string): string {
   const idx = msg.indexOf('\n');
   return idx >= 0 ? msg.slice(0, idx) : msg;

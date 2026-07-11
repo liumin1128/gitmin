@@ -1,6 +1,6 @@
 /**
- * 纯函数 sanity check：验证核心逻辑无回归
- * 运行：node --experimental-strip-types test/sanity.mts
+ * Pure function sanity check: verify no regression in core logic
+ * Run: node --experimental-strip-types test/sanity.mts
  */
 import assert from 'node:assert/strict';
 import {
@@ -36,7 +36,7 @@ import { getAdjacentFileChange } from '../src/utils/diffNavigation.ts';
     'h1\x00sh1\x00m1\x00a1\x00e1\x00d1\x00p1\nh2\x00sh2\x00m2\x00a2\x00e2\x00d2\x00'
   );
   assert.equal(commits.length, 2);
-  assert.deepEqual(commits[1].parents, []); // 根 commit 无 parent
+  assert.deepEqual(commits[1].parents, []); // root commit has no parent
 }
 {
   const map = parseNameStatus('A\tfoo.ts\nM\tbar.ts\nD\tbaz.ts\nR100\told.ts\tnew.ts');
@@ -72,26 +72,26 @@ import { getAdjacentFileChange } from '../src/utils/diffNavigation.ts';
     { hash: 'c1', shortHash: 'c1', message: '', author: '', email: '', date: '', parents: ['c0'] },
     { hash: 'c0', shortHash: 'c0', message: '', author: '', email: '', date: '', parents: [] },
   ];
-  // 单选 c2：base=c1, head=c2
+  // Single select c2: base=c1, head=c2
   const r1 = computeDiffRange(['c2'], commits);
   assert.deepEqual(r1, { base: 'c1', head: 'c2', contiguous: true });
 
-  // 连续多选 c3,c2：base=c1(=c2.parents[0]), head=c3
+  // Contiguous multi-select c3,c2: base=c1(=c2.parents[0]), head=c3
   const r2 = computeDiffRange(['c3', 'c2'], commits);
   assert.deepEqual(r2, { base: 'c1', head: 'c3', contiguous: true });
 
-  // 不连续 c3,c1：base=c0, head=c3, contiguous=false
+  // Non-contiguous c3,c1: base=c0, head=c3, contiguous=false
   const r3 = computeDiffRange(['c3', 'c1'], commits);
   assert.equal(r3?.contiguous, false);
   assert.equal(r3?.head, 'c3');
   assert.equal(r3?.base, 'c0');
 
-  // 根 commit c0：base=空树 hash
+  // Root commit c0: base=empty tree hash
   const r4 = computeDiffRange(['c0'], commits);
   assert.equal(r4?.base, EMPTY_TREE_HASH);
   assert.equal(r4?.head, 'c0');
 
-  // 空选择
+  // Empty selection
   assert.equal(computeDiffRange([], commits), null);
 }
 
@@ -140,36 +140,36 @@ import { getAdjacentFileChange } from '../src/utils/diffNavigation.ts';
     { hash: 'def456abc789', shortHash: 'def456a', message: 'fix: search bug', author: 'Bob', email: '', date: '', parents: [] },
     { hash: '9990001112', shortHash: '9990001', message: 'FIX: capitalise', author: 'Carol', email: '', date: '', parents: [] },
   ];
-  // 空 filter → 全部
+  // Empty filter → all
   assert.equal(applySearch(commits).length, 3);
   assert.equal(applySearch(commits, {}).length, 3);
   assert.equal(applySearch(commits, { search: '   ' }).length, 3);
 
-  // 子串匹配 message（默认忽略大小写）
+  // Substring match on message (case-insensitive by default)
   assert.deepEqual(
     applySearch(commits, { search: 'fix' }).map((c) => c.shortHash),
     ['def456a', '9990001']
   );
 
-  // Cc 大小写敏感
+  // Cc case-sensitive
   assert.deepEqual(
     applySearch(commits, { search: 'fix', searchCaseSensitive: true }).map((c) => c.shortHash),
     ['def456a']
   );
 
-  // hash 前缀命中
+  // Hash prefix match
   assert.deepEqual(
     applySearch(commits, { search: 'abc123' }).map((c) => c.shortHash),
     ['abc123d']
   );
 
-  // 正则
+  // Regex
   assert.deepEqual(
     applySearch(commits, { search: '^(feat|fix):', searchRegex: true }).map((c) => c.shortHash),
     ['abc123d', 'def456a', '9990001']
   );
 
-  // 非法正则 → 退化为全部
+  // Invalid regex → degrade to all
   assert.equal(applySearch(commits, { search: '(', searchRegex: true }).length, 3);
   assert.equal(isValidSearch('(', true), false);
   assert.equal(isValidSearch('(', false), true);
@@ -182,23 +182,23 @@ import { getAdjacentFileChange } from '../src/utils/diffNavigation.ts';
     hash, shortHash: hash, message: '', author: '', email: '', date: '', parents,
   });
 
-  // 线性：全部 lane 0
+  // Linear: all lane 0
   {
     const { rows, maxLanes } = layoutCommits([
       mk('c', ['b']), mk('b', ['a']), mk('a', []),
     ]);
     assert.equal(maxLanes, 1);
     assert.deepEqual(rows.map((r) => r.commitLane), [0, 0, 0]);
-    // 中间 commit 应有一条上边线 + 一条下边线
+    // Middle commit should have one top edge + one bottom edge
     assert.equal(rows[1]!.topEdges.length, 1);
     assert.equal(rows[1]!.bottomEdges.length, 1);
-    // 根 commit 无 parent → 无下边线
+    // Root commit has no parent → no bottom edge
     assert.equal(rows[2]!.bottomEdges.length, 0);
-    // 尖端 commit 无上边线（activeLanes 之前是空）
+    // Tip commit has no top edge (activeLanes was empty before)
     assert.equal(rows[0]!.topEdges.length, 0);
   }
 
-  // 分叉 + merge：main（c → a）与 side（c → b → a），c 是 merge
+  // Fork + merge: main (c → a) and side (c → b → a), c is merge
   //   c
   //   |\
   //   | b
@@ -208,33 +208,33 @@ import { getAdjacentFileChange } from '../src/utils/diffNavigation.ts';
     const { rows, maxLanes } = layoutCommits([
       mk('c', ['a', 'b']),   // merge
       mk('b', ['a']),        // side branch tip
-      mk('a', []),           // 根
+      mk('a', []),           // root
     ]);
     assert.equal(maxLanes, 2);
     assert.equal(rows[0]!.commitLane, 0);
-    // merge 行 bottomEdges 应含 lane 0 → 0 和 0 → 1（斜出到 side）
+    // Merge row bottomEdges should include lane 0 → 0 and 0 → 1 (branch out to side)
     const rowCEdges = rows[0]!.bottomEdges.map((e) => `${e.fromLane}->${e.toLane}`).sort();
     assert.deepEqual(rowCEdges, ['0->0', '0->1']);
-    // b 位于 lane 1
+    // b is on lane 1
     assert.equal(rows[1]!.commitLane, 1);
-    // b 合流到 a：a 已经在 lane 0 上，所以 b 的 parent[0]=a 复用 lane 0；
-    // 这里 lane 1 应该在 b 之后消失（after=[a, null]）
-    // b 行 bottomEdges 应含 lane 0 直下（a 穿过） 但不含 lane 1 出
-    // a 位于 lane 0
+    // b merges into a: a is already on lane 0, so b's parent[0]=a reuses lane 0;
+    // here lane 1 should disappear after b (after=[a, null])
+    // b row bottomEdges should include lane 0 straight down (a passes through) but not lane 1 out
+    // a is on lane 0
     assert.equal(rows[2]!.commitLane, 0);
   }
 
-  // 截断 parent：只提供 c, b，但 b 的 parent a 不在数组
+  // Truncated parent: only c, b provided, but b's parent a is not in the array
   {
     const { rows, maxLanes } = layoutCommits([
       mk('c', ['b']), mk('b', ['a']),
     ]);
     assert.equal(maxLanes, 1);
-    // b 的 parent a 不在列表，不绘制无法连接到可见 commit 的边
+    // b's parent a is not in the list, don't draw edges that can't connect to visible commits
     assert.equal(rows[1]!.bottomEdges.length, 0);
   }
 
-  // 空输入
+  // Empty input
   {
     const { rows, maxLanes } = layoutCommits([]);
     assert.equal(rows.length, 0);

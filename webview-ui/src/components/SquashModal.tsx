@@ -43,9 +43,9 @@ export function SquashModal({ commits, onConfirm, onCancel }: Props) {
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
-        <div className="modal-title">合并 Commit</div>
+        <div className="modal-title">Squash Commits</div>
         <div className="modal-subtitle">
-          将合并以下 {commits.length} 个 commit：
+          The following {commits.length} commit(s) will be squashed:
         </div>
         <div className="squash-source-list">
           {commits.map((c) => (
@@ -55,7 +55,7 @@ export function SquashModal({ commits, onConfirm, onCancel }: Props) {
             </div>
           ))}
         </div>
-        <div className="modal-subtitle">新的 commit message：</div>
+        <div className="modal-subtitle">New commit message:</div>
         <textarea
           ref={textareaRef}
           className="squash-textarea"
@@ -65,7 +65,7 @@ export function SquashModal({ commits, onConfirm, onCancel }: Props) {
         />
         <div className="modal-actions">
           <button type="button" className="btn" onClick={onCancel}>
-            取消
+            Cancel
           </button>
           <button
             type="button"
@@ -73,7 +73,7 @@ export function SquashModal({ commits, onConfirm, onCancel }: Props) {
             onClick={handleConfirm}
             disabled={!message.trim()}
           >
-            合并
+            Squash
           </button>
         </div>
       </div>

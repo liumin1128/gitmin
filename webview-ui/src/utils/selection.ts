@@ -1,14 +1,14 @@
 /**
- * 选择集合的纯函数操作
- * 与 React、DOM 无关，便于单测
+ * Selection set pure function operations
+ * Independent of React and DOM, easy to unit test
  */
 
-/** 单选：只保留 item */
+/** Single select: keep only item */
 export function selectSingle(item: string): Set<string> {
   return new Set([item]);
 }
 
-/** Ctrl/Cmd+Click：toggle item */
+/** Ctrl/Cmd+Click: toggle item */
 export function toggleSelection(prev: ReadonlySet<string>, item: string): Set<string> {
   const next = new Set(prev);
   if (next.has(item)) {
@@ -20,8 +20,8 @@ export function toggleSelection(prev: ReadonlySet<string>, item: string): Set<st
 }
 
 /**
- * Shift+Click：选中 anchor 到 target 的范围（含首尾）
- * items 为完整可见列表；若 anchor/target 不在列表内，返回单选 target
+ * Shift+Click: select range from anchor to target (inclusive)
+ * items is the full visible list; if anchor/target is not in the list, returns single select of target
  */
 export function selectRange(
   items: readonly string[],

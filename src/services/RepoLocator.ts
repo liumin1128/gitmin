@@ -1,6 +1,6 @@
 /**
- * 复用 vscode.git 内置扩展 API 定位仓库与生成 diff URI
- * 单例封装，activate 时缓存 API 引用
+ * Reuse vscode.git built-in extension API to locate repos and generate diff URIs
+ * Singleton wrapper, caches API reference on activate
  */
 import * as vscode from 'vscode';
 
@@ -9,7 +9,7 @@ export interface RepositoryLocation {
   currentBranch: string;
 }
 
-/** vscode.git API 的最小类型描述，避免引入完整 .d.ts */
+/** Minimal type description for the vscode.git API, avoiding full .d.ts import */
 export interface GitApi {
   repositories: Array<{
     rootUri: vscode.Uri;
@@ -28,7 +28,7 @@ async function ensureGitApi(): Promise<GitApi | null> {
   const exports = ext.isActive ? ext.exports : await ext.activate();
   cachedApi = exports.getAPI(1) as GitApi;
 
-  // 首次激活时 repositories 可能还未加载，等一小段时间
+  // Repositories may not be loaded on first activation, wait a bit
   if (cachedApi.repositories.length === 0) {
     await new Promise<void>((resolve) => {
       const timer = setTimeout(() => {

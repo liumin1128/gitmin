@@ -1,6 +1,6 @@
 /**
- * 右键上下文菜单（纯 UI）
- * 由父组件决定何时打开、传入位置与选中状态；点击项时向上派发 action
+ * Right-click context menu (pure UI)
+ * Parent decides when to open, providing position and selection state; item clicks dispatch action upward
  */
 import { Fragment } from 'react';
 import type { GitAction } from '../../../shared/actions';
@@ -14,7 +14,7 @@ interface Props {
   onSelect: (action: GitAction) => void;
 }
 
-/** 菜单项顺序 + 分割线位置 */
+/** Menu item order + separator positions */
 const ORDER: GitAction[] = [
   'copy-hash',
   'revert',

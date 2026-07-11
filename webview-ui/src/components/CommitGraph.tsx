@@ -1,8 +1,8 @@
 /**
- * commit graph 单行 SVG 渲染
- * - 同 lane 边：垂直实线
- * - 跨 lane 边（branch/merge）：折线路径
- * - 历史片段首尾节点绘制竖向短端帽
+ * Commit graph single-row SVG renderer
+ * - Same-lane edges: vertical solid line
+ * - Cross-lane edges (branch/merge): polyline path
+ * - First/last node in a history segment renders short vertical end caps
  */
 import type { GraphRow, GraphEdge } from '../utils/commitGraph';
 

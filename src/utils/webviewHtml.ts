@@ -1,6 +1,6 @@
 /**
- * 共享的 Webview HTML 拼装
- * 供 WebviewPanel 与 WebviewView 复用
+ * Shared Webview HTML builder
+ * Reusable for both WebviewPanel and WebviewView
  */
 import * as vscode from 'vscode';
 import { getNonce } from './nonce';
@@ -18,7 +18,7 @@ export function buildWebviewHtml(
   const nonce = getNonce();
   const csp = webview.cspSource;
   return `<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${csp} 'unsafe-inline'; script-src 'nonce-${nonce}'; img-src ${csp} data: https:; font-src ${csp};" />

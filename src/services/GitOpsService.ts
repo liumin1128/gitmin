@@ -1,8 +1,8 @@
 /**
- * 修改历史类的 Git 操作
- * - 所有操作前检查工作区 clean（reset --hard 例外，UI 已二次确认）
- * - 交互式 rebase（squash/drop）通过 GIT_SEQUENCE_EDITOR 指向脚本自动改 todo
- * - 冲突或失败自动 rebase --abort，避免仓库残留 rebase 状态
+ * Git history modification operations
+ * - Checks working tree is clean before all operations (except reset --hard, which has a second confirmation in the UI)
+ * - Interactive rebase (squash/drop) uses GIT_SEQUENCE_EDITOR to point to a script that auto-edits the todo list
+ * - Conflicts or failures auto-run rebase --abort to avoid leaving the repo in a rebase state
  */
 import * as path from 'node:path';
 import * as vscode from 'vscode';
@@ -33,18 +33,18 @@ export class GitOpsService {
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         throw new Error(
-          `revert ${h.slice(0, 7)} 失败：${msg}\n请手动解决冲突后 git revert --continue 或 --abort`
+          `revert ${h.slice(0, 7)} failed: ${msg}\nPlease manually resolve conflicts, then git revert --continue or --abort`
         );
       }
     }
   }
 
   async squash(hashes: string[], allCommits: Commit[], message: string): Promise<void> {
-    if (hashes.length < 2) throw new Error('至少选择 2 个 commit 才能 squash');
+    if (hashes.length < 2) throw new Error('At least 2 commits required to squash');
     await this.assertClean();
     const { oldest } = this.findOldestNewest(hashes, allCommits);
     const base = oldest.parents[0];
-    if (!base) throw new Error('无法 squash 根 commit');
+    if (!base) throw new Error('Cannot squash root commit');
     await this.git.raw(['reset', '--soft', base]);
     await this.git.raw(['commit', '-m', message]);
   }
@@ -53,7 +53,7 @@ export class GitOpsService {
     await this.assertClean();
     const { oldest } = this.findOldestNewest(hashes, allCommits);
     const base = oldest.parents[0];
-    if (!base) throw new Error('无法 drop 根 commit');
+    if (!base) throw new Error('Cannot drop root commit');
     await this.runInteractiveRebase(base, 'drop', hashes);
   }
 
@@ -61,12 +61,12 @@ export class GitOpsService {
     await this.git.raw(['reset', `--${mode}`, hash]);
   }
 
-  // ===== 私有辅助 =====
+  // ===== Private helpers =====
 
   private async assertClean(): Promise<void> {
     const status = await this.git.status();
     if (!status.isClean()) {
-      throw new Error('工作区有未提交改动，请先 commit 或 stash 后再操作');
+      throw new Error('Working tree has uncommitted changes. Please commit or stash before proceeding');
     }
   }
 
@@ -75,7 +75,7 @@ export class GitOpsService {
     const indices = hashes
       .map((h) => indexMap.get(h))
       .filter((v): v is number => v !== undefined);
-    if (indices.length === 0) throw new Error('未找到指定 commit');
+    if (indices.length === 0) throw new Error('Specified commits not found');
     const minIdx = Math.min(...indices);
     const maxIdx = Math.max(...indices);
     return { newest: allCommits[minIdx]!, oldest: allCommits[maxIdx]! };
@@ -114,9 +114,9 @@ export class GitOpsService {
       try {
         await this.git.raw(['rebase', '--abort']);
       } catch {
-        // 忽略 abort 本身的错
+        // Ignore abort errors
       }
-      throw new Error(`rebase 失败：${msg}\n已尝试 abort，请检查仓库状态`);
+      throw new Error(`rebase failed: ${msg}\nAbort was attempted, please check repo status`);
     }
   }
 }

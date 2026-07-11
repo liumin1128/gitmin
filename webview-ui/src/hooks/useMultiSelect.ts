@@ -1,6 +1,6 @@
 /**
- * 多选交互 hook：封装 Ctrl/Shift/单击 行为
- * 依赖纯函数 utils/selection，本 hook 只做 state 管理
+ * Multi-select interaction hook: encapsulates Ctrl/Shift/Click behavior
+ * Depends on pure functions utils/selection; this hook only manages state
  */
 import { useCallback, useRef, useState } from 'react';
 import type { MouseEvent } from 'react';
@@ -15,7 +15,7 @@ export interface MultiSelectAPI {
 }
 
 /**
- * @param items 完整可见列表（用于 Shift 范围计算），顺序需与 UI 显示顺序一致
+ * @param items Full visible list (for Shift range calculation), order must match the UI display order
  */
 export function useMultiSelect(items: readonly string[]): MultiSelectAPI {
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -25,7 +25,7 @@ export function useMultiSelect(items: readonly string[]): MultiSelectAPI {
     (item: string, event: MouseEvent) => {
       if (event.shiftKey) {
         setSelected(selectRange(items, anchorRef.current, item));
-        // Shift 时不改锚点
+        // Shift does not change anchor
       } else if (event.ctrlKey || event.metaKey) {
         setSelected((prev) => toggleSelection(prev, item));
         anchorRef.current = item;
