@@ -39,13 +39,14 @@ export class GitOpsService {
     }
   }
 
-  async squash(hashes: string[], allCommits: Commit[]): Promise<void> {
+  async squash(hashes: string[], allCommits: Commit[], message: string): Promise<void> {
     if (hashes.length < 2) throw new Error('至少选择 2 个 commit 才能 squash');
     await this.assertClean();
     const { oldest } = this.findOldestNewest(hashes, allCommits);
     const base = oldest.parents[0];
     if (!base) throw new Error('无法 squash 根 commit');
-    await this.runInteractiveRebase(base, 'fixup', hashes);
+    await this.git.raw(['reset', '--soft', base]);
+    await this.git.raw(['commit', '-m', message]);
   }
 
   async drop(hashes: string[], allCommits: Commit[]): Promise<void> {
@@ -104,6 +105,7 @@ export class GitOpsService {
       GIT_SEQUENCE_EDITOR: `node "${this.editorScript}"`,
       GITMGR_REBASE_ACTION: action,
       GITMGR_TARGET_HASHES: targetHashes.join(','),
+      GIT_PAGER: 'cat',
     };
     try {
       await this.git.env(env).raw(['rebase', '-i', base]);

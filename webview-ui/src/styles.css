@@ -648,3 +648,91 @@ html, body, #root {
   background: var(--vscode-menu-separatorBackground, var(--vscode-panel-border));
   margin: 4px 0;
 }
+
+/* ===== Squash modal ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-body {
+  background: var(--vscode-menu-background, var(--vscode-editor-background));
+  color: var(--vscode-menu-foreground, var(--vscode-foreground));
+  border: 1px solid var(--vscode-menu-border, var(--vscode-panel-border));
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  padding: 16px 20px;
+  min-width: 360px;
+  max-width: 520px;
+  width: calc(100vw - 40px);
+}
+
+.modal-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.modal-subtitle {
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+  margin-bottom: 6px;
+}
+
+.squash-source-list {
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border, transparent);
+  border-radius: 3px;
+  padding: 6px 8px;
+  margin-bottom: 12px;
+  max-height: 150px;
+  overflow: auto;
+}
+
+.squash-source-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 0;
+  font-size: 12px;
+}
+
+.squash-source-msg {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.squash-textarea {
+  display: block;
+  width: 100%;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, transparent);
+  border-radius: 3px;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 13px;
+  font-family: var(--vscode-editor-font-family, monospace);
+  resize: vertical;
+  min-height: 60px;
+}
+
+.squash-textarea:focus {
+  outline: none;
+  border-color: var(--vscode-focusBorder);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}

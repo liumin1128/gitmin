@@ -12,7 +12,7 @@ export type WebviewMessage =
   | { type: 'filters/refresh' }
   | { type: 'diff/request'; hashes: string[] }
   | { type: 'file/openDiff'; range: DiffRange; filePath: string }
-  | { type: 'action/execute'; action: GitAction; hashes: string[] };
+  | { type: 'action/execute'; action: GitAction; hashes: string[]; squashMessage?: string };
 
 // ===== Extension -> Webview =====
 export type ExtensionMessage =

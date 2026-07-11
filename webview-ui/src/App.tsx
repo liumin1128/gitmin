@@ -14,6 +14,7 @@ import { FilterBar } from './components/FilterBar';
 import { CommitList, DEFAULT_COLUMNS, type ColumnFlags } from './components/CommitList';
 import { ChangedFilesPanel } from './components/ChangedFilesPanel';
 import { CommitContextMenu } from './components/CommitContextMenu';
+import { SquashModal } from './components/SquashModal';
 import { ResizableSplitView } from './components/ResizableSplitView';
 import { ViewSection } from './components/ViewSection';
 import { ViewVisibilityMenu } from './components/ViewVisibilityMenu';
@@ -35,6 +36,7 @@ export function App() {
   const [activeFilePath, setActiveFilePath] = useState<string | null>(null);
   const [diffLoading, setDiffLoading] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [squashHashes, setSquashHashes] = useState<string[] | null>(null);
   const [filters, setFilters] = useState<CommitFilters>({});
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     branches: [],
@@ -135,12 +137,41 @@ export function App() {
     (action: GitAction) => {
       menu.close();
       if (selected.size === 0) return;
+      if (action === 'squash') {
+        setSquashHashes([...selected]);
+        return;
+      }
       setBusy(true);
       setError(null);
       postMessage({ type: 'action/execute', action, hashes: [...selected] });
     },
     [selected, menu]
   );
+
+  const squashCommits = useMemo(() => {
+    if (!squashHashes) return [];
+    const hashSet = new Set(squashHashes);
+    return commits.filter((c) => hashSet.has(c.hash));
+  }, [squashHashes, commits]);
+
+  const handleSquashConfirm = useCallback(
+    (message: string) => {
+      setSquashHashes(null);
+      setBusy(true);
+      setError(null);
+      postMessage({
+        type: 'action/execute',
+        action: 'squash',
+        hashes: squashHashes ?? [],
+        squashMessage: message,
+      });
+    },
+    [squashHashes]
+  );
+
+  const handleSquashCancel = useCallback(() => {
+    setSquashHashes(null);
+  }, []);
 
   const handleRefresh = useCallback(() => {
     clear();
@@ -245,6 +276,13 @@ export function App() {
           selectedCount={selected.size}
           contiguous={contiguous}
           onSelect={handleActionSelect}
+        />
+      )}
+      {squashHashes && squashCommits.length > 0 && (
+        <SquashModal
+          commits={squashCommits}
+          onConfirm={handleSquashConfirm}
+          onCancel={handleSquashCancel}
         />
       )}
     </div>

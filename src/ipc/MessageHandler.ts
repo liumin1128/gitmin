@@ -65,7 +65,7 @@ export class MessageHandler implements vscode.Disposable {
           await this.openFileDiff(msg.range, msg.filePath);
           break;
         case 'action/execute':
-          await this.handleAction(msg.action, msg.hashes);
+          await this.handleAction(msg);
           break;
       }
     } catch (e) {
@@ -148,8 +148,9 @@ export class MessageHandler implements vscode.Disposable {
     );
   }
 
-  private async handleAction(action: GitAction, hashes: string[]): Promise<void> {
+  private async handleAction(msg: Extract<WebviewMessage, { type: 'action/execute' }>): Promise<void> {
     if (!this.ops) return;
+    const { action, hashes } = msg;
 
     // reset --hard 二次确认（可能丢失工作区改动）
     if (action === 'reset-hard') {
@@ -174,7 +175,7 @@ export class MessageHandler implements vscode.Disposable {
           await this.ops.revert(hashes, this.commitsCache);
           break;
         case 'squash':
-          await this.ops.squash(hashes, this.commitsCache);
+          await this.ops.squash(hashes, this.commitsCache, msg.squashMessage ?? 'squash');
           break;
         case 'drop':
           await this.ops.drop(hashes, this.commitsCache);
