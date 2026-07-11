@@ -114,13 +114,33 @@ export function completeCommitPage(pagination: CommitPaginationRefs, page: Commi
   return true;
 }
 
-export function failCommitPage(pagination: CommitPaginationRefs, requestId: number): boolean {
+export function failCommitPage(
+  pagination: CommitPaginationRefs,
+  requestId: number
+): number | null {
   if (requestId !== pagination.requestIdRef.current || pagination.pendingOffsetRef.current === null) {
-    return false;
+    return null;
   }
 
+  const failedOffset = pagination.pendingOffsetRef.current;
   pagination.pendingOffsetRef.current = null;
   pagination.loadingMoreRef.current = false;
+  return failedOffset;
+}
+
+export function retryFailedCommitPage(
+  pagination: CommitPaginationRefs,
+  failedOffsetRef: { current: number | null },
+  filters: CommitFilters,
+  post: PostCommitPageRequest
+): boolean {
+  const failedOffset = failedOffsetRef.current;
+  if (pagination.loadingMoreRef.current || failedOffset === null) return false;
+
+  pagination.loadingMoreRef.current = true;
+  pagination.pendingOffsetRef.current = failedOffset;
+  failedOffsetRef.current = null;
+  requestCommitPage(pagination.requestIdRef.current, failedOffset, filters, post);
   return true;
 }
 
@@ -156,7 +176,7 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [commitPageFailed, setCommitPageFailed] = useState(false);
+  const [commitPageError, setCommitPageError] = useState<string | null>(null);
   const [range, setRange] = useState<DiffRange | null>(null);
   const [files, setFiles] = useState<FileChange[]>([]);
   const [activeFilePath, setActiveFilePath] = useState<string | null>(null);
@@ -176,6 +196,7 @@ export function App() {
   const nextCommitOffsetRef = useRef(0);
   const loadingMoreRef = useRef(false);
   const pendingCommitOffsetRef = useRef<number | null>(null);
+  const failedCommitOffsetRef = useRef<number | null>(null);
   const initialCommitLoadSettledRef = useRef(false);
   const queuedCommitResetFiltersRef = useRef<CommitFilters | null>(null);
   const dispatchResetRef = useRef<(filters: CommitFilters) => void>(() => undefined);
@@ -205,16 +226,18 @@ export function App() {
     setCommits((current) => mergeCommitPage(current, m.page));
     setHasMore(m.page.hasMore);
     setLoadingMore(false);
-    setCommitPageFailed(false);
+    failedCommitOffsetRef.current = null;
+    setCommitPageError(null);
     setError(null);
     settleInitialCommitLoad(initialLoadGate, (filters) => dispatchResetRef.current(filters));
   });
   useIpcListener('commits/error', (m) => {
-    if (!failCommitPage(pagination, m.requestId)) return;
+    const failedOffset = failCommitPage(pagination, m.requestId);
+    if (failedOffset === null) return;
 
+    failedCommitOffsetRef.current = failedOffset;
     setLoadingMore(false);
-    setCommitPageFailed(true);
-    setError(m.error);
+    setCommitPageError(m.error);
     settleInitialCommitLoad(initialLoadGate, (filters) => dispatchResetRef.current(filters));
   });
   useIpcListener('filters/restored', (m) => {
@@ -253,7 +276,8 @@ export function App() {
         setCommits([]);
         setHasMore(true);
         setLoadingMore(false);
-        setCommitPageFailed(false);
+        failedCommitOffsetRef.current = null;
+        setCommitPageError(null);
       });
     },
     [clear]
@@ -270,9 +294,17 @@ export function App() {
   const loadMoreCommits = useCallback(() => {
     if (loadNextCommitPage(pagination, hasMore, filtersRef.current, postMessage)) {
       setLoadingMore(true);
-      setCommitPageFailed(false);
+      failedCommitOffsetRef.current = null;
+      setCommitPageError(null);
     }
   }, [hasMore]);
+
+  const retryFailedCommitPageRequest = useCallback(() => {
+    if (retryFailedCommitPage(pagination, failedCommitOffsetRef, filtersRef.current, postMessage)) {
+      setLoadingMore(true);
+      setCommitPageError(null);
+    }
+  }, []);
 
   // === filter 变化 → 重新拉取 commits（跳过首次挂载，交给 webview/ready）===
   useEffect(() => {
@@ -416,7 +448,7 @@ export function App() {
           />
         }
       />
-      {error && <div className="error-bar">{error}</div>}
+      {(commitPageError ?? error) && <div className="error-bar">{commitPageError ?? error}</div>}
       {busy && <div className="busy-bar">执行中...</div>}
       <ResizableSplitView
         ratio={layout.splitRatio}
@@ -433,6 +465,19 @@ export function App() {
             visible={layout.views.commits.visible}
             collapsed={layout.views.commits.collapsed}
             onCollapsedChange={(collapsed) => setCollapsed('commits', collapsed)}
+            actions={
+              commitPageError ? (
+                <button
+                  type="button"
+                  className="toolbar-icon-button"
+                  title="重试加载 commit"
+                  aria-label="重试加载 commit"
+                  onClick={retryFailedCommitPageRequest}
+                >
+                  ↻
+                </button>
+              ) : undefined
+            }
           >
             <CommitList
               commits={commits}
@@ -442,7 +487,7 @@ export function App() {
               onItemContextMenu={handleContextMenu}
               hasMore={hasMore}
               loadingMore={loadingMore}
-              automaticLoadEnabled={!commitPageFailed}
+              automaticLoadEnabled={!commitPageError}
               onLoadMore={loadMoreCommits}
             />
           </ViewSection>

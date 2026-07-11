@@ -3,10 +3,12 @@ import type { Commit } from '../shared/domain';
 import type { CommitPage } from '../shared/commitPagination';
 import {
   completeCommitPage,
+  failCommitPage,
   loadNextCommitPage,
   mergeCommitPage,
   queueCommitReset,
   resetCommitPage,
+  retryFailedCommitPage,
   settleInitialCommitLoad,
 } from '../webview-ui/src/App';
 
@@ -65,6 +67,29 @@ assert.deepEqual(requests.at(-1), {
   limit: 50,
   filters: { branch: 'main' },
 });
+
+const failedOffsetRef = { current: failCommitPage(pagination, 1) };
+assert.equal(failedOffsetRef.current, 50);
+assert.equal(
+  retryFailedCommitPage(pagination, failedOffsetRef, { branch: 'main' }, post),
+  true,
+  'a failed page can retry at its original offset without resetting the session'
+);
+assert.deepEqual(requests.at(-1), {
+  type: 'commits/refresh',
+  requestId: 1,
+  offset: 50,
+  limit: 50,
+  filters: { branch: 'main' },
+});
+assert.equal(failedOffsetRef.current, null);
+assert.equal(pagination.loadingMoreRef.current, true);
+assert.equal(pagination.pendingOffsetRef.current, 50);
+assert.equal(
+  retryFailedCommitPage(pagination, failedOffsetRef, { branch: 'main' }, post),
+  false,
+  'the in-flight lock suppresses duplicate retry clicks'
+);
 
 let displayedCommits = mergeCommitPage([commits[0]!], nextPage);
 let displayedHasMore = nextPage.hasMore;
