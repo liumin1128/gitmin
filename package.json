@@ -81,6 +81,7 @@
   "scripts": {
     "build": "node esbuild.config.mjs",
     "watch": "node esbuild.config.mjs --watch",
+    "test:app-commit-pagination": "node test/runTsxTest.mjs test/appCommitPagination.ts",
     "test:commit-pagination": "node test/runTsxTest.mjs test/commitPagination.mts",
     "test:commit-details": "node --experimental-strip-types test/commitDetails.mts && node test/runTsxTest.mjs test/commitDetailsPanel.tsx",
     "test:commit-graph": "node --experimental-strip-types test/commitGraph.mts && node test/runTsxTest.mjs test/commitGraphSVG.tsx",

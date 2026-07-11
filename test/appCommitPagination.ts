@@ -2,9 +2,12 @@ import assert from 'node:assert/strict';
 import type { Commit } from '../shared/domain';
 import type { CommitPage } from '../shared/commitPagination';
 import {
+  completeCommitPage,
   loadNextCommitPage,
   mergeCommitPage,
+  queueCommitReset,
   resetCommitPage,
+  settleInitialCommitLoad,
 } from '../webview-ui/src/App';
 
 const commits = [{ hash: 'one' }, { hash: 'two' }] as Commit[];
@@ -30,6 +33,7 @@ const pagination = {
   requestIdRef: { current: 0 },
   nextOffsetRef: { current: 0 },
   loadingMoreRef: { current: false },
+  pendingOffsetRef: { current: null as number | null },
 };
 const requests: unknown[] = [];
 const post = (request: unknown) => requests.push(request);
@@ -44,8 +48,14 @@ assert.deepEqual(requests, [
     filters: { branch: 'main' },
   },
 ]);
+assert.equal(pagination.loadingMoreRef.current, true);
+assert.equal(pagination.pendingOffsetRef.current, 0);
+assert.equal(loadNextCommitPage(pagination, true, { branch: 'main' }, post), false);
 
-pagination.nextOffsetRef.current = firstPage.nextOffset;
+assert.equal(completeCommitPage(pagination, firstPage), true);
+assert.equal(pagination.loadingMoreRef.current, false);
+assert.equal(pagination.pendingOffsetRef.current, null);
+
 assert.equal(loadNextCommitPage(pagination, true, { branch: 'main' }, post), true);
 assert.equal(loadNextCommitPage(pagination, true, { branch: 'main' }, post), false);
 assert.deepEqual(requests.at(-1), {
@@ -87,10 +97,41 @@ assert.deepEqual(resetRequests, [
     displayedCommits: [],
     displayedHasMore: true,
     displayedLoadingMore: false,
-    loadingLocked: false,
+    loadingLocked: true,
   },
 ]);
 assert.equal(pagination.requestIdRef.current, 2);
 assert.equal(pagination.nextOffsetRef.current, 0);
+assert.equal(pagination.loadingMoreRef.current, true);
+assert.equal(pagination.pendingOffsetRef.current, 0);
+
+assert.equal(
+  completeCommitPage(pagination, { ...firstPage, requestId: 1 }),
+  false,
+  'a page from a prior session must be ignored'
+);
+assert.equal(
+  completeCommitPage(pagination, { ...nextPage, requestId: 2 }),
+  false,
+  'a same-session page for a different offset must not replace the reset page'
+);
+assert.equal(pagination.loadingMoreRef.current, true);
+assert.equal(pagination.pendingOffsetRef.current, 0);
+assert.equal(completeCommitPage(pagination, { ...firstPage, requestId: 2 }), true);
+
+const initialLoadGate = {
+  settledRef: { current: false },
+  queuedFiltersRef: { current: null as { branch?: string } | null },
+};
+const queuedResets: unknown[] = [];
+const dispatchReset = (filters: { branch?: string }) => queuedResets.push(filters);
+
+assert.equal(queueCommitReset(initialLoadGate, { branch: 'main' }, dispatchReset), false);
+assert.equal(queueCommitReset(initialLoadGate, { branch: 'release' }, dispatchReset), false);
+assert.deepEqual(queuedResets, []);
+settleInitialCommitLoad(initialLoadGate, dispatchReset);
+assert.deepEqual(queuedResets, [{ branch: 'release' }]);
+assert.equal(queueCommitReset(initialLoadGate, { branch: 'main' }, dispatchReset), true);
+assert.deepEqual(queuedResets, [{ branch: 'release' }, { branch: 'main' }]);
 
 console.log('app commit pagination checks passed');

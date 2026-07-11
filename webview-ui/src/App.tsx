@@ -38,6 +38,12 @@ interface CommitPaginationRefs {
   requestIdRef: { current: number };
   nextOffsetRef: { current: number };
   loadingMoreRef: { current: boolean };
+  pendingOffsetRef: { current: number | null };
+}
+
+interface InitialCommitLoadGate {
+  settledRef: { current: boolean };
+  queuedFiltersRef: { current: CommitFilters | null };
 }
 
 type PostCommitPageRequest = (request: CommitPageRequest) => void;
@@ -49,7 +55,8 @@ export function mergeCommitPage(commits: Commit[], page: CommitPage): Commit[] {
 function startCommitPageSession(pagination: CommitPaginationRefs): number {
   pagination.requestIdRef.current += 1;
   pagination.nextOffsetRef.current = 0;
-  pagination.loadingMoreRef.current = false;
+  pagination.loadingMoreRef.current = true;
+  pagination.pendingOffsetRef.current = 0;
   return pagination.requestIdRef.current;
 }
 
@@ -83,6 +90,7 @@ export function loadNextCommitPage(
   if (pagination.loadingMoreRef.current || !hasMore) return false;
 
   pagination.loadingMoreRef.current = true;
+  pagination.pendingOffsetRef.current = pagination.nextOffsetRef.current;
   requestCommitPage(
     pagination.requestIdRef.current,
     pagination.nextOffsetRef.current,
@@ -90,6 +98,56 @@ export function loadNextCommitPage(
     post
   );
   return true;
+}
+
+export function completeCommitPage(pagination: CommitPaginationRefs, page: CommitPage): boolean {
+  if (
+    page.requestId !== pagination.requestIdRef.current ||
+    page.offset !== pagination.pendingOffsetRef.current
+  ) {
+    return false;
+  }
+
+  pagination.nextOffsetRef.current = page.nextOffset;
+  pagination.pendingOffsetRef.current = null;
+  pagination.loadingMoreRef.current = false;
+  return true;
+}
+
+export function failCommitPage(pagination: CommitPaginationRefs, requestId: number): boolean {
+  if (requestId !== pagination.requestIdRef.current || pagination.pendingOffsetRef.current === null) {
+    return false;
+  }
+
+  pagination.pendingOffsetRef.current = null;
+  pagination.loadingMoreRef.current = false;
+  return true;
+}
+
+export function queueCommitReset(
+  gate: InitialCommitLoadGate,
+  filters: CommitFilters,
+  dispatchReset: (filters: CommitFilters) => void
+): boolean {
+  if (!gate.settledRef.current) {
+    gate.queuedFiltersRef.current = filters;
+    return false;
+  }
+
+  dispatchReset(filters);
+  return true;
+}
+
+export function settleInitialCommitLoad(
+  gate: InitialCommitLoadGate,
+  dispatchReset: (filters: CommitFilters) => void
+): void {
+  if (gate.settledRef.current) return;
+
+  gate.settledRef.current = true;
+  const filters = gate.queuedFiltersRef.current;
+  gate.queuedFiltersRef.current = null;
+  if (filters) dispatchReset(filters);
 }
 
 export function App() {
@@ -116,12 +174,21 @@ export function App() {
   const commitRequestIdRef = useRef(0);
   const nextCommitOffsetRef = useRef(0);
   const loadingMoreRef = useRef(false);
+  const pendingCommitOffsetRef = useRef<number | null>(null);
+  const initialCommitLoadSettledRef = useRef(false);
+  const queuedCommitResetFiltersRef = useRef<CommitFilters | null>(null);
+  const dispatchResetRef = useRef<(filters: CommitFilters) => void>(() => undefined);
   const filtersRef = useRef(filters);
   filtersRef.current = filters;
   const pagination = {
     requestIdRef: commitRequestIdRef,
     nextOffsetRef: nextCommitOffsetRef,
     loadingMoreRef,
+    pendingOffsetRef: pendingCommitOffsetRef,
+  };
+  const initialLoadGate = {
+    settledRef: initialCommitLoadSettledRef,
+    queuedFiltersRef: queuedCommitResetFiltersRef,
   };
 
   // === 消息订阅 ===
@@ -132,21 +199,20 @@ export function App() {
     setRepoError(m.reason);
   });
   useIpcListener('commits/loaded', (m) => {
-    if (m.page.requestId !== commitRequestIdRef.current) return;
+    if (!completeCommitPage(pagination, m.page)) return;
 
     setCommits((current) => mergeCommitPage(current, m.page));
-    nextCommitOffsetRef.current = m.page.nextOffset;
-    loadingMoreRef.current = false;
     setHasMore(m.page.hasMore);
     setLoadingMore(false);
     setError(null);
+    settleInitialCommitLoad(initialLoadGate, (filters) => dispatchResetRef.current(filters));
   });
   useIpcListener('commits/error', (m) => {
-    if (m.requestId !== commitRequestIdRef.current) return;
+    if (!failCommitPage(pagination, m.requestId)) return;
 
-    loadingMoreRef.current = false;
     setLoadingMore(false);
     setError(m.error);
+    settleInitialCommitLoad(initialLoadGate, (filters) => dispatchResetRef.current(filters));
   });
   useIpcListener('filters/restored', (m) => {
     restoringFiltersRef.current = true;
@@ -177,7 +243,7 @@ export function App() {
   const { selected, isSelected, onItemClick, selectOnly, clear } = useMultiSelect(commitHashes);
   const commitDetails = useCommitDetails(commits, selected);
 
-  const resetCommits = useCallback(
+  const dispatchResetCommits = useCallback(
     (nextFilters: CommitFilters) => {
       clear();
       resetCommitPage(pagination, nextFilters, postMessage, () => {
@@ -187,6 +253,14 @@ export function App() {
       });
     },
     [clear]
+  );
+  dispatchResetRef.current = dispatchResetCommits;
+
+  const resetCommits = useCallback(
+    (nextFilters: CommitFilters) => {
+      queueCommitReset(initialLoadGate, nextFilters, dispatchResetCommits);
+    },
+    [dispatchResetCommits]
   );
 
   const loadMoreCommits = useCallback(() => {
