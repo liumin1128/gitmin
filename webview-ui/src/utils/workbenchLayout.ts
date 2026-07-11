@@ -1,4 +1,4 @@
-export type WorkbenchViewId = 'commits' | 'files';
+export type WorkbenchViewId = 'commits' | 'files' | 'details';
 
 export interface WorkbenchViewState {
   visible: boolean;
@@ -17,6 +17,7 @@ export const DEFAULT_WORKBENCH_LAYOUT: WorkbenchLayoutState = {
   views: {
     commits: { visible: true, collapsed: false },
     files: { visible: true, collapsed: false },
+    details: { visible: true, collapsed: false },
   },
 };
 
@@ -26,6 +27,7 @@ function defaultLayout(): WorkbenchLayoutState {
     views: {
       commits: { ...DEFAULT_WORKBENCH_LAYOUT.views.commits },
       files: { ...DEFAULT_WORKBENCH_LAYOUT.views.files },
+      details: { ...DEFAULT_WORKBENCH_LAYOUT.views.details },
     },
   };
 }
@@ -63,6 +65,9 @@ export function parseWorkbenchLayout(value: unknown): WorkbenchLayoutState {
     views: {
       commits: { ...state.views.commits },
       files: { ...state.views.files },
+      details: isViewState(state.views.details)
+        ? { ...state.views.details }
+        : { ...DEFAULT_WORKBENCH_LAYOUT.views.details },
     },
   };
 }

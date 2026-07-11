@@ -21,7 +21,7 @@ export function parseLogLine(line: string): Commit {
   };
 }
 
-function parseCommitRefs(raw: string): string[] {
+export function parseCommitRefs(raw: string): string[] {
   if (!raw || raw.trim().length === 0) return [];
   return raw
     .split(',')

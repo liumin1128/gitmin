@@ -11,9 +11,11 @@ import { useMultiSelect } from './hooks/useMultiSelect';
 import { useContextMenu } from './hooks/useContextMenu';
 import { useWorkbenchLayout } from './hooks/useWorkbenchLayout';
 import { usePersistedFilters } from './hooks/usePersistedFilters';
+import { useCommitDetails } from './hooks/useCommitDetails';
 import { FilterBar } from './components/FilterBar';
 import { CommitList, DEFAULT_COLUMNS, type ColumnFlags } from './components/CommitList';
 import { ChangedFilesPanel } from './components/ChangedFilesPanel';
+import { CommitDetailsPanel } from './components/CommitDetailsPanel';
 import { CommitContextMenu } from './components/CommitContextMenu';
 import { SquashModal } from './components/SquashModal';
 import { ResizableSplitView } from './components/ResizableSplitView';
@@ -91,6 +93,7 @@ export function App() {
   // === 多选 ===
   const commitHashes = useMemo(() => commits.map((c) => c.hash), [commits]);
   const { selected, isSelected, onItemClick, selectOnly, clear } = useMultiSelect(commitHashes);
+  const commitDetails = useCommitDetails(commits, selected);
 
   // === filter 变化 → 重新拉取 commits（跳过首次挂载，交给 webview/ready）===
   useEffect(() => {
@@ -219,8 +222,10 @@ export function App() {
           <ViewVisibilityMenu
             commitsVisible={layout.views.commits.visible}
             filesVisible={layout.views.files.visible}
+            detailsVisible={layout.views.details.visible}
             onCommitsVisibleChange={(visible) => setVisible('commits', visible)}
             onFilesVisibleChange={(visible) => setVisible('files', visible)}
+            onDetailsVisibleChange={(visible) => setVisible('details', visible)}
           />
         }
       />
@@ -280,6 +285,20 @@ export function App() {
           </ViewSection>
         }
       />
+      <ViewSection
+        id="details"
+        title="Commit 详细信息"
+        count={commitDetails.hashes.length}
+        visible={layout.views.details.visible}
+        collapsed={layout.views.details.collapsed}
+        onCollapsedChange={(collapsed) => setCollapsed('details', collapsed)}
+      >
+        <CommitDetailsPanel
+          details={commitDetails.details}
+          loading={commitDetails.loading}
+          error={commitDetails.error}
+        />
+      </ViewSection>
       {menu.pos && (
         <CommitContextMenu
           x={menu.pos.x}

@@ -3,15 +3,19 @@ import { FilterDropdown } from './FilterDropdown';
 interface Props {
   commitsVisible: boolean;
   filesVisible: boolean;
+  detailsVisible: boolean;
   onCommitsVisibleChange: (visible: boolean) => void;
   onFilesVisibleChange: (visible: boolean) => void;
+  onDetailsVisibleChange: (visible: boolean) => void;
 }
 
 export function ViewVisibilityMenu({
   commitsVisible,
   filesVisible,
+  detailsVisible,
   onCommitsVisibleChange,
   onFilesVisibleChange,
+  onDetailsVisibleChange,
 }: Props) {
   return (
     <FilterDropdown
@@ -37,6 +41,14 @@ export function ViewVisibilityMenu({
               onChange={(event) => onFilesVisibleChange(event.target.checked)}
             />
             <span>更改的文件</span>
+          </label>
+          <label className="filter-check">
+            <input
+              type="checkbox"
+              checked={detailsVisible}
+              onChange={(event) => onDetailsVisibleChange(event.target.checked)}
+            />
+            <span>Commit 详细信息</span>
           </label>
         </div>
       )}

@@ -27,6 +27,18 @@ const second = (
     file list
   </ViewSection>
 );
+const details = (
+  <ViewSection
+    id="details"
+    title="Commit 详细信息"
+    count={2}
+    visible
+    collapsed={false}
+    onCollapsedChange={() => undefined}
+  >
+    commit details
+  </ViewSection>
+);
 
 const html = renderToStaticMarkup(
   <>
@@ -40,11 +52,14 @@ const html = renderToStaticMarkup(
       first={first}
       second={second}
     />
+    {details}
     <ViewVisibilityMenu
       commitsVisible
       filesVisible
+      detailsVisible
       onCommitsVisibleChange={() => undefined}
       onFilesVisibleChange={() => undefined}
+      onDetailsVisibleChange={() => undefined}
     />
   </>
 );
@@ -55,6 +70,8 @@ assert.match(html, /aria-orientation="vertical"/);
 assert.match(html, /title="管理视图"/);
 assert.match(html, />提交</);
 assert.match(html, />更改的文件</);
+assert.match(html, />Commit 详细信息</);
+assert.match(html, /aria-label="折叠Commit 详细信息"/);
 
 const collapsedHtml = renderToStaticMarkup(
   <ResizableSplitView

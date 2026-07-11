@@ -64,6 +64,9 @@ export class MessageHandler implements vscode.Disposable {
         case 'filters/refresh':
           await this.loadFilterOptions();
           break;
+        case 'commitDetails/request':
+          await this.loadCommitDetails(msg.hashes);
+          break;
         case 'diff/request':
           await this.loadDiff(msg.hashes);
           break;
@@ -141,6 +144,20 @@ export class MessageHandler implements vscode.Disposable {
       this.post({ type: 'filters/options', options: { branches, authors } });
     } catch (e) {
       console.error('[gitMgr] loadFilterOptions error:', e);
+    }
+  }
+
+  private async loadCommitDetails(hashes: string[]): Promise<void> {
+    if (!this.git) return;
+    try {
+      const details = await this.git.getCommitDetails(hashes);
+      this.post({ type: 'commitDetails/loaded', hashes, details });
+    } catch (error) {
+      this.post({
+        type: 'commitDetails/error',
+        hashes,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 

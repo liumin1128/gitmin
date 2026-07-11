@@ -3,7 +3,7 @@
  * 全部返回 shared/domain 中定义的领域类型
  */
 import { simpleGit, type SimpleGit } from 'simple-git';
-import type { Commit, CommitFilters, FileChange } from '../../shared/domain';
+import type { Commit, CommitDetails, CommitFilters, FileChange } from '../../shared/domain';
 import {
   LOG_FORMAT,
   parseLogOutput,
@@ -11,6 +11,10 @@ import {
   parseNumstat,
   mergeFileChanges,
 } from '../utils/commitParser';
+import {
+  COMMIT_DETAILS_FORMAT,
+  parseCommitDetailsOutput,
+} from '../utils/commitDetailsParser';
 
 export class GitService {
   private readonly git: SimpleGit;
@@ -25,6 +29,17 @@ export class GitService {
     const args = buildLogArgs(limit, opts.filters);
     const output = await this.git.raw(args);
     return parseLogOutput(output);
+  }
+
+  async getCommitDetails(hashes: string[]): Promise<CommitDetails[]> {
+    if (hashes.length === 0) return [];
+    const output = await this.git.raw([
+      'log',
+      '--no-walk=unsorted',
+      `--pretty=format:${COMMIT_DETAILS_FORMAT}`,
+      ...hashes,
+    ]);
+    return parseCommitDetailsOutput(output);
   }
 
   /** 累积 diff 的变更文件列表（含 A/M/D/R 状态 + 增删行数） */

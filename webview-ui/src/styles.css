@@ -340,6 +340,10 @@ html, body, #root {
   min-width: 0;
   overflow: hidden;
 }
+.app > [data-view-id='details'] {
+  flex: 0 0 min(34vh, 280px);
+  border-top: 1px solid var(--vscode-panel-border);
+}
 .view-section {
   display: flex;
   flex-direction: column;
@@ -462,20 +466,20 @@ html, body, #root {
     bottom: 0;
     left: 1px;
   }
-  .view-section.is-collapsed .view-section-header {
+  .workbench-split > .view-section.is-collapsed .view-section-header {
     width: 26px;
     height: 100%;
     flex: 1;
     border-right: 1px solid var(--vscode-panel-border);
     border-bottom: 0;
   }
-  .view-section.is-collapsed .view-section-toggle {
+  .workbench-split > .view-section.is-collapsed .view-section-toggle {
     justify-content: center;
     padding: 0;
   }
-  .view-section.is-collapsed .view-section-title,
-  .view-section.is-collapsed .view-section-count,
-  .view-section.is-collapsed .view-section-actions {
+  .workbench-split > .view-section.is-collapsed .view-section-title,
+  .workbench-split > .view-section.is-collapsed .view-section-count,
+  .workbench-split > .view-section.is-collapsed .view-section-actions {
     display: none;
   }
 }
@@ -605,6 +609,79 @@ html, body, #root {
 .stat-add { color: var(--vscode-gitDecoration-addedResourceForeground, #4caf50); }
 .stat-del { color: var(--vscode-gitDecoration-deletedResourceForeground, #f44336); }
 .file-stat.binary { color: var(--vscode-descriptionForeground); }
+
+/* ===== Commit details ===== */
+.commit-details-list {
+  min-width: 0;
+}
+.commit-detail-item {
+  padding: 10px 12px 14px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+.commit-detail-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  margin-bottom: 8px;
+}
+.commit-detail-header h3 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  font-weight: 600;
+}
+.commit-detail-header code,
+.commit-detail-grid code {
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 0.9em;
+}
+.commit-detail-header code {
+  color: var(--vscode-textLink-foreground);
+}
+.commit-detail-body {
+  margin: 0 0 10px;
+  padding: 6px 10px;
+  border-left: 2px solid var(--vscode-textBlockQuote-border, var(--vscode-panel-border));
+  color: var(--vscode-descriptionForeground);
+  font: inherit;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 0.9em;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.commit-detail-grid {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+.commit-detail-row {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+}
+.commit-detail-row dt {
+  color: var(--vscode-descriptionForeground);
+}
+.commit-detail-row dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.commit-detail-values,
+.commit-detail-refs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+.commit-details-error {
+  padding: 12px;
+  color: var(--vscode-errorForeground);
+}
 
 /* ===== Empty hint ===== */
 .empty-hint {

@@ -23,10 +23,19 @@ const saved = {
   },
 };
 
-assert.deepEqual(parseWorkbenchLayout(saved), saved);
-assert.equal(setViewVisible(saved, 'files', true).views.files.visible, true);
-assert.equal(setViewCollapsed(saved, 'commits', true).views.commits.collapsed, true);
-assert.equal(setSplitRatio(saved, 100).splitRatio, 80);
+const migratedSaved = {
+  ...saved,
+  views: {
+    ...saved.views,
+    details: { visible: true, collapsed: false },
+  },
+};
+
+assert.deepEqual(parseWorkbenchLayout(saved), migratedSaved);
+assert.equal(setViewVisible(migratedSaved, 'files', true).views.files.visible, true);
+assert.equal(setViewCollapsed(migratedSaved, 'commits', true).views.commits.collapsed, true);
+assert.equal(setViewCollapsed(migratedSaved, 'details', true).views.details.collapsed, true);
+assert.equal(setSplitRatio(migratedSaved, 100).splitRatio, 80);
 assert.equal(saved.views.files.visible, false, 'updates must be immutable');
 assert.deepEqual(
   parseWorkbenchLayout({ ...saved, views: { commits: saved.views.commits } }),

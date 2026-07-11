@@ -15,6 +15,32 @@ export interface Commit {
   refs: string[];
 }
 
+export interface CommitIdentity {
+  name: string;
+  email: string;
+  date: string;
+}
+
+export interface CommitSignature {
+  status: string;
+  signer: string;
+  key: string;
+}
+
+export interface CommitDetails {
+  hash: string;
+  shortHash: string;
+  treeHash: string;
+  parents: string[];
+  refs: string[];
+  subject: string;
+  body: string;
+  author: CommitIdentity;
+  committer: CommitIdentity;
+  encoding: string;
+  signature: CommitSignature;
+}
+
 export type FileStatus = 'A' | 'M' | 'D' | 'R' | 'C' | 'U' | '?';
 
 export interface FileChange {
@@ -61,4 +87,3 @@ export interface FilterOptions {
   branches: string[];
   authors: string[];
 }
-

@@ -1,14 +1,16 @@
 import { createRequire } from 'node:module';
 import { rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { build } from 'esbuild';
 
-const outfile = join(tmpdir(), `git-managment-commit-graph-${process.pid}.cjs`);
+const entryPoint = process.argv[2];
+if (!entryPoint) throw new Error('TSX test entry path is required');
+const outfile = join(tmpdir(), `${basename(entryPoint)}-${process.pid}.cjs`);
 
 try {
   await build({
-    entryPoints: ['test/commitGraphSVG.tsx'],
+    entryPoints: [entryPoint],
     bundle: true,
     platform: 'node',
     format: 'cjs',
