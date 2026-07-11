@@ -65,9 +65,11 @@ export function requestCommitPage(
 export function resetCommitPage(
   pagination: CommitPaginationRefs,
   filters: CommitFilters,
-  post: PostCommitPageRequest
+  post: PostCommitPageRequest,
+  beforeRequest: () => void = () => undefined
 ): number {
   const requestId = startCommitPageSession(pagination);
+  beforeRequest();
   requestCommitPage(requestId, 0, filters, post);
   return requestId;
 }
@@ -178,9 +180,11 @@ export function App() {
   const resetCommits = useCallback(
     (nextFilters: CommitFilters) => {
       clear();
-      setHasMore(true);
-      setLoadingMore(false);
-      resetCommitPage(pagination, nextFilters, postMessage);
+      resetCommitPage(pagination, nextFilters, postMessage, () => {
+        setCommits([]);
+        setHasMore(true);
+        setLoadingMore(false);
+      });
     },
     [clear]
   );

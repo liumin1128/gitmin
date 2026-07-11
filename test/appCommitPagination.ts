@@ -56,4 +56,41 @@ assert.deepEqual(requests.at(-1), {
   filters: { branch: 'main' },
 });
 
+let displayedCommits = mergeCommitPage([commits[0]!], nextPage);
+let displayedHasMore = nextPage.hasMore;
+let displayedLoadingMore = true;
+const resetRequests: unknown[] = [];
+
+resetCommitPage(pagination, { author: 'Ada' }, (request) => {
+  resetRequests.push({
+    request,
+    displayedCommits,
+    displayedHasMore,
+    displayedLoadingMore,
+    loadingLocked: pagination.loadingMoreRef.current,
+  });
+}, () => {
+  displayedCommits = [];
+  displayedHasMore = true;
+  displayedLoadingMore = false;
+});
+
+assert.deepEqual(resetRequests, [
+  {
+    request: {
+      type: 'commits/refresh',
+      requestId: 2,
+      offset: 0,
+      limit: 50,
+      filters: { author: 'Ada' },
+    },
+    displayedCommits: [],
+    displayedHasMore: true,
+    displayedLoadingMore: false,
+    loadingLocked: false,
+  },
+]);
+assert.equal(pagination.requestIdRef.current, 2);
+assert.equal(pagination.nextOffsetRef.current, 0);
+
 console.log('app commit pagination checks passed');
