@@ -48,10 +48,10 @@ export function CommitList({
 
   const gridTemplate = [
     columns.graph ? `${maxLanes * LANE_W}px` : null,
-    columns.hash ? '70px' : null,
+    columns.hash ? 'auto' : null,
     '1fr',
-    columns.author ? '100px' : null,
-    columns.time ? '80px' : null,
+    columns.author ? 'auto' : null,
+    columns.time ? 'auto' : null,
   ]
     .filter(Boolean)
     .join(' ');
