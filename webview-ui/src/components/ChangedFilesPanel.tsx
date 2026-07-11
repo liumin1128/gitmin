@@ -64,7 +64,7 @@ function ChangedFileItem({ file, active, onOpenDiff }: ItemProps) {
   return (
     <div
       ref={itemRef}
-      className={`file-item status-${file.status}${active ? ' is-active' : ''}`}
+      className={`file-item status-${file.status}${active ? ' is-active' : ''}${file.status === 'D' ? ' is-deleted' : ''}`}
       aria-current={active ? 'true' : undefined}
       onClick={() => onOpenDiff(file.path)}
       title={file.oldPath ? `${file.oldPath} → ${file.path}` : file.path}

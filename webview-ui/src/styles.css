@@ -730,6 +730,8 @@ body.vscode-high-contrast-light .filter-form-row > input {
 }
 .stat-add { color: var(--vscode-gitDecoration-addedResourceForeground, #4caf50); }
 .stat-del { color: var(--vscode-gitDecoration-deletedResourceForeground, #f44336); }
+.file-item.is-deleted { opacity: 0.5; }
+.file-item.is-deleted .file-path { text-decoration: line-through; }
 .file-stat.binary { color: var(--vscode-descriptionForeground); }
 
 /* ===== Commit details ===== */
