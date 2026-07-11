@@ -19,6 +19,7 @@ import {
 import { relativeTime, shortHash, firstLine } from '../webview-ui/src/utils/formatters.ts';
 import { applySearch, isValidSearch } from '../shared/commitFilter.ts';
 import { layoutCommits } from '../webview-ui/src/utils/commitGraph.ts';
+import { getAdjacentFileChange } from '../src/utils/diffNavigation.ts';
 
 // ===== commitParser =====
 {
@@ -92,6 +93,23 @@ import { layoutCommits } from '../webview-ui/src/utils/commitGraph.ts';
 
   // 空选择
   assert.equal(computeDiffRange([], commits), null);
+}
+
+// ===== diffNavigation =====
+{
+  const files = [
+    { path: 'a.ts', status: 'M' as const, insertions: 1, deletions: 0, binary: false },
+    { path: 'b.ts', status: 'M' as const, insertions: 1, deletions: 0, binary: false },
+    { path: 'c.ts', status: 'M' as const, insertions: 1, deletions: 0, binary: false },
+  ];
+
+  assert.deepEqual(
+    getAdjacentFileChange(files, 'b.ts', 1)?.path,
+    'c.ts'
+  );
+  assert.equal(getAdjacentFileChange(files, 'c.ts', 1)?.path, 'a.ts');
+  assert.equal(getAdjacentFileChange(files, 'a.ts', -1)?.path, 'c.ts');
+  assert.equal(getAdjacentFileChange(files, 'missing.ts', 1), undefined);
 }
 
 // ===== selection =====

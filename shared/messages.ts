@@ -22,5 +22,6 @@ export type ExtensionMessage =
   | { type: 'commits/error'; error: string }
   | { type: 'filters/options'; options: FilterOptions }
   | { type: 'diff/loaded'; range: DiffRange; files: FileChange[] }
+  | { type: 'diff/activeFile'; filePath: string | null }
   | { type: 'diff/error'; error: string }
   | { type: 'action/result'; action: GitAction; ok: boolean; message?: string };

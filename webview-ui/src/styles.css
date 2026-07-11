@@ -564,6 +564,10 @@ html, body, #root {
 .file-item:hover {
   background: var(--vscode-list-hoverBackground);
 }
+.file-item.is-active {
+  background: var(--vscode-list-inactiveSelectionBackground, var(--vscode-list-activeSelectionBackground));
+  color: var(--vscode-list-inactiveSelectionForeground, var(--vscode-list-activeSelectionForeground));
+}
 .file-status {
   font-family: var(--vscode-editor-font-family, monospace);
   font-weight: 600;

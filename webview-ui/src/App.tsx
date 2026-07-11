@@ -32,6 +32,7 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [range, setRange] = useState<DiffRange | null>(null);
   const [files, setFiles] = useState<FileChange[]>([]);
+  const [activeFilePath, setActiveFilePath] = useState<string | null>(null);
   const [diffLoading, setDiffLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [filters, setFilters] = useState<CommitFilters>({});
@@ -58,8 +59,10 @@ export function App() {
   useIpcListener('diff/loaded', (m) => {
     setRange(m.range);
     setFiles(m.files);
+    setActiveFilePath(null);
     setDiffLoading(false);
   });
+  useIpcListener('diff/activeFile', (m) => setActiveFilePath(m.filePath));
   useIpcListener('diff/error', (m) => {
     setError(m.error);
     setDiffLoading(false);
@@ -110,6 +113,7 @@ export function App() {
     if (selected.size === 0) {
       setRange(null);
       setFiles([]);
+      setActiveFilePath(null);
       return;
     }
     setDiffLoading(true);
@@ -227,6 +231,7 @@ export function App() {
             <ChangedFilesPanel
               range={range}
               files={files}
+              activeFilePath={activeFilePath}
               loading={diffLoading}
               onOpenDiff={handleOpenDiff}
             />

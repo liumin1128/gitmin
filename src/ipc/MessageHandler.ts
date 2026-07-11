@@ -5,27 +5,46 @@
  */
 import * as vscode from 'vscode';
 import type { WebviewMessage, ExtensionMessage } from '../../shared/messages';
-import type { Commit, CommitFilters, DiffRange } from '../../shared/domain';
+import type { Commit, CommitFilters, DiffRange, FileChange } from '../../shared/domain';
 import type { GitAction } from '../../shared/actions';
 import { GitService } from '../services/GitService';
 import { GitOpsService, type ResetMode } from '../services/GitOpsService';
-import { getActiveRepo, getGitApi } from '../services/RepoLocator';
+import { FileDiffNavigator } from '../services/FileDiffNavigator';
+import { getActiveRepo } from '../services/RepoLocator';
 import { computeDiffRange } from '../utils/diffRange';
 import { applySearch } from '../../shared/commitFilter';
 
 export type PostMessage = (msg: ExtensionMessage) => void;
 
-export class MessageHandler {
+export class MessageHandler implements vscode.Disposable {
   private git: GitService | null = null;
   private ops: GitOpsService | null = null;
   private commitsCache: Commit[] = [];
   private repoRoot: string | null = null;
   private lastFilters: CommitFilters | undefined = undefined;
+  private diffCache: { range: DiffRange; files: FileChange[] } | null = null;
+  private readonly disposables: vscode.Disposable[] = [];
 
   constructor(
     private readonly post: PostMessage,
-    private readonly extensionUri: vscode.Uri
-  ) {}
+    private readonly extensionUri: vscode.Uri,
+    private readonly fileDiffNavigator: FileDiffNavigator
+  ) {
+    this.disposables.push(
+      this.fileDiffNavigator.onDidChangeActiveFile(({ range, filePath }) => {
+        if (
+          this.diffCache?.range.base === range.base &&
+          this.diffCache.range.head === range.head
+        ) {
+          this.post({ type: 'diff/activeFile', filePath });
+        }
+      })
+    );
+  }
+
+  dispose(): void {
+    this.disposables.forEach((disposable) => disposable.dispose());
+  }
 
   async handle(msg: WebviewMessage): Promise<void> {
     try {
@@ -102,8 +121,12 @@ export class MessageHandler {
     if (!this.git) return;
     const range = computeDiffRange(hashes, this.commitsCache);
     if (!range) return;
+    this.fileDiffNavigator.clear();
+    this.diffCache = null;
+    this.post({ type: 'diff/activeFile', filePath: null });
     try {
       const files = await this.git.getDiffSummary(range.base, range.head);
+      this.diffCache = { range, files };
       this.post({ type: 'diff/loaded', range, files });
     } catch (e) {
       this.post({ type: 'diff/error', error: e instanceof Error ? e.message : String(e) });
@@ -112,13 +135,17 @@ export class MessageHandler {
 
   private async openFileDiff(range: DiffRange, filePath: string): Promise<void> {
     if (!this.repoRoot) return;
-    const api = await getGitApi();
-    if (!api) return;
-    const fullUri = vscode.Uri.joinPath(vscode.Uri.file(this.repoRoot), filePath);
-    const leftUri = api.toGitUri(fullUri, range.base);
-    const rightUri = api.toGitUri(fullUri, range.head);
-    const title = `${filePath} (${range.base.slice(0, 7)}..${range.head.slice(0, 7)})`;
-    await vscode.commands.executeCommand('vscode.diff', leftUri, rightUri, title);
+    if (
+      !this.diffCache ||
+      this.diffCache.range.base !== range.base ||
+      this.diffCache.range.head !== range.head
+    ) return;
+    await this.fileDiffNavigator.open(
+      this.repoRoot,
+      range,
+      this.diffCache.files,
+      filePath
+    );
   }
 
   private async handleAction(action: GitAction, hashes: string[]): Promise<void> {

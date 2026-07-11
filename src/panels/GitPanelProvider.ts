@@ -4,13 +4,14 @@
  */
 import * as vscode from 'vscode';
 import { MessageHandler } from '../ipc/MessageHandler';
+import { FileDiffNavigator } from '../services/FileDiffNavigator';
 import { buildWebviewHtml } from '../utils/webviewHtml';
 import type { WebviewMessage } from '../../shared/messages';
 
 export class GitPanelProvider {
   private static current: GitPanelProvider | undefined;
 
-  static show(context: vscode.ExtensionContext): void {
+  static show(context: vscode.ExtensionContext, fileDiffNavigator: FileDiffNavigator): void {
     if (GitPanelProvider.current) {
       GitPanelProvider.current.panel.reveal(vscode.ViewColumn.Active);
       return;
@@ -25,21 +26,28 @@ export class GitPanelProvider {
         localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'out')],
       }
     );
-    GitPanelProvider.current = new GitPanelProvider(panel, context.extensionUri);
+    GitPanelProvider.current = new GitPanelProvider(
+      panel,
+      context.extensionUri,
+      fileDiffNavigator
+    );
   }
 
   private constructor(
     private readonly panel: vscode.WebviewPanel,
-    extensionUri: vscode.Uri
+    extensionUri: vscode.Uri,
+    fileDiffNavigator: FileDiffNavigator
   ) {
     this.panel.webview.html = buildWebviewHtml(this.panel.webview, extensionUri);
     const handler = new MessageHandler((msg) => {
       this.panel.webview.postMessage(msg);
-    }, extensionUri);
-    this.panel.webview.onDidReceiveMessage((raw: WebviewMessage) => {
+    }, extensionUri, fileDiffNavigator);
+    const messageSubscription = this.panel.webview.onDidReceiveMessage((raw: WebviewMessage) => {
       void handler.handle(raw);
     });
     this.panel.onDidDispose(() => {
+      messageSubscription.dispose();
+      handler.dispose();
       GitPanelProvider.current = undefined;
     });
   }

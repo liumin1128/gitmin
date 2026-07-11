@@ -19,6 +19,20 @@
         "title": "Git Mgr: 在编辑区打开面板",
         "category": "Git Mgr",
         "icon": "$(link-external)"
+      },
+      {
+        "command": "gitMgr.previousFileDiff",
+        "title": "Git Mgr: 上一个文件 Diff",
+        "category": "Git Mgr",
+        "icon": "$(arrow-up)",
+        "enablement": "gitMgr.fileDiffActive"
+      },
+      {
+        "command": "gitMgr.nextFileDiff",
+        "title": "Git Mgr: 下一个文件 Diff",
+        "category": "Git Mgr",
+        "icon": "$(arrow-down)",
+        "enablement": "gitMgr.fileDiffActive"
       }
     ],
     "viewsContainers": {
@@ -40,6 +54,18 @@
       ]
     },
     "menus": {
+      "editor/title": [
+        {
+          "command": "gitMgr.previousFileDiff",
+          "when": "gitMgr.fileDiffActive",
+          "group": "navigation@1"
+        },
+        {
+          "command": "gitMgr.nextFileDiff",
+          "when": "gitMgr.fileDiffActive",
+          "group": "navigation@2"
+        }
+      ],
       "view/title": [
         {
           "command": "gitMgr.openPanel",
