@@ -7,7 +7,7 @@ import type { GitAction } from './actions';
 
 // ===== Webview -> Extension =====
 export type WebviewMessage =
-  | { type: 'webview/ready' }
+  | { type: 'webview/ready'; filters?: CommitFilters }
   | { type: 'commits/refresh'; limit?: number; filters?: CommitFilters }
   | { type: 'filters/refresh' }
   | { type: 'diff/request'; hashes: string[] }
@@ -20,6 +20,7 @@ export type ExtensionMessage =
   | { type: 'repo/none'; reason: string }
   | { type: 'commits/loaded'; commits: Commit[] }
   | { type: 'commits/error'; error: string }
+  | { type: 'filters/restored'; filters: CommitFilters }
   | { type: 'filters/options'; options: FilterOptions }
   | { type: 'diff/loaded'; range: DiffRange; files: FileChange[] }
   | { type: 'diff/activeFile'; filePath: string | null }

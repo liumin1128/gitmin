@@ -16,6 +16,7 @@ const html = renderToStaticMarkup(<FilterBar {...props} />);
 const refreshIndex = html.indexOf('aria-label="刷新 commit 列表"');
 const columnsIndex = html.indexOf('title="显示列"');
 
+assert.equal(DEFAULT_COLUMNS.tags, false, 'tag column should be hidden by default');
 assert.notEqual(refreshIndex, -1, 'filter toolbar should render refresh action');
 assert.notEqual(columnsIndex, -1, 'filter toolbar should retain column settings');
 assert.ok(refreshIndex < columnsIndex, 'refresh action should appear before column settings');

@@ -8,10 +8,7 @@ import {
   type WorkbenchLayoutState,
   type WorkbenchViewId,
 } from '../utils/workbenchLayout';
-
-interface PersistedWebviewState {
-  workbenchLayout?: unknown;
-}
+import type { PersistedWebviewState } from '../utils/persistedWebviewState';
 
 type LayoutUpdate = (current: WorkbenchLayoutState) => WorkbenchLayoutState;
 

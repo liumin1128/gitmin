@@ -23,7 +23,7 @@ export const DEFAULT_COLUMNS: ColumnFlags = {
   hash: false,
   author: true,
   time: true,
-  tags: true,
+  tags: false,
 };
 
 interface Props {

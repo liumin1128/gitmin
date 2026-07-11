@@ -5,7 +5,11 @@ import { FileDiffNavigator } from './services/FileDiffNavigator';
 
 export function activate(context: vscode.ExtensionContext) {
   const fileDiffNavigator = new FileDiffNavigator();
-  const viewProvider = new GitPanelViewProvider(context.extensionUri, fileDiffNavigator);
+  const viewProvider = new GitPanelViewProvider(
+    context.extensionUri,
+    fileDiffNavigator,
+    context.workspaceState
+  );
   context.subscriptions.push(
     fileDiffNavigator,
     vscode.window.registerWebviewViewProvider(

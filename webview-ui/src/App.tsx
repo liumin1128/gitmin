@@ -10,6 +10,7 @@ import { postMessage, useIpcListener } from './hooks/useIpc';
 import { useMultiSelect } from './hooks/useMultiSelect';
 import { useContextMenu } from './hooks/useContextMenu';
 import { useWorkbenchLayout } from './hooks/useWorkbenchLayout';
+import { usePersistedFilters } from './hooks/usePersistedFilters';
 import { FilterBar } from './components/FilterBar';
 import { CommitList, DEFAULT_COLUMNS, type ColumnFlags } from './components/CommitList';
 import { ChangedFilesPanel } from './components/ChangedFilesPanel';
@@ -20,7 +21,6 @@ import { ViewSection } from './components/ViewSection';
 import { ViewVisibilityMenu } from './components/ViewVisibilityMenu';
 import type {
   Commit,
-  CommitFilters,
   DiffRange,
   FileChange,
   FilterOptions,
@@ -37,13 +37,15 @@ export function App() {
   const [diffLoading, setDiffLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [squashHashes, setSquashHashes] = useState<string[] | null>(null);
-  const [filters, setFilters] = useState<CommitFilters>({});
+  const { filters, setFilters } = usePersistedFilters();
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     branches: [],
     authors: [],
   });
   const [columns, setColumns] = useState<ColumnFlags>(DEFAULT_COLUMNS);
   const { layout, setRatio, setVisible, setCollapsed } = useWorkbenchLayout();
+  const filtersReadyRef = useRef(false);
+  const restoringFiltersRef = useRef(false);
 
   // === 消息订阅 ===
   useIpcListener('repo/info', () => {
@@ -57,6 +59,10 @@ export function App() {
     setError(null);
   });
   useIpcListener('commits/error', (m) => setError(m.error));
+  useIpcListener('filters/restored', (m) => {
+    restoringFiltersRef.current = true;
+    setFilters(m.filters);
+  });
   useIpcListener('filters/options', (m) => setFilterOptions(m.options));
   useIpcListener('diff/loaded', (m) => {
     setRange(m.range);
@@ -77,7 +83,9 @@ export function App() {
 
   // === 生命周期：挂载即通知 ===
   useEffect(() => {
-    postMessage({ type: 'webview/ready' });
+    postMessage({ type: 'webview/ready', filters });
+    // 恢复后的 filters 只用于首次握手，后续变化由下方 effect 刷新。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // === 多选 ===
@@ -85,10 +93,13 @@ export function App() {
   const { selected, isSelected, onItemClick, selectOnly, clear } = useMultiSelect(commitHashes);
 
   // === filter 变化 → 重新拉取 commits（跳过首次挂载，交给 webview/ready）===
-  const filtersReadyRef = useRef(false);
   useEffect(() => {
     if (!filtersReadyRef.current) {
       filtersReadyRef.current = true;
+      return;
+    }
+    if (restoringFiltersRef.current) {
+      restoringFiltersRef.current = false;
       return;
     }
     clear();

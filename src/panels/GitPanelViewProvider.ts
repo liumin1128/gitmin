@@ -13,7 +13,8 @@ export class GitPanelViewProvider implements vscode.WebviewViewProvider {
 
   constructor(
     private readonly extensionUri: vscode.Uri,
-    private readonly fileDiffNavigator: FileDiffNavigator
+    private readonly fileDiffNavigator: FileDiffNavigator,
+    private readonly workspaceState: vscode.Memento
   ) {}
 
   resolveWebviewView(view: vscode.WebviewView): void {
@@ -25,7 +26,7 @@ export class GitPanelViewProvider implements vscode.WebviewViewProvider {
 
     const handler = new MessageHandler((msg) => {
       view.webview.postMessage(msg);
-    }, this.extensionUri, this.fileDiffNavigator);
+    }, this.extensionUri, this.fileDiffNavigator, this.workspaceState);
     const sub = view.webview.onDidReceiveMessage((raw: WebviewMessage) => {
       void handler.handle(raw);
     });

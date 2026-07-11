@@ -13,6 +13,10 @@ import { FileDiffNavigator } from '../services/FileDiffNavigator';
 import { getActiveRepo } from '../services/RepoLocator';
 import { computeDiffRange } from '../utils/diffRange';
 import { applySearch } from '../../shared/commitFilter';
+import {
+  commitFiltersStateKey,
+  parsePersistedCommitFilters,
+} from '../../shared/persistedFilters';
 
 export type PostMessage = (msg: ExtensionMessage) => void;
 
@@ -28,7 +32,8 @@ export class MessageHandler implements vscode.Disposable {
   constructor(
     private readonly post: PostMessage,
     private readonly extensionUri: vscode.Uri,
-    private readonly fileDiffNavigator: FileDiffNavigator
+    private readonly fileDiffNavigator: FileDiffNavigator,
+    private readonly workspaceState: vscode.Memento
   ) {
     this.disposables.push(
       this.fileDiffNavigator.onDidChangeActiveFile(({ range, filePath }) => {
@@ -50,9 +55,10 @@ export class MessageHandler implements vscode.Disposable {
     try {
       switch (msg.type) {
         case 'webview/ready':
-          await this.initRepo();
+          await this.initRepo(msg.filters);
           break;
         case 'commits/refresh':
+          await this.persistFilters(msg.filters);
           await this.loadCommits(msg.limit ?? 100, msg.filters);
           break;
         case 'filters/refresh':
@@ -74,7 +80,7 @@ export class MessageHandler implements vscode.Disposable {
     }
   }
 
-  private async initRepo(): Promise<void> {
+  private async initRepo(fallbackFilters?: CommitFilters): Promise<void> {
     const repo = await getActiveRepo();
     if (!repo) {
       this.post({ type: 'repo/none', reason: '当前工作区未检测到 git 仓库' });
@@ -83,12 +89,33 @@ export class MessageHandler implements vscode.Disposable {
     this.repoRoot = repo.rootPath;
     this.git = new GitService(repo.rootPath);
     this.ops = new GitOpsService(repo.rootPath, this.extensionUri);
+    const stateKey = commitFiltersStateKey(repo.rootPath);
+    const storedFilters = this.workspaceState.get<unknown>(stateKey);
+    const filters = parsePersistedCommitFilters(
+      storedFilters === undefined ? fallbackFilters : storedFilters
+    );
+    if (storedFilters === undefined && fallbackFilters) {
+      await this.persistFilters(filters);
+    }
     this.post({
       type: 'repo/info',
       info: { rootPath: repo.rootPath, currentBranch: repo.currentBranch, hasCommits: true },
     });
-    await this.loadCommits(100);
+    this.post({ type: 'filters/restored', filters });
+    await this.loadCommits(100, filters);
     await this.loadFilterOptions();
+  }
+
+  private async persistFilters(filters?: CommitFilters): Promise<void> {
+    if (!this.repoRoot) return;
+    try {
+      await this.workspaceState.update(
+        commitFiltersStateKey(this.repoRoot),
+        parsePersistedCommitFilters(filters)
+      );
+    } catch (error) {
+      console.error('[gitMgr] persist filters error:', error);
+    }
   }
 
   private async loadCommits(limit: number, filters?: CommitFilters): Promise<void> {

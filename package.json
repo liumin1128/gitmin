@@ -82,6 +82,7 @@
     "build": "node esbuild.config.mjs",
     "watch": "node esbuild.config.mjs --watch",
     "test:commit-graph": "node --experimental-strip-types test/commitGraph.mts && node test/runCommitGraphSVG.mjs",
+    "test:persisted-filters": "node --experimental-strip-types test/persistedFilters.mts",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.webview.json --noEmit",
     "vscode:prepublish": "npm run build"
   },

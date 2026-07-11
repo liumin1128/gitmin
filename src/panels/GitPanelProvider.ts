@@ -29,19 +29,21 @@ export class GitPanelProvider {
     GitPanelProvider.current = new GitPanelProvider(
       panel,
       context.extensionUri,
-      fileDiffNavigator
+      fileDiffNavigator,
+      context.workspaceState
     );
   }
 
   private constructor(
     private readonly panel: vscode.WebviewPanel,
     extensionUri: vscode.Uri,
-    fileDiffNavigator: FileDiffNavigator
+    fileDiffNavigator: FileDiffNavigator,
+    workspaceState: vscode.Memento
   ) {
     this.panel.webview.html = buildWebviewHtml(this.panel.webview, extensionUri);
     const handler = new MessageHandler((msg) => {
       this.panel.webview.postMessage(msg);
-    }, extensionUri, fileDiffNavigator);
+    }, extensionUri, fileDiffNavigator, workspaceState);
     const messageSubscription = this.panel.webview.onDidReceiveMessage((raw: WebviewMessage) => {
       void handler.handle(raw);
     });
