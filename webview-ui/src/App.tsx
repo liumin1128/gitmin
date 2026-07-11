@@ -156,6 +156,7 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [commitPageFailed, setCommitPageFailed] = useState(false);
   const [range, setRange] = useState<DiffRange | null>(null);
   const [files, setFiles] = useState<FileChange[]>([]);
   const [activeFilePath, setActiveFilePath] = useState<string | null>(null);
@@ -204,6 +205,7 @@ export function App() {
     setCommits((current) => mergeCommitPage(current, m.page));
     setHasMore(m.page.hasMore);
     setLoadingMore(false);
+    setCommitPageFailed(false);
     setError(null);
     settleInitialCommitLoad(initialLoadGate, (filters) => dispatchResetRef.current(filters));
   });
@@ -211,6 +213,7 @@ export function App() {
     if (!failCommitPage(pagination, m.requestId)) return;
 
     setLoadingMore(false);
+    setCommitPageFailed(true);
     setError(m.error);
     settleInitialCommitLoad(initialLoadGate, (filters) => dispatchResetRef.current(filters));
   });
@@ -250,6 +253,7 @@ export function App() {
         setCommits([]);
         setHasMore(true);
         setLoadingMore(false);
+        setCommitPageFailed(false);
       });
     },
     [clear]
@@ -266,6 +270,7 @@ export function App() {
   const loadMoreCommits = useCallback(() => {
     if (loadNextCommitPage(pagination, hasMore, filtersRef.current, postMessage)) {
       setLoadingMore(true);
+      setCommitPageFailed(false);
     }
   }, [hasMore]);
 
@@ -437,6 +442,7 @@ export function App() {
               onItemContextMenu={handleContextMenu}
               hasMore={hasMore}
               loadingMore={loadingMore}
+              automaticLoadEnabled={!commitPageFailed}
               onLoadMore={loadMoreCommits}
             />
           </ViewSection>

@@ -53,6 +53,25 @@ export function runLoadMoreCheck(
   return true;
 }
 
+export function runAutomaticLoadMoreCheck(
+  automaticLoadEnabled: boolean,
+  hasMore: boolean,
+  loadingMore: boolean,
+  scrollTop: number,
+  clientHeight: number,
+  scrollHeight: number,
+  onLoadMore: () => void
+): boolean {
+  return automaticLoadEnabled && runLoadMoreCheck(
+    hasMore,
+    loadingMore,
+    scrollTop,
+    clientHeight,
+    scrollHeight,
+    onLoadMore
+  );
+}
+
 interface Props {
   commits: Commit[];
   columns: ColumnFlags;
@@ -61,6 +80,7 @@ interface Props {
   onItemContextMenu: (hash: string, event: MouseEvent) => void;
   hasMore: boolean;
   loadingMore: boolean;
+  automaticLoadEnabled: boolean;
   onLoadMore: () => void;
 }
 
@@ -72,6 +92,7 @@ export function CommitList({
   onItemContextMenu,
   hasMore,
   loadingMore,
+  automaticLoadEnabled,
   onLoadMore,
 }: Props) {
   const listRef = useRef<HTMLDivElement>(null);
@@ -108,16 +129,36 @@ export function CommitList({
     const scrollContainer = listRef.current?.closest<HTMLElement>('.view-section-content');
     if (!scrollContainer) return;
 
-    const checkForMore = () => runLoadMoreCheck(
-      hasMore,
-      loadingMore,
+    const scrollMetrics = () => [
       scrollContainer.scrollTop,
       scrollContainer.clientHeight,
       scrollContainer.scrollHeight,
-      onLoadMore
-    );
+    ] as const;
+    const checkForMore = () => {
+      const [scrollTop, clientHeight, scrollHeight] = scrollMetrics();
+      return runAutomaticLoadMoreCheck(
+        automaticLoadEnabled,
+        hasMore,
+        loadingMore,
+        scrollTop,
+        clientHeight,
+        scrollHeight,
+        onLoadMore
+      );
+    };
+    const handleScroll = () => {
+      const [scrollTop, clientHeight, scrollHeight] = scrollMetrics();
+      return runLoadMoreCheck(
+        hasMore,
+        loadingMore,
+        scrollTop,
+        clientHeight,
+        scrollHeight,
+        onLoadMore
+      );
+    };
 
-    scrollContainer.addEventListener('scroll', checkForMore);
+    scrollContainer.addEventListener('scroll', handleScroll);
     checkForMore();
 
     const resizeObserver = typeof ResizeObserver === 'undefined'
@@ -126,10 +167,10 @@ export function CommitList({
     resizeObserver?.observe(scrollContainer);
 
     return () => {
-      scrollContainer.removeEventListener('scroll', checkForMore);
+      scrollContainer.removeEventListener('scroll', handleScroll);
       resizeObserver?.disconnect();
     };
-  }, [columns, commits, hasMore, loadingMore, onLoadMore]);
+  }, [automaticLoadEnabled, columns, commits, hasMore, loadingMore, onLoadMore]);
 
   if (commits.length === 0) {
     return <div className="empty-hint">暂无 commit</div>;
