@@ -81,7 +81,9 @@ html, body, #root {
   min-width: 0;
 }
 .filter-bar-controls > .filter-dropdown:not(.view-visibility-menu) > .filter-dropdown-btn {
-  width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
 }
 .filter-bar-controls > .toolbar-icon-button,
 .filter-bar-controls > .view-visibility-menu {
@@ -227,6 +229,8 @@ html, body, #root {
 
 /* 下拉按钮 */
 .filter-dropdown {
+  display: inline-flex;
+  align-items: center;
   position: relative;
 }
 .filter-dropdown-btn {
@@ -262,6 +266,32 @@ html, body, #root {
 .filter-dropdown-caret {
   font-size: 0.7em;
   opacity: 0.6;
+}
+.filter-dropdown-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 24px;
+  margin-left: -3px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+}
+.filter-dropdown-clear:hover {
+  background: var(--vscode-toolbar-hoverBackground, rgba(128, 128, 128, 0.2));
+  color: var(--vscode-foreground);
+}
+.filter-dropdown-clear:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+.filter-dropdown-clear .codicon {
+  font-size: 12px;
 }
 
 /* 下拉面板 */
@@ -346,6 +376,17 @@ html, body, #root {
   padding: 2px 6px;
   font: inherit;
   height: 22px;
+}
+body.vscode-dark .filter-form-row > input,
+body.vscode-high-contrast .filter-form-row > input {
+  color-scheme: dark;
+}
+body.vscode-light .filter-form-row > input,
+body.vscode-high-contrast-light .filter-form-row > input {
+  color-scheme: light;
+}
+.filter-form-row > input::-webkit-calendar-picker-indicator {
+  opacity: 0.75;
 }
 .filter-form-row > input:focus {
   outline: none;

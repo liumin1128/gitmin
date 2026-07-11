@@ -13,6 +13,8 @@ interface Props {
   title?: string;
   hideCaret?: boolean;
   className?: string;
+  onClear?: () => void;
+  clearLabel?: string;
   children: (close: () => void) => ReactNode;
 }
 
@@ -23,6 +25,8 @@ export function FilterDropdown({
   title,
   hideCaret,
   className,
+  onClear,
+  clearLabel = '清除筛选',
   children,
 }: Props) {
   const [open, setOpen] = useState(false);
@@ -74,6 +78,20 @@ export function FilterDropdown({
         <span>{label}</span>
         {!hideCaret && <span className="filter-dropdown-caret">▾</span>}
       </button>
+      {active && onClear && (
+        <button
+          type="button"
+          className="filter-dropdown-clear"
+          aria-label={clearLabel}
+          title={clearLabel}
+          onClick={() => {
+            close();
+            onClear();
+          }}
+        >
+          <span className="codicon codicon-close" aria-hidden="true" />
+        </button>
+      )}
       {open && (
         <div
           ref={panelRef}

@@ -85,6 +85,8 @@ export function FilterBar({
           label={`分支: ${branchLabel(filters.branch)}`}
           active={!!filters.branch}
           disabled={options.branches.length === 0}
+          onClear={() => patch({ branch: undefined })}
+          clearLabel="清除分支筛选"
         >
           {(close) => (
             <BranchPanel
@@ -103,6 +105,8 @@ export function FilterBar({
           label={`用户: ${filters.author || '全部'}`}
           active={!!filters.author}
           disabled={options.authors.length === 0}
+          onClear={() => patch({ author: undefined })}
+          clearLabel="清除用户筛选"
         >
           {(close) => (
             <AuthorPanel
@@ -120,6 +124,8 @@ export function FilterBar({
         <FilterDropdown
           label={`日期: ${dateLabel(filters.dateAfter, filters.dateBefore)}`}
           active={!!(filters.dateAfter || filters.dateBefore)}
+          onClear={() => patch({ dateAfter: undefined, dateBefore: undefined })}
+          clearLabel="清除日期筛选"
         >
           {(close) => (
             <DatePanel

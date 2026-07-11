@@ -22,6 +22,7 @@ assert.doesNotMatch(html, /title="显示列"/, 'column settings belongs to the c
 assert.match(html, /codicon-search/, 'search should use the VS Code search icon');
 assert.match(html, /codicon-refresh/, 'refresh should use the VS Code refresh icon');
 assert.doesNotMatch(html, /🔍/, 'toolbar should not render emoji icons');
+assert.doesNotMatch(html, /aria-label="清除/, 'inactive filters should not render clear actions');
 assert.match(
   html,
   /class="filter-bar-controls"[\s\S]*aria-label="刷新 commit 列表"/,
@@ -44,6 +45,38 @@ assert.match(
   /\.filter-bar-controls\s*>\s*\.toolbar-icon-button,[^}]*\.view-visibility-menu\s*\{[^}]*flex:\s*0\s+0\s+24px/s,
   'toolbar icon buttons should keep their 24px width'
 );
+assert.match(
+  styles,
+  /\.filter-bar-controls[^}]*\.filter-dropdown-btn\s*\{[^}]*font-size:\s*12px/s,
+  'filter labels should use compact toolbar text'
+);
+assert.match(
+  styles,
+  /body\.vscode-dark[^}]*\.filter-form-row\s*>\s*input[^}]*\{[^}]*color-scheme:\s*dark/s,
+  'date inputs should use a dark native calendar icon in dark themes'
+);
+assert.match(
+  styles,
+  /body\.vscode-light[^}]*\.filter-form-row\s*>\s*input[^}]*\{[^}]*color-scheme:\s*light/s,
+  'date inputs should use a light native calendar icon in light themes'
+);
+
+const activeFiltersHtml = renderToStaticMarkup(
+  <FilterBar
+    {...props}
+    filters={{
+      branch: 'main',
+      author: 'Alice',
+      dateAfter: '2026-07-01',
+      dateBefore: '2026-07-12',
+    }}
+    options={{ branches: ['main'], authors: ['Alice'] }}
+  />
+);
+assert.match(activeFiltersHtml, /aria-label="清除分支筛选"/);
+assert.match(activeFiltersHtml, /aria-label="清除用户筛选"/);
+assert.match(activeFiltersHtml, /aria-label="清除日期筛选"/);
+assert.equal((activeFiltersHtml.match(/codicon-close/g) ?? []).length, 3);
 
 const checkedItemHtml = renderToStaticMarkup(
   <CheckedMenuItem checked onChange={() => undefined}>作者</CheckedMenuItem>
