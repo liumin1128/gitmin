@@ -29,6 +29,7 @@ function row(props: Partial<GraphRow> & { commitLane: number; commitColor: numbe
     /<line x1="8" y1="11" x2="8" y2="19"/,
     'commit dot should have a short bottom cap'
   );
+  assert.match(html, /stroke-width:1(?:;|\")/, 'graph lines should use a thin 1px stroke');
   assert.equal((html.match(/<line/g) || []).length, 2, 'only endpoint caps should be rendered');
   assert.doesNotMatch(html, /<path/, 'no path when no edges');
 }

@@ -9,7 +9,7 @@ import type { GraphRow, GraphEdge } from '../utils/commitGraph';
 const LANE_W = 16;
 const ROW_H = 22;
 const DOT_R = 3;
-const STROKE_W = 1.5;
+const STROKE_W = 1;
 const STEP_H = 5;
 const END_CAP_H = 8;
 
