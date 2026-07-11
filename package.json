@@ -40,7 +40,7 @@
         {
           "id": "gitMgr",
           "title": "Git Managment",
-          "icon": "media/icon.svg"
+          "icon": "$(git-commit)"
         }
       ]
     },
