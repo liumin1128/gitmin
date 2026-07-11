@@ -7,7 +7,7 @@ import * as vscode from 'vscode';
 import type { WebviewMessage, ExtensionMessage } from '../../shared/messages';
 import type { Commit, CommitFilters, DiffRange, FileChange } from '../../shared/domain';
 import type { GitAction } from '../../shared/actions';
-import { GitService } from '../services/GitService';
+import { GitService, normalizeLogPagination } from '../services/GitService';
 import { GitOpsService, type ResetMode } from '../services/GitOpsService';
 import { FileDiffNavigator } from '../services/FileDiffNavigator';
 import { getActiveRepo } from '../services/RepoLocator';
@@ -28,12 +28,21 @@ type CommitLoadRequest = {
   filters?: CommitFilters;
 };
 
+type CommitContinuation = {
+  requestId: number;
+  expectedOffset: number;
+  raw: Commit[];
+  nextRawOffset: number;
+};
+
 export class MessageHandler implements vscode.Disposable {
   private git: GitService | null = null;
   private ops: GitOpsService | null = null;
   private commitsCache: Commit[] = [];
   private repoRoot: string | null = null;
   private lastFilters: CommitFilters | undefined = undefined;
+  private activeCommitRequestId: number | null = null;
+  private commitContinuation: CommitContinuation | null = null;
   private diffCache: { range: DiffRange; files: FileChange[] } | null = null;
   private readonly disposables: vscode.Disposable[] = [];
 
@@ -62,13 +71,20 @@ export class MessageHandler implements vscode.Disposable {
   async handle(msg: WebviewMessage): Promise<void> {
     try {
       switch (msg.type) {
-        case 'webview/ready':
-          await this.initRepo(msg);
+        case 'webview/ready': {
+          const request = this.normalizeCommitRequest({ ...msg, offset: 0 });
+          this.activateCommitRequest(request);
+          await this.initRepo(request);
           break;
-        case 'commits/refresh':
-          await this.persistFilters(msg.filters);
-          await this.loadCommits(msg);
+        }
+        case 'commits/refresh': {
+          const request = this.normalizeCommitRequest(msg);
+          if (!this.activateCommitRequest(request)) return;
+          await this.persistFilters(request.filters);
+          if (!this.isActiveCommitRequest(request.requestId)) return;
+          await this.loadCommits(request);
           break;
+        }
         case 'filters/refresh':
           await this.loadFilterOptions();
           break;
@@ -91,10 +107,9 @@ export class MessageHandler implements vscode.Disposable {
     }
   }
 
-  private async initRepo(
-    ready: Extract<WebviewMessage, { type: 'webview/ready' }>
-  ): Promise<void> {
+  private async initRepo(ready: CommitLoadRequest): Promise<void> {
     const repo = await getActiveRepo();
+    if (!this.isActiveCommitRequest(ready.requestId)) return;
     if (!repo) {
       this.post({ type: 'repo/none', reason: '当前工作区未检测到 git 仓库' });
       return;
@@ -109,6 +124,7 @@ export class MessageHandler implements vscode.Disposable {
     );
     if (storedFilters === undefined && ready.filters) {
       await this.persistFilters(filters);
+      if (!this.isActiveCommitRequest(ready.requestId)) return;
     }
     this.post({
       type: 'repo/info',
@@ -137,43 +153,124 @@ export class MessageHandler implements vscode.Disposable {
   }
 
   private async loadCommits(request: CommitLoadRequest): Promise<void> {
+    if (!this.isActiveCommitRequest(request.requestId)) return;
     this.lastFilters = request.filters;
     if (!this.git) return;
     try {
-      let rawOffset = request.offset;
-      let raw: Commit[];
-      let commits: Commit[];
+      const result = await this.readCommitPage(request);
+      if (!result || !this.isActiveCommitRequest(request.requestId)) return;
 
-      do {
-        raw = await this.git.getLog({
-          offset: rawOffset,
-          limit: request.limit,
-          filters: request.filters,
-        });
-        commits = applySearch(raw, request.filters);
-        rawOffset += raw.length;
-      } while (commits.length === 0 && raw.length === request.limit);
+      const hasMore = result.commits.length > 0
+        ? await this.prepareContinuation(request, result.nextOffset)
+        : false;
+      if (hasMore === undefined || !this.isActiveCommitRequest(request.requestId)) return;
 
       if (request.offset === 0) {
-        this.commitsCache = commits;
+        this.commitsCache = result.commits;
       } else {
-        this.commitsCache = [...this.commitsCache, ...commits];
+        this.commitsCache = [...this.commitsCache, ...result.commits];
       }
 
       const page: CommitPage = {
         requestId: request.requestId,
         offset: request.offset,
-        nextOffset: rawOffset,
-        commits,
-        hasMore: raw.length === request.limit,
+        nextOffset: result.nextOffset,
+        commits: result.commits,
+        hasMore,
       };
       this.post({ type: 'commits/loaded', page });
     } catch (e) {
+      if (!this.isActiveCommitRequest(request.requestId)) return;
       this.post({
         type: 'commits/error',
         requestId: request.requestId,
         error: e instanceof Error ? e.message : String(e),
       });
+    }
+  }
+
+  private normalizeCommitRequest(request: CommitLoadRequest): CommitLoadRequest {
+    const { limit, offset } = normalizeLogPagination(request.limit, request.offset);
+    return { ...request, limit, offset };
+  }
+
+  private activateCommitRequest(request: CommitLoadRequest): boolean {
+    if (request.offset === 0) {
+      this.activeCommitRequestId = request.requestId;
+      this.commitContinuation = null;
+      return true;
+    }
+    return this.isActiveCommitRequest(request.requestId);
+  }
+
+  private isActiveCommitRequest(requestId: number): boolean {
+    return this.activeCommitRequestId === requestId;
+  }
+
+  private async readCommitPage(
+    request: CommitLoadRequest
+  ): Promise<{ commits: Commit[]; nextOffset: number } | undefined> {
+    const continuation = this.commitContinuation;
+    if (
+      continuation?.requestId === request.requestId &&
+      continuation.expectedOffset === request.offset
+    ) {
+      this.commitContinuation = null;
+      return {
+        commits: applySearch(continuation.raw, request.filters),
+        nextOffset: continuation.nextRawOffset,
+      };
+    }
+    if (continuation?.requestId === request.requestId) {
+      this.commitContinuation = null;
+    }
+
+    let rawOffset = request.offset;
+    let raw: Commit[];
+    let commits: Commit[];
+
+    do {
+      raw = await this.git!.getLog({
+        offset: rawOffset,
+        limit: request.limit,
+        filters: request.filters,
+      });
+      if (!this.isActiveCommitRequest(request.requestId)) return undefined;
+      commits = applySearch(raw, request.filters);
+      rawOffset += raw.length;
+    } while (commits.length === 0 && raw.length === request.limit);
+
+    return { commits, nextOffset: rawOffset };
+  }
+
+  private async prepareContinuation(
+    request: CommitLoadRequest,
+    expectedOffset: number
+  ): Promise<boolean | undefined> {
+    let rawOffset = expectedOffset;
+
+    while (true) {
+      const raw = await this.git!.getLog({
+        offset: rawOffset,
+        limit: request.limit,
+        filters: request.filters,
+      });
+      if (!this.isActiveCommitRequest(request.requestId)) return undefined;
+
+      if (applySearch(raw, request.filters).length > 0) {
+        this.commitContinuation = {
+          requestId: request.requestId,
+          expectedOffset,
+          raw,
+          nextRawOffset: rawOffset + raw.length,
+        };
+        return true;
+      }
+      if (raw.length < request.limit) {
+        this.commitContinuation = null;
+        return false;
+      }
+      rawOffset += raw.length;
     }
   }
 

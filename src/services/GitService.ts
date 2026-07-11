@@ -15,6 +15,7 @@ import {
   COMMIT_DETAILS_FORMAT,
   parseCommitDetailsOutput,
 } from '../utils/commitDetailsParser';
+import { COMMIT_PAGE_SIZE } from '../../shared/commitPagination';
 
 export class GitService {
   private readonly git: SimpleGit;
@@ -27,8 +28,7 @@ export class GitService {
   async getLog(
     opts: { offset?: number; limit?: number; filters?: CommitFilters } = {}
   ): Promise<Commit[]> {
-    const offset = opts.offset ?? 0;
-    const limit = opts.limit ?? 100;
+    const { offset, limit } = normalizeLogPagination(opts.limit ?? 100, opts.offset ?? 0);
     const args = buildLogArgs(limit, offset, opts.filters);
     const output = await this.git.raw(args);
     return parseLogOutput(output);
@@ -93,14 +93,15 @@ export function buildLogArgs(
   offset: number = 0,
   filters?: CommitFilters
 ): string[] {
+  const pagination = normalizeLogPagination(limit, offset);
   const args = [
     'log',
     `--pretty=format:${LOG_FORMAT}`,
     '--decorate=short',
     '--skip',
-    String(offset),
+    String(pagination.offset),
     '-n',
-    String(limit),
+    String(pagination.limit),
   ];
   if (!filters) return args;
 
@@ -120,4 +121,16 @@ export function buildLogArgs(
     args.push(`--before=${filters.dateBefore}`);
   }
   return args;
+}
+
+export function normalizeLogPagination(
+  limit: number,
+  offset: number = 0
+): { limit: number; offset: number } {
+  return {
+    limit: Number.isFinite(limit) && limit > 0
+      ? Math.max(1, Math.floor(limit))
+      : COMMIT_PAGE_SIZE,
+    offset: Number.isFinite(offset) && offset > 0 ? Math.floor(offset) : 0,
+  };
 }
