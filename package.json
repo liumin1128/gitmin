@@ -24,14 +24,14 @@
         "command": "gitMgr.previousFileDiff",
         "title": "Git Mgr: 上一个文件 Diff",
         "category": "Git Mgr",
-        "icon": "$(arrow-up)",
+        "icon": "$(arrow-left)",
         "enablement": "gitMgr.fileDiffActive"
       },
       {
         "command": "gitMgr.nextFileDiff",
         "title": "Git Mgr: 下一个文件 Diff",
         "category": "Git Mgr",
-        "icon": "$(arrow-down)",
+        "icon": "$(arrow-right)",
         "enablement": "gitMgr.fileDiffActive"
       }
     ],
@@ -58,12 +58,12 @@
         {
           "command": "gitMgr.previousFileDiff",
           "when": "gitMgr.fileDiffActive",
-          "group": "navigation@1"
+          "group": "navigation@12"
         },
         {
           "command": "gitMgr.nextFileDiff",
           "when": "gitMgr.fileDiffActive",
-          "group": "navigation@2"
+          "group": "navigation@13"
         }
       ],
       "view/title": [
