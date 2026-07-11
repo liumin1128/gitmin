@@ -5,11 +5,21 @@ export class CommitRequestGuard {
 
   reserve(requestId: number, offset: number): boolean {
     if (offset === 0) {
-      if (this.activeRequestId !== null && requestId <= this.activeRequestId) return false;
-      this.activeRequestId = requestId;
-      this.expectedOffset = 0;
-      this.inFlightOffset = 0;
-      return true;
+      if (this.activeRequestId === null || requestId > this.activeRequestId) {
+        this.activeRequestId = requestId;
+        this.expectedOffset = 0;
+        this.inFlightOffset = 0;
+        return true;
+      }
+      if (
+        this.activeRequestId === requestId &&
+        this.expectedOffset === 0 &&
+        this.inFlightOffset === null
+      ) {
+        this.inFlightOffset = 0;
+        return true;
+      }
+      return false;
     }
 
     if (

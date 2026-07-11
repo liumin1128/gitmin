@@ -32,4 +32,12 @@ assert.equal(requestGuard.reserve(1, 150), true);
 assert.equal(requestGuard.reserve(2, 0), true);
 assert.equal(requestGuard.reserve(1, 150), false);
 
+const retryGuard = new CommitRequestGuard();
+assert.equal(retryGuard.reserve(5, 0), true);
+assert.equal(retryGuard.reserve(5, 0), false);
+retryGuard.release(5, 0);
+assert.equal(retryGuard.reserve(5, 0), true);
+assert.equal(retryGuard.complete(5, 0, 50), true);
+assert.equal(retryGuard.reserve(5, 0), false);
+
 console.log('commit pagination checks passed');
