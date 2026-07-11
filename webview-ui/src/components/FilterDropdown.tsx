@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 
 interface Props {
-  label: string;
+  label: ReactNode;
   active?: boolean;
   disabled?: boolean;
   title?: string;
@@ -30,6 +30,7 @@ export function FilterDropdown({
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const close = useCallback(() => setOpen(false), []);
+  const buttonTitle = title ?? (typeof label === 'string' ? label : undefined);
 
   useEffect(() => {
     if (!open) return;
@@ -68,7 +69,7 @@ export function FilterDropdown({
         className={`filter-dropdown-btn${active ? ' is-active' : ''}${open ? ' is-open' : ''}`}
         onClick={() => !disabled && setOpen((v) => !v)}
         disabled={disabled}
-        title={title ?? label}
+        title={buttonTitle}
       >
         <span>{label}</span>
         {!hideCaret && <span className="filter-dropdown-caret">▾</span>}

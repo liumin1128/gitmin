@@ -30,6 +30,7 @@ const webviewConfig = {
   minify: isProd,
   loader: {
     '.css': 'css',
+    '.ttf': 'file',
   },
   logLevel: 'info',
   define: {

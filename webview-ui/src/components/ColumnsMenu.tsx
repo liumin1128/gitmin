@@ -21,7 +21,12 @@ const ITEMS: Array<{ key: keyof ColumnFlags; label: string }> = [
 
 export function ColumnsMenu({ columns, onChange }: Props) {
   return (
-    <FilterDropdown label="⋯" title="显示列" hideCaret className="columns-menu">
+    <FilterDropdown
+      label={<span className="codicon codicon-more" aria-hidden="true" />}
+      title="显示列"
+      hideCaret
+      className="columns-menu"
+    >
       {() => (
         <div className="filter-list" role="menu">
           {ITEMS.map(({ key, label }) => (

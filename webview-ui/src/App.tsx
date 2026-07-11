@@ -476,7 +476,7 @@ export function App() {
                         aria-label="重试加载 commit"
                         onClick={retryFailedCommitPageRequest}
                       >
-                        ↻
+                        <span className="codicon codicon-refresh" aria-hidden="true" />
                       </button>
                     )}
                     <ColumnsMenu columns={columns} onChange={setColumns} />

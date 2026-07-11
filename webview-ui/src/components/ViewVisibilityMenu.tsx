@@ -20,7 +20,7 @@ export function ViewVisibilityMenu({
 }: Props) {
   return (
     <FilterDropdown
-      label="⋯"
+      label={<span className="codicon codicon-more" aria-hidden="true" />}
       title="管理视图"
       hideCaret
       className="view-visibility-menu"

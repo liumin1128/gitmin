@@ -19,6 +19,9 @@ const refreshIndex = html.indexOf('aria-label="刷新 commit 列表"');
 assert.equal(DEFAULT_COLUMNS.tags, false, 'tag column should be hidden by default');
 assert.notEqual(refreshIndex, -1, 'filter toolbar should render refresh action');
 assert.doesNotMatch(html, /title="显示列"/, 'column settings belongs to the commit panel header');
+assert.match(html, /codicon-search/, 'search should use the VS Code search icon');
+assert.match(html, /codicon-refresh/, 'refresh should use the VS Code refresh icon');
+assert.doesNotMatch(html, /🔍/, 'toolbar should not render emoji icons');
 assert.match(
   html,
   /class="filter-bar-controls"[\s\S]*aria-label="刷新 commit 列表"/,
@@ -52,7 +55,7 @@ assert.doesNotMatch(checkedItemHtml, /<input/);
 const columnsMenuHtml = renderToStaticMarkup(
   <ColumnsMenu columns={DEFAULT_COLUMNS} onChange={() => undefined} />
 );
-assert.match(columnsMenuHtml, />⋯<\/span>/, 'column settings should use an overflow icon');
+assert.match(columnsMenuHtml, /codicon-more/, 'column settings should use the VS Code overflow icon');
 
 const appSource = readFileSync('webview-ui/src/App.tsx', 'utf8');
 const commitSectionStart = appSource.indexOf('id="commits"');

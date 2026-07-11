@@ -1,6 +1,6 @@
 /**
  * WebStorm 风格 commit 过滤栏：
- *  [🔍 文本或哈希          .*  Cc]  [分支▼] [用户▼] [日期▼] [路径▼]
+ *  [搜索 文本或哈希        .*  Cc]  [分支▼] [用户▼] [日期▼] [路径▼]
  *
  * 组件职责：受控展示 + 用户交互；搜索输入内部 debounce
  * 不含任何 git 调用，业务在父组件通过 onChange 触发
@@ -53,7 +53,7 @@ export function FilterBar({
     <div className="filter-bar">
       {/* 搜索框 */}
       <div className={`filter-search${!searchValid ? ' is-invalid' : ''}`}>
-        <span className="filter-search-icon">🔍</span>
+        <span className="filter-search-icon codicon codicon-search" aria-hidden="true" />
         <input
           className="filter-search-input"
           type="text"
@@ -143,7 +143,7 @@ export function FilterBar({
           title="刷新 commit 列表"
           aria-label="刷新 commit 列表"
         >
-          ↻
+          <span className="codicon codicon-refresh" aria-hidden="true" />
         </button>
 
         {actions}

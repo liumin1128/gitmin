@@ -58,8 +58,8 @@ html, body, #root {
 .filter-search {
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 0 4px;
+  gap: 4px;
+  padding: 0 3px 0 5px;
   max-width: 360px;
   flex: 1 1 220px;
   background: var(--vscode-input-background);
@@ -105,10 +105,10 @@ html, body, #root {
 .filter-search.is-invalid {
   border-color: var(--vscode-inputValidation-errorBorder, #f14c4c);
 }
-.filter-search-icon {
-  color: var(--vscode-descriptionForeground);
-  font-size: 0.85em;
-  padding: 0 2px;
+.filter-search-icon.codicon {
+  flex: 0 0 14px;
+  color: var(--vscode-input-placeholderForeground, var(--vscode-descriptionForeground));
+  font-size: 14px;
 }
 .filter-search-input {
   flex: 1;
@@ -118,7 +118,11 @@ html, body, #root {
   background: transparent;
   color: inherit;
   font: inherit;
-  padding: 0 4px;
+  padding: 0;
+}
+.filter-search-input::placeholder {
+  color: var(--vscode-input-placeholderForeground);
+  opacity: 1;
 }
 .filter-toggle {
   background: transparent;
