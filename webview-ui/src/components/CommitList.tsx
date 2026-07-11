@@ -37,6 +37,22 @@ export function shouldLoadMore(
   return hasMore && !loadingMore && isNearCommitListBottom(scrollTop, clientHeight, scrollHeight);
 }
 
+export function runLoadMoreCheck(
+  hasMore: boolean,
+  loadingMore: boolean,
+  scrollTop: number,
+  clientHeight: number,
+  scrollHeight: number,
+  onLoadMore: () => void
+): boolean {
+  if (!shouldLoadMore(hasMore, loadingMore, scrollTop, clientHeight, scrollHeight)) {
+    return false;
+  }
+
+  onLoadMore();
+  return true;
+}
+
 interface Props {
   commits: Commit[];
   columns: ColumnFlags;
@@ -92,23 +108,28 @@ export function CommitList({
     const scrollContainer = listRef.current?.closest<HTMLElement>('.view-section-content');
     if (!scrollContainer) return;
 
-    const handleScroll = () => {
-      if (
-        shouldLoadMore(
-          hasMore,
-          loadingMore,
-          scrollContainer.scrollTop,
-          scrollContainer.clientHeight,
-          scrollContainer.scrollHeight
-        )
-      ) {
-        onLoadMore();
-      }
-    };
+    const checkForMore = () => runLoadMoreCheck(
+      hasMore,
+      loadingMore,
+      scrollContainer.scrollTop,
+      scrollContainer.clientHeight,
+      scrollContainer.scrollHeight,
+      onLoadMore
+    );
 
-    scrollContainer.addEventListener('scroll', handleScroll);
-    return () => scrollContainer.removeEventListener('scroll', handleScroll);
-  }, [commits.length, hasMore, loadingMore, onLoadMore]);
+    scrollContainer.addEventListener('scroll', checkForMore);
+    checkForMore();
+
+    const resizeObserver = typeof ResizeObserver === 'undefined'
+      ? undefined
+      : new ResizeObserver(checkForMore);
+    resizeObserver?.observe(scrollContainer);
+
+    return () => {
+      scrollContainer.removeEventListener('scroll', checkForMore);
+      resizeObserver?.disconnect();
+    };
+  }, [columns, commits, hasMore, loadingMore, onLoadMore]);
 
   if (commits.length === 0) {
     return <div className="empty-hint">暂无 commit</div>;
