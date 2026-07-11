@@ -7,12 +7,14 @@ import * as vscode from 'vscode';
 import type { WebviewMessage, ExtensionMessage } from '../../shared/messages';
 import type { Commit, CommitFilters, DiffRange, FileChange } from '../../shared/domain';
 import type { GitAction } from '../../shared/actions';
-import { GitService } from '../services/GitService';
+import { GitService, normalizeLogPagination } from '../services/GitService';
+import { CommitRequestGuard } from './CommitRequestGuard';
 import { GitOpsService, type ResetMode } from '../services/GitOpsService';
 import { FileDiffNavigator } from '../services/FileDiffNavigator';
 import { getActiveRepo } from '../services/RepoLocator';
 import { computeDiffRange } from '../utils/diffRange';
 import { applySearch } from '../../shared/commitFilter';
+import type { CommitPage } from '../../shared/commitPagination';
 import {
   commitFiltersStateKey,
   parsePersistedCommitFilters,
@@ -20,12 +22,28 @@ import {
 
 export type PostMessage = (msg: ExtensionMessage) => void;
 
+type CommitLoadRequest = {
+  requestId: number;
+  offset: number;
+  limit: number;
+  filters?: CommitFilters;
+};
+
+type CommitContinuation = {
+  requestId: number;
+  expectedOffset: number;
+  raw: Commit[];
+  nextRawOffset: number;
+};
+
 export class MessageHandler implements vscode.Disposable {
   private git: GitService | null = null;
   private ops: GitOpsService | null = null;
   private commitsCache: Commit[] = [];
   private repoRoot: string | null = null;
   private lastFilters: CommitFilters | undefined = undefined;
+  private readonly commitRequestGuard = new CommitRequestGuard();
+  private commitContinuation: CommitContinuation | null = null;
   private diffCache: { range: DiffRange; files: FileChange[] } | null = null;
   private readonly disposables: vscode.Disposable[] = [];
 
@@ -54,13 +72,20 @@ export class MessageHandler implements vscode.Disposable {
   async handle(msg: WebviewMessage): Promise<void> {
     try {
       switch (msg.type) {
-        case 'webview/ready':
-          await this.initRepo(msg.filters);
+        case 'webview/ready': {
+          const request = this.normalizeCommitRequest({ ...msg, offset: 0 });
+          if (!this.reserveCommitRequest(request)) return;
+          await this.initRepo(request);
           break;
-        case 'commits/refresh':
-          await this.persistFilters(msg.filters);
-          await this.loadCommits(msg.limit ?? 100, msg.filters);
+        }
+        case 'commits/refresh': {
+          const request = this.normalizeCommitRequest(msg);
+          if (!this.reserveCommitRequest(request)) return;
+          await this.persistFilters(request.filters);
+          if (!this.isReservedCommitRequest(request)) return;
+          await this.loadCommits(request);
           break;
+        }
         case 'filters/refresh':
           await this.loadFilterOptions();
           break;
@@ -83,10 +108,12 @@ export class MessageHandler implements vscode.Disposable {
     }
   }
 
-  private async initRepo(fallbackFilters?: CommitFilters): Promise<void> {
+  private async initRepo(ready: CommitLoadRequest): Promise<void> {
     const repo = await getActiveRepo();
+    if (!this.isReservedCommitRequest(ready)) return;
     if (!repo) {
       this.post({ type: 'repo/none', reason: '当前工作区未检测到 git 仓库' });
+      this.commitRequestGuard.release(ready.requestId, ready.offset);
       return;
     }
     this.repoRoot = repo.rootPath;
@@ -95,17 +122,23 @@ export class MessageHandler implements vscode.Disposable {
     const stateKey = commitFiltersStateKey(repo.rootPath);
     const storedFilters = this.workspaceState.get<unknown>(stateKey);
     const filters = parsePersistedCommitFilters(
-      storedFilters === undefined ? fallbackFilters : storedFilters
+      storedFilters === undefined ? ready.filters : storedFilters
     );
-    if (storedFilters === undefined && fallbackFilters) {
+    if (storedFilters === undefined && ready.filters) {
       await this.persistFilters(filters);
+      if (!this.isReservedCommitRequest(ready)) return;
     }
     this.post({
       type: 'repo/info',
       info: { rootPath: repo.rootPath, currentBranch: repo.currentBranch, hasCommits: true },
     });
     this.post({ type: 'filters/restored', filters });
-    await this.loadCommits(100, filters);
+    await this.loadCommits({
+      requestId: ready.requestId,
+      offset: 0,
+      limit: ready.limit,
+      filters,
+    });
     await this.loadFilterOptions();
   }
 
@@ -121,16 +154,129 @@ export class MessageHandler implements vscode.Disposable {
     }
   }
 
-  private async loadCommits(limit: number, filters?: CommitFilters): Promise<void> {
-    if (!this.git) return;
+  private async loadCommits(request: CommitLoadRequest): Promise<void> {
+    if (!this.isReservedCommitRequest(request)) return;
+    this.lastFilters = request.filters;
+    if (!this.git) {
+      this.commitRequestGuard.release(request.requestId, request.offset);
+      return;
+    }
     try {
-      const raw = await this.git.getLog({ limit, filters });
-      const commits = applySearch(raw, filters);
-      this.commitsCache = commits;
-      this.lastFilters = filters;
-      this.post({ type: 'commits/loaded', commits });
+      const result = await this.readCommitPage(request);
+      if (!result || !this.isReservedCommitRequest(request)) return;
+
+      const hasMore = result.commits.length > 0
+        ? await this.prepareContinuation(request, result.nextOffset)
+        : false;
+      if (hasMore === undefined || !this.isReservedCommitRequest(request)) return;
+
+      if (request.offset === 0) {
+        this.commitsCache = result.commits;
+      } else {
+        this.commitsCache = [...this.commitsCache, ...result.commits];
+      }
+
+      const page: CommitPage = {
+        requestId: request.requestId,
+        offset: request.offset,
+        nextOffset: result.nextOffset,
+        commits: result.commits,
+        hasMore,
+      };
+      this.post({ type: 'commits/loaded', page });
+      this.commitRequestGuard.complete(request.requestId, request.offset, result.nextOffset);
     } catch (e) {
-      this.post({ type: 'commits/error', error: e instanceof Error ? e.message : String(e) });
+      if (!this.isReservedCommitRequest(request)) return;
+      this.post({
+        type: 'commits/error',
+        requestId: request.requestId,
+        error: e instanceof Error ? e.message : String(e),
+      });
+      this.commitRequestGuard.release(request.requestId, request.offset);
+    }
+  }
+
+  private normalizeCommitRequest(request: CommitLoadRequest): CommitLoadRequest {
+    const { limit, offset } = normalizeLogPagination(request.limit, request.offset);
+    return { ...request, limit, offset };
+  }
+
+  private reserveCommitRequest(request: CommitLoadRequest): boolean {
+    const isReserved = this.commitRequestGuard.reserve(request.requestId, request.offset);
+    if (isReserved && request.offset === 0) {
+      this.commitContinuation = null;
+    }
+    return isReserved;
+  }
+
+  private isReservedCommitRequest(request: CommitLoadRequest): boolean {
+    return this.commitRequestGuard.isReserved(request.requestId, request.offset);
+  }
+
+  private async readCommitPage(
+    request: CommitLoadRequest
+  ): Promise<{ commits: Commit[]; nextOffset: number } | undefined> {
+    const continuation = this.commitContinuation;
+    if (
+      continuation?.requestId === request.requestId &&
+      continuation.expectedOffset === request.offset
+    ) {
+      this.commitContinuation = null;
+      return {
+        commits: applySearch(continuation.raw, request.filters),
+        nextOffset: continuation.nextRawOffset,
+      };
+    }
+    if (continuation?.requestId === request.requestId) {
+      this.commitContinuation = null;
+    }
+
+    let rawOffset = request.offset;
+    let raw: Commit[];
+    let commits: Commit[];
+
+    do {
+      raw = await this.git!.getLog({
+        offset: rawOffset,
+        limit: request.limit,
+        filters: request.filters,
+      });
+      if (!this.isReservedCommitRequest(request)) return undefined;
+      commits = applySearch(raw, request.filters);
+      rawOffset += raw.length;
+    } while (commits.length === 0 && raw.length === request.limit);
+
+    return { commits, nextOffset: rawOffset };
+  }
+
+  private async prepareContinuation(
+    request: CommitLoadRequest,
+    expectedOffset: number
+  ): Promise<boolean | undefined> {
+    let rawOffset = expectedOffset;
+
+    while (true) {
+      const raw = await this.git!.getLog({
+        offset: rawOffset,
+        limit: request.limit,
+        filters: request.filters,
+      });
+      if (!this.isReservedCommitRequest(request)) return undefined;
+
+      if (applySearch(raw, request.filters).length > 0) {
+        this.commitContinuation = {
+          requestId: request.requestId,
+          expectedOffset,
+          raw,
+          nextRawOffset: rawOffset + raw.length,
+        };
+        return true;
+      }
+      if (raw.length < request.limit) {
+        this.commitContinuation = null;
+        return false;
+      }
+      rawOffset += raw.length;
     }
   }
 
@@ -234,9 +380,7 @@ export class MessageHandler implements vscode.Disposable {
         }
       }
       this.post({ type: 'action/result', action, ok: true });
-      if (action !== 'copy-hash') {
-        await this.loadCommits(100, this.lastFilters);
-      } else {
+      if (action === 'copy-hash') {
         vscode.window.showInformationMessage(`已复制 ${hashes.length} 个 hash 到剪贴板`);
       }
     } catch (e) {

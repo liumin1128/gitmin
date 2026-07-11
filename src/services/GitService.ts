@@ -15,6 +15,7 @@ import {
   COMMIT_DETAILS_FORMAT,
   parseCommitDetailsOutput,
 } from '../utils/commitDetailsParser';
+import { COMMIT_PAGE_SIZE } from '../../shared/commitPagination';
 
 export class GitService {
   private readonly git: SimpleGit;
@@ -24,9 +25,11 @@ export class GitService {
   }
 
   /** 拉取最近 limit 条 commit，可按 filter 缩小范围（不含 search） */
-  async getLog(opts: { limit?: number; filters?: CommitFilters } = {}): Promise<Commit[]> {
-    const limit = opts.limit ?? 100;
-    const args = buildLogArgs(limit, opts.filters);
+  async getLog(
+    opts: { offset?: number; limit?: number; filters?: CommitFilters } = {}
+  ): Promise<Commit[]> {
+    const { offset, limit } = normalizeLogPagination(opts.limit ?? 100, opts.offset ?? 0);
+    const args = buildLogArgs(limit, offset, opts.filters);
     const output = await this.git.raw(args);
     return parseLogOutput(output);
   }
@@ -85,8 +88,21 @@ export class GitService {
  * 组装 git log 参数
  * - search 不在这里处理（服务端后置纯函数负责）
  */
-function buildLogArgs(limit: number, filters?: CommitFilters): string[] {
-  const args = ['log', `--pretty=format:${LOG_FORMAT}`, '--decorate=short', '-n', String(limit)];
+export function buildLogArgs(
+  limit: number,
+  offset: number = 0,
+  filters?: CommitFilters
+): string[] {
+  const pagination = normalizeLogPagination(limit, offset);
+  const args = [
+    'log',
+    `--pretty=format:${LOG_FORMAT}`,
+    '--decorate=short',
+    '--skip',
+    String(pagination.offset),
+    '-n',
+    String(pagination.limit),
+  ];
   if (!filters) return args;
 
   if (filters.branch === '__all__') {
@@ -105,4 +121,16 @@ function buildLogArgs(limit: number, filters?: CommitFilters): string[] {
     args.push(`--before=${filters.dateBefore}`);
   }
   return args;
+}
+
+export function normalizeLogPagination(
+  limit: number,
+  offset: number = 0
+): { limit: number; offset: number } {
+  return {
+    limit: Number.isFinite(limit) && limit > 0
+      ? Math.max(1, Math.floor(limit))
+      : COMMIT_PAGE_SIZE,
+    offset: Number.isFinite(offset) && offset > 0 ? Math.floor(offset) : 0,
+  };
 }

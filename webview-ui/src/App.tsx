@@ -21,18 +21,162 @@ import { SquashModal } from './components/SquashModal';
 import { ResizableSplitView } from './components/ResizableSplitView';
 import { ViewSection } from './components/ViewSection';
 import { ViewVisibilityMenu } from './components/ViewVisibilityMenu';
+import { COMMIT_PAGE_SIZE, type CommitPage } from '../../shared/commitPagination';
 import type {
   Commit,
+  CommitFilters,
   DiffRange,
   FileChange,
   FilterOptions,
 } from '../../shared/domain';
+import type { WebviewMessage } from '../../shared/messages';
 import type { GitAction } from '../../shared/actions';
+
+type CommitPageRequest = Extract<WebviewMessage, { type: 'commits/refresh' }>;
+
+interface CommitPaginationRefs {
+  requestIdRef: { current: number };
+  nextOffsetRef: { current: number };
+  loadingMoreRef: { current: boolean };
+  pendingOffsetRef: { current: number | null };
+}
+
+interface InitialCommitLoadGate {
+  settledRef: { current: boolean };
+  queuedFiltersRef: { current: CommitFilters | null };
+}
+
+type PostCommitPageRequest = (request: CommitPageRequest) => void;
+
+export function mergeCommitPage(commits: Commit[], page: CommitPage): Commit[] {
+  return page.offset === 0 ? page.commits : [...commits, ...page.commits];
+}
+
+function startCommitPageSession(pagination: CommitPaginationRefs): number {
+  pagination.requestIdRef.current += 1;
+  pagination.nextOffsetRef.current = 0;
+  pagination.loadingMoreRef.current = true;
+  pagination.pendingOffsetRef.current = 0;
+  return pagination.requestIdRef.current;
+}
+
+export function requestCommitPage(
+  requestId: number,
+  offset: number,
+  filters: CommitFilters,
+  post: PostCommitPageRequest
+): void {
+  post({ type: 'commits/refresh', requestId, offset, limit: COMMIT_PAGE_SIZE, filters });
+}
+
+export function resetCommitPage(
+  pagination: CommitPaginationRefs,
+  filters: CommitFilters,
+  post: PostCommitPageRequest,
+  beforeRequest: () => void = () => undefined
+): number {
+  const requestId = startCommitPageSession(pagination);
+  beforeRequest();
+  requestCommitPage(requestId, 0, filters, post);
+  return requestId;
+}
+
+export function loadNextCommitPage(
+  pagination: CommitPaginationRefs,
+  hasMore: boolean,
+  filters: CommitFilters,
+  post: PostCommitPageRequest
+): boolean {
+  if (pagination.loadingMoreRef.current || !hasMore) return false;
+
+  pagination.loadingMoreRef.current = true;
+  pagination.pendingOffsetRef.current = pagination.nextOffsetRef.current;
+  requestCommitPage(
+    pagination.requestIdRef.current,
+    pagination.nextOffsetRef.current,
+    filters,
+    post
+  );
+  return true;
+}
+
+export function completeCommitPage(pagination: CommitPaginationRefs, page: CommitPage): boolean {
+  if (
+    page.requestId !== pagination.requestIdRef.current ||
+    page.offset !== pagination.pendingOffsetRef.current
+  ) {
+    return false;
+  }
+
+  pagination.nextOffsetRef.current = page.nextOffset;
+  pagination.pendingOffsetRef.current = null;
+  pagination.loadingMoreRef.current = false;
+  return true;
+}
+
+export function failCommitPage(
+  pagination: CommitPaginationRefs,
+  requestId: number
+): number | null {
+  if (requestId !== pagination.requestIdRef.current || pagination.pendingOffsetRef.current === null) {
+    return null;
+  }
+
+  const failedOffset = pagination.pendingOffsetRef.current;
+  pagination.pendingOffsetRef.current = null;
+  pagination.loadingMoreRef.current = false;
+  return failedOffset;
+}
+
+export function retryFailedCommitPage(
+  pagination: CommitPaginationRefs,
+  failedOffsetRef: { current: number | null },
+  filters: CommitFilters,
+  post: PostCommitPageRequest
+): boolean {
+  const failedOffset = failedOffsetRef.current;
+  if (pagination.loadingMoreRef.current || failedOffset === null) return false;
+
+  pagination.loadingMoreRef.current = true;
+  pagination.pendingOffsetRef.current = failedOffset;
+  failedOffsetRef.current = null;
+  requestCommitPage(pagination.requestIdRef.current, failedOffset, filters, post);
+  return true;
+}
+
+export function queueCommitReset(
+  gate: InitialCommitLoadGate,
+  filters: CommitFilters,
+  dispatchReset: (filters: CommitFilters) => void
+): boolean {
+  if (!gate.settledRef.current) {
+    gate.queuedFiltersRef.current = filters;
+    return false;
+  }
+
+  dispatchReset(filters);
+  return true;
+}
+
+export function settleInitialCommitLoad(
+  gate: InitialCommitLoadGate,
+  dispatchReset: (filters: CommitFilters) => void
+): void {
+  if (gate.settledRef.current) return;
+
+  gate.settledRef.current = true;
+  const filters = gate.queuedFiltersRef.current;
+  gate.queuedFiltersRef.current = null;
+  if (filters) dispatchReset(filters);
+}
 
 export function App() {
   const [repoError, setRepoError] = useState<string | null>(null);
   const [commits, setCommits] = useState<Commit[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [commitPageError, setCommitPageError] = useState<string | null>(null);
   const [range, setRange] = useState<DiffRange | null>(null);
   const [files, setFiles] = useState<FileChange[]>([]);
   const [activeFilePath, setActiveFilePath] = useState<string | null>(null);
@@ -48,6 +192,26 @@ export function App() {
   const { layout, setRatio, setVisible, setCollapsed } = useWorkbenchLayout();
   const filtersReadyRef = useRef(false);
   const restoringFiltersRef = useRef(false);
+  const commitRequestIdRef = useRef(0);
+  const nextCommitOffsetRef = useRef(0);
+  const loadingMoreRef = useRef(false);
+  const pendingCommitOffsetRef = useRef<number | null>(null);
+  const failedCommitOffsetRef = useRef<number | null>(null);
+  const initialCommitLoadSettledRef = useRef(false);
+  const queuedCommitResetFiltersRef = useRef<CommitFilters | null>(null);
+  const dispatchResetRef = useRef<(filters: CommitFilters) => void>(() => undefined);
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
+  const pagination = {
+    requestIdRef: commitRequestIdRef,
+    nextOffsetRef: nextCommitOffsetRef,
+    loadingMoreRef,
+    pendingOffsetRef: pendingCommitOffsetRef,
+  };
+  const initialLoadGate = {
+    settledRef: initialCommitLoadSettledRef,
+    queuedFiltersRef: queuedCommitResetFiltersRef,
+  };
 
   // === 消息订阅 ===
   useIpcListener('repo/info', () => {
@@ -57,10 +221,25 @@ export function App() {
     setRepoError(m.reason);
   });
   useIpcListener('commits/loaded', (m) => {
-    setCommits(m.commits);
+    if (!completeCommitPage(pagination, m.page)) return;
+
+    setCommits((current) => mergeCommitPage(current, m.page));
+    setHasMore(m.page.hasMore);
+    setLoadingMore(false);
+    failedCommitOffsetRef.current = null;
+    setCommitPageError(null);
     setError(null);
+    settleInitialCommitLoad(initialLoadGate, (filters) => dispatchResetRef.current(filters));
   });
-  useIpcListener('commits/error', (m) => setError(m.error));
+  useIpcListener('commits/error', (m) => {
+    const failedOffset = failCommitPage(pagination, m.requestId);
+    if (failedOffset === null) return;
+
+    failedCommitOffsetRef.current = failedOffset;
+    setLoadingMore(false);
+    setCommitPageError(m.error);
+    settleInitialCommitLoad(initialLoadGate, (filters) => dispatchResetRef.current(filters));
+  });
   useIpcListener('filters/restored', (m) => {
     restoringFiltersRef.current = true;
     setFilters(m.filters);
@@ -77,15 +256,10 @@ export function App() {
     setError(m.error);
     setDiffLoading(false);
   });
-  useIpcListener('action/result', (m) => {
-    setBusy(false);
-    if (!m.ok) setError(m.message ?? '操作失败');
-    else setError(null);
-  });
-
   // === 生命周期：挂载即通知 ===
   useEffect(() => {
-    postMessage({ type: 'webview/ready', filters });
+    const requestId = startCommitPageSession(pagination);
+    postMessage({ type: 'webview/ready', requestId, limit: COMMIT_PAGE_SIZE, filters });
     // 恢复后的 filters 只用于首次握手，后续变化由下方 effect 刷新。
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -94,6 +268,43 @@ export function App() {
   const commitHashes = useMemo(() => commits.map((c) => c.hash), [commits]);
   const { selected, isSelected, onItemClick, selectOnly, clear } = useMultiSelect(commitHashes);
   const commitDetails = useCommitDetails(commits, selected);
+
+  const dispatchResetCommits = useCallback(
+    (nextFilters: CommitFilters) => {
+      clear();
+      resetCommitPage(pagination, nextFilters, postMessage, () => {
+        setCommits([]);
+        setHasMore(true);
+        setLoadingMore(false);
+        failedCommitOffsetRef.current = null;
+        setCommitPageError(null);
+      });
+    },
+    [clear]
+  );
+  dispatchResetRef.current = dispatchResetCommits;
+
+  const resetCommits = useCallback(
+    (nextFilters: CommitFilters) => {
+      queueCommitReset(initialLoadGate, nextFilters, dispatchResetCommits);
+    },
+    [dispatchResetCommits]
+  );
+
+  const loadMoreCommits = useCallback(() => {
+    if (loadNextCommitPage(pagination, hasMore, filtersRef.current, postMessage)) {
+      setLoadingMore(true);
+      failedCommitOffsetRef.current = null;
+      setCommitPageError(null);
+    }
+  }, [hasMore]);
+
+  const retryFailedCommitPageRequest = useCallback(() => {
+    if (retryFailedCommitPage(pagination, failedCommitOffsetRef, filtersRef.current, postMessage)) {
+      setLoadingMore(true);
+      setCommitPageError(null);
+    }
+  }, []);
 
   // === filter 变化 → 重新拉取 commits（跳过首次挂载，交给 webview/ready）===
   useEffect(() => {
@@ -105,10 +316,19 @@ export function App() {
       restoringFiltersRef.current = false;
       return;
     }
-    clear();
-    postMessage({ type: 'commits/refresh', limit: 100, filters });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters]);
+    resetCommits(filters);
+  }, [filters, resetCommits]);
+
+  useIpcListener('action/result', (m) => {
+    setBusy(false);
+    if (!m.ok) {
+      setError(m.message ?? '操作失败');
+      return;
+    }
+
+    setError(null);
+    if (m.action !== 'copy-hash') resetCommits(filtersRef.current);
+  });
 
   // 选中是否连续（Squash 需要）
   const contiguous = useMemo(() => {
@@ -188,10 +408,9 @@ export function App() {
   }, []);
 
   const handleRefresh = useCallback(() => {
-    clear();
-    postMessage({ type: 'commits/refresh', limit: 100, filters });
+    resetCommits(filters);
     postMessage({ type: 'filters/refresh' });
-  }, [clear, filters]);
+  }, [filters, resetCommits]);
 
   const handleOpenDiff = useCallback(
     (filePath: string) => {
@@ -229,7 +448,7 @@ export function App() {
           />
         }
       />
-      {error && <div className="error-bar">{error}</div>}
+      {(commitPageError ?? error) && <div className="error-bar">{commitPageError ?? error}</div>}
       {busy && <div className="busy-bar">执行中...</div>}
       <ResizableSplitView
         ratio={layout.splitRatio}
@@ -246,6 +465,19 @@ export function App() {
             visible={layout.views.commits.visible}
             collapsed={layout.views.commits.collapsed}
             onCollapsedChange={(collapsed) => setCollapsed('commits', collapsed)}
+            actions={
+              commitPageError ? (
+                <button
+                  type="button"
+                  className="toolbar-icon-button"
+                  title="重试加载 commit"
+                  aria-label="重试加载 commit"
+                  onClick={retryFailedCommitPageRequest}
+                >
+                  ↻
+                </button>
+              ) : undefined
+            }
           >
             <CommitList
               commits={commits}
@@ -253,6 +485,10 @@ export function App() {
               isSelected={isSelected}
               onItemClick={onItemClick}
               onItemContextMenu={handleContextMenu}
+              hasMore={hasMore}
+              loadingMore={loadingMore}
+              automaticLoadEnabled={!commitPageError}
+              onLoadMore={loadMoreCommits}
             />
           </ViewSection>
         }
