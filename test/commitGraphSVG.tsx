@@ -13,13 +13,23 @@ function row(props: Partial<GraphRow> & { commitLane: number; commitColor: numbe
   };
 }
 
-// ===== 空行（只有圆点，无连接线） =====
+// ===== 独立节点（圆点上下都有短端帽，无拓扑连接线） =====
 {
   const html = renderToStaticMarkup(
     <CommitGraph row={row({ commitLane: 0, commitColor: 0 })} maxLanes={1} />
   );
   assert.match(html, /<circle/, 'should have commit dot');
-  assert.doesNotMatch(html, /<line/, 'no lines when no edges');
+  assert.match(
+    html,
+    /<line x1="8" y1="3" x2="8" y2="11"/,
+    'commit dot should have a short top cap'
+  );
+  assert.match(
+    html,
+    /<line x1="8" y1="11" x2="8" y2="19"/,
+    'commit dot should have a short bottom cap'
+  );
+  assert.equal((html.match(/<line/g) || []).length, 2, 'only endpoint caps should be rendered');
   assert.doesNotMatch(html, /<path/, 'no path when no edges');
 }
 
@@ -35,7 +45,19 @@ function row(props: Partial<GraphRow> & { commitLane: number; commitColor: numbe
   assert.match(html, /<svg/, 'should have svg');
   assert.match(html, /<circle/, 'should have commit dot');
   const lineCount = (html.match(/<line/g) || []).length;
-  assert.equal(lineCount, 2, 'should have 2 straight lines');
+  assert.equal(lineCount, 2, 'connected node should only have its 2 graph lines');
+}
+
+// ===== 片段首节点（顶部端帽 + 向下真实连线） =====
+{
+  const r = row({
+    commitLane: 0,
+    commitColor: 0,
+    bottomEdges: [{ fromLane: 0, toLane: 0, color: 0, type: 'normal' }],
+  });
+  const html = renderToStaticMarkup(<CommitGraph row={r} maxLanes={1} />);
+  assert.match(html, /<line x1="8" y1="3" x2="8" y2="11"/);
+  assert.equal((html.match(/<line/g) || []).length, 2, 'top cap plus bottom graph line');
 }
 
 // ===== 分支线（path） =====

@@ -2,14 +2,16 @@
  * commit graph 单行 SVG 渲染
  * - 同 lane 边：垂直实线
  * - 跨 lane 边（branch/merge）：折线路径
+ * - 历史片段首尾节点绘制竖向短端帽
  */
 import type { GraphRow, GraphEdge } from '../utils/commitGraph';
 
 const LANE_W = 16;
 const ROW_H = 22;
-const DOT_R = 3.5;
+const DOT_R = 3;
 const STROKE_W = 1.5;
 const STEP_H = 5;
+const END_CAP_H = 8;
 
 interface Props {
   row: GraphRow;
@@ -20,6 +22,10 @@ export function CommitGraph({ row, maxLanes }: Props) {
   const width = maxLanes * LANE_W;
   const height = ROW_H;
   const midY = height / 2;
+  const commitX = laneX(row.commitLane);
+  const commitColor = laneColor(row.commitColor);
+  const hasTopConnection = row.topEdges.some((edge) => edge.toLane === row.commitLane);
+  const hasBottomConnection = row.bottomEdges.some((edge) => edge.fromLane === row.commitLane);
 
   return (
     <svg className="commit-graph" width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
@@ -29,11 +35,29 @@ export function CommitGraph({ row, maxLanes }: Props) {
       {row.bottomEdges.map((e, i) => (
         <EdgePath key={`b${i}`} edge={e} yStart={midY} yEnd={height} />
       ))}
+      {!hasTopConnection && (
+        <line
+          x1={commitX}
+          y1={midY - END_CAP_H}
+          x2={commitX}
+          y2={midY}
+          style={{ stroke: commitColor, strokeWidth: STROKE_W }}
+        />
+      )}
+      {!hasBottomConnection && (
+        <line
+          x1={commitX}
+          y1={midY}
+          x2={commitX}
+          y2={midY + END_CAP_H}
+          style={{ stroke: commitColor, strokeWidth: STROKE_W }}
+        />
+      )}
       <circle
-        cx={laneX(row.commitLane)}
+        cx={commitX}
         cy={midY}
         r={DOT_R}
-        style={{ fill: laneColor(row.commitColor) }}
+        style={{ fill: commitColor }}
       />
     </svg>
   );
