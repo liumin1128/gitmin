@@ -1,15 +1,15 @@
 /**
- * commit graph 单行 SVG 渲染（纯展示）
- * - 圆点在 (commitLane * LANE_W + LANE_W/2, ROW_H/2)
- * - 每条 edge 分上下半段：顶边→中心 / 中心→底边
- * - 直线段 = fromLane === toLane 时的垂直线；否则斜线
+ * commit graph 单行 SVG 渲染
+ * - 同 lane 边：垂直实线
+ * - 跨 lane 边（branch/merge）：折线路径
  */
-import type { GraphRow } from '../utils/commitGraph';
+import type { GraphRow, GraphEdge } from '../utils/commitGraph';
 
-const LANE_W = 12;
+const LANE_W = 16;
 const ROW_H = 22;
 const DOT_R = 3.5;
 const STROKE_W = 1.5;
+const STEP_H = 5;
 
 interface Props {
   row: GraphRow;
@@ -24,34 +24,58 @@ export function CommitGraph({ row, maxLanes }: Props) {
   return (
     <svg className="commit-graph" width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
       {row.topEdges.map((e, i) => (
-        <line
-          key={`t${i}`}
-          x1={laneX(e.fromLane)}
-          y1={0}
-          x2={laneX(e.toLane)}
-          y2={midY}
-          stroke={laneColor(e.color)}
-          strokeWidth={STROKE_W}
-        />
+        <EdgePath key={`t${i}`} edge={e} yStart={0} yEnd={midY} />
       ))}
       {row.bottomEdges.map((e, i) => (
-        <line
-          key={`b${i}`}
-          x1={laneX(e.fromLane)}
-          y1={midY}
-          x2={laneX(e.toLane)}
-          y2={height}
-          stroke={laneColor(e.color)}
-          strokeWidth={STROKE_W}
-        />
+        <EdgePath key={`b${i}`} edge={e} yStart={midY} yEnd={height} />
       ))}
       <circle
         cx={laneX(row.commitLane)}
         cy={midY}
         r={DOT_R}
-        fill={laneColor(row.commitColor)}
+        style={{ fill: laneColor(row.commitColor) }}
       />
     </svg>
+  );
+}
+
+function EdgePath({ edge, yStart, yEnd }: { edge: GraphEdge; yStart: number; yEnd: number }) {
+  const x1 = laneX(edge.fromLane);
+  const x2 = laneX(edge.toLane);
+  const color = laneColor(edge.color);
+  const sameLane = edge.fromLane === edge.toLane;
+
+  if (sameLane) {
+    return (
+      <line
+        x1={x1} y1={yStart} x2={x2} y2={yEnd}
+        style={{
+          stroke: color,
+          strokeWidth: STROKE_W,
+        }}
+      />
+    );
+  }
+
+  const midY = (yStart + yEnd) / 2;
+  const stepY = yStart + STEP_H;
+
+  const d = [
+    `M ${x1} ${yStart}`,
+    `L ${x1} ${stepY}`,
+    `L ${x2} ${midY}`,
+    `L ${x2} ${yEnd}`,
+  ].join(' ');
+
+  return (
+    <path
+      d={d}
+      fill="none"
+      style={{
+        stroke: color,
+        strokeWidth: STROKE_W,
+      }}
+    />
   );
 }
 
@@ -59,28 +83,17 @@ function laneX(lane: number): number {
   return lane * LANE_W + LANE_W / 2;
 }
 
-/**
- * 颜色循环取模：前 6 色复用 VSCode 主题变量，后续自定义色保证可区分性
- */
-const PALETTE: Array<{ cssVar?: string; color: string }> = [
-  { cssVar: '--vscode-charts-red',    color: '#f14c4c' },
-  { cssVar: '--vscode-charts-blue',   color: '#3794ff' },
-  { cssVar: '--vscode-charts-green',  color: '#89d185' },
-  { cssVar: '--vscode-charts-orange', color: '#d18616' },
-  { cssVar: '--vscode-charts-purple', color: '#b180d7' },
-  { cssVar: '--vscode-charts-yellow', color: '#cca700' },
-  { color: '#33b2b2' },
-  { color: '#e879b4' },
-  { color: '#7ecf7e' },
-  { color: '#b59a6b' },
-  { color: '#6cb6ff' },
-  { color: '#d484ff' },
+const PALETTE: string[] = [
+  '#89d185',
+  '#4f83cc',
+  '#b180d7',
+  '#33b2b2',
+  '#d18616',
+  '#cca700',
+  '#e879b4',
+  '#f14c4c',
 ];
 
 function laneColor(colorId: number): string {
-  const entry = PALETTE[colorId % PALETTE.length]!;
-  if (entry.cssVar) {
-    return `var(${entry.cssVar}, ${entry.color})`;
-  }
-  return entry.color;
+  return PALETTE[colorId % PALETTE.length]!;
 }

@@ -129,8 +129,8 @@ import { getAdjacentFileChange } from '../src/utils/diffNavigation.ts';
   assert.equal(firstLine('line1\nline2'), 'line1');
   assert.equal(firstLine('single'), 'single');
   const now = new Date('2026-01-01T00:00:00Z');
-  assert.equal(relativeTime('2025-12-31T23:59:00Z', now), '1m ago');
-  assert.equal(relativeTime('2025-12-31T00:00:00Z', now), '1d ago');
+  assert.equal(relativeTime('2025-12-31T23:59:00Z', now), '1m ago (07:59)');
+  assert.equal(relativeTime('2025-12-31T00:00:00Z', now), '1d ago (08:00)');
 }
 
 // ===== commitFilter =====
@@ -230,8 +230,8 @@ import { getAdjacentFileChange } from '../src/utils/diffNavigation.ts';
       mk('c', ['b']), mk('b', ['a']),
     ]);
     assert.equal(maxLanes, 1);
-    // b 行有 bottomEdge（期待 a 出去），即使 a 不在列表
-    assert.equal(rows[1]!.bottomEdges.length, 1);
+    // b 的 parent a 不在列表，不绘制无法连接到可见 commit 的边
+    assert.equal(rows[1]!.bottomEdges.length, 0);
   }
 
   // 空输入

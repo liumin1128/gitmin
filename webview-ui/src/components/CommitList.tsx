@@ -43,7 +43,7 @@ export function CommitList({
 }: Props) {
   const { rows, maxLanes } = useMemo(() => layoutCommits(commits), [commits]);
 
-  const LANE_W = 12;
+  const LANE_W = 16;
   const PAD = 10;
 
   const colWidths = useMemo(() => {
