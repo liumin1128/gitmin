@@ -3,7 +3,6 @@
  * 采用 discriminated union，两端类型一致
  */
 import type {
-  Commit,
   CommitDetails,
   FileChange,
   RepoInfo,
@@ -12,11 +11,18 @@ import type {
   FilterOptions,
 } from './domain';
 import type { GitAction } from './actions';
+import type { CommitPage } from './commitPagination';
 
 // ===== Webview -> Extension =====
 export type WebviewMessage =
-  | { type: 'webview/ready'; filters?: CommitFilters }
-  | { type: 'commits/refresh'; limit?: number; filters?: CommitFilters }
+  | { type: 'webview/ready'; filters?: CommitFilters; requestId: number; limit: number }
+  | {
+      type: 'commits/refresh';
+      requestId: number;
+      offset: number;
+      limit: number;
+      filters?: CommitFilters;
+    }
   | { type: 'filters/refresh' }
   | { type: 'commitDetails/request'; hashes: string[] }
   | { type: 'diff/request'; hashes: string[] }
@@ -27,8 +33,8 @@ export type WebviewMessage =
 export type ExtensionMessage =
   | { type: 'repo/info'; info: RepoInfo }
   | { type: 'repo/none'; reason: string }
-  | { type: 'commits/loaded'; commits: Commit[] }
-  | { type: 'commits/error'; error: string }
+  | { type: 'commits/loaded'; page: CommitPage }
+  | { type: 'commits/error'; requestId: number; error: string }
   | { type: 'filters/restored'; filters: CommitFilters }
   | { type: 'filters/options'; options: FilterOptions }
   | { type: 'commitDetails/loaded'; hashes: string[]; details: CommitDetails[] }
