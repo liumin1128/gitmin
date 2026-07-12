@@ -23,6 +23,7 @@ import { ResizablePanelStack } from './components/ResizablePanelStack';
 import { ViewSection } from './components/ViewSection';
 import { ViewVisibilityMenu } from './components/ViewVisibilityMenu';
 import { getWorkbenchPaneSizes } from './utils/workbenchLayout';
+import { shouldPreserveUnresolvedParents } from './utils/commitGraph';
 import { COMMIT_PAGE_SIZE, type CommitPage } from '../../shared/commitPagination';
 import type {
   Commit,
@@ -491,6 +492,7 @@ export function App() {
                   onItemClick={onItemClick}
                   onItemContextMenu={handleContextMenu}
                   hasMore={hasMore}
+                  preserveUnresolvedParents={shouldPreserveUnresolvedParents(hasMore, filters)}
                   loadingMore={loadingMore}
                   automaticLoadEnabled={!commitPageError}
                   onLoadMore={loadMoreCommits}

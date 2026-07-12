@@ -71,6 +71,13 @@ function row(props: Partial<GraphRow> & { commitLane: number; commitColor: numbe
   });
   const html = renderToStaticMarkup(<CommitGraph row={r} maxLanes={2} />);
   assert.match(html, /<path/, 'branch edges should use path');
+  assert.match(
+    html,
+    /d="M 8 11 C 8 16\.5 24 16\.5 24 22"/,
+    'cross-lane edges should use a smooth cubic curve'
+  );
+  assert.match(html, /stroke-linecap:round/, 'rounded caps should bridge adjacent row edges');
+  assert.match(html, /stroke-linejoin:round/, 'curved edge joins should remain smooth');
 }
 
 // ===== Merge line =====

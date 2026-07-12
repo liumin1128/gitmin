@@ -79,6 +79,7 @@ interface Props {
   onItemClick: (hash: string, event: MouseEvent) => void;
   onItemContextMenu: (hash: string, event: MouseEvent) => void;
   hasMore: boolean;
+  preserveUnresolvedParents: boolean;
   loadingMore: boolean;
   automaticLoadEnabled: boolean;
   onLoadMore: () => void;
@@ -91,12 +92,16 @@ export function CommitList({
   onItemClick,
   onItemContextMenu,
   hasMore,
+  preserveUnresolvedParents,
   loadingMore,
   automaticLoadEnabled,
   onLoadMore,
 }: Props) {
   const listRef = useRef<HTMLDivElement>(null);
-  const { rows, maxLanes } = useMemo(() => layoutCommits(commits), [commits]);
+  const { rows, maxLanes } = useMemo(
+    () => layoutCommits(commits, { preserveUnresolvedParents }),
+    [commits, preserveUnresolvedParents]
+  );
 
   const LANE_W = 16;
   const PAD = 4;

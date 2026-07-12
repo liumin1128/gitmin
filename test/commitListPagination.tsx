@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { renderToStaticMarkup } from 'react-dom/server';
+import type { Commit } from '../shared/domain';
 import {
   CommitList,
   DEFAULT_COLUMNS,
@@ -16,6 +17,7 @@ const props: Parameters<typeof CommitList>[0] = {
   onItemClick: () => undefined,
   onItemContextMenu: () => undefined,
   hasMore: true,
+  preserveUnresolvedParents: false,
   loadingMore: false,
   automaticLoadEnabled: true,
   onLoadMore: () => undefined,
@@ -41,6 +43,30 @@ assert.equal(
   renderToStaticMarkup(<CommitList {...props} />),
   '<div class="empty-hint">No commits</div>',
   'empty commit list markup should remain unchanged'
+);
+
+const graphCommits = [
+  {
+    hash: 'merge', shortHash: 'merge', message: 'merge', author: '', email: '', date: '',
+    parents: ['main-next', 'side'], refs: [],
+  },
+  {
+    hash: 'side', shortHash: 'side', message: 'side', author: '', email: '', date: '',
+    parents: [], refs: [],
+  },
+] satisfies Commit[];
+const paginatedGraphHtml = renderToStaticMarkup(
+  <CommitList
+    {...props}
+    commits={graphCommits}
+    columns={{ graph: true, hash: false, author: false, time: false, tags: false }}
+    preserveUnresolvedParents
+  />
+);
+assert.match(
+  paginatedGraphHtml,
+  /class="commit-graph" width="32"/,
+  'the list must pass pagination context into the graph layout'
 );
 
 assert.equal(shouldLoadMore(true, false, 70, 100, 200), true);

@@ -1,7 +1,7 @@
 /**
  * Commit graph single-row SVG renderer
  * - Same-lane edges: vertical solid line
- * - Cross-lane edges (branch/merge): polyline path
+ * - Cross-lane edges (branch/merge): smooth cubic path
  * - First/last node in a history segment renders short vertical end caps
  */
 import type { GraphRow, GraphEdge } from '../utils/commitGraph';
@@ -10,7 +10,6 @@ const LANE_W = 16;
 const ROW_H = 22;
 const DOT_R = 3;
 const STROKE_W = 1;
-const STEP_H = 5;
 const END_CAP_H = 8;
 
 interface Props {
@@ -41,7 +40,7 @@ export function CommitGraph({ row, maxLanes }: Props) {
           y1={midY - END_CAP_H}
           x2={commitX}
           y2={midY}
-          style={{ stroke: commitColor, strokeWidth: STROKE_W }}
+          style={edgeStyle(commitColor)}
         />
       )}
       {!hasBottomConnection && (
@@ -50,7 +49,7 @@ export function CommitGraph({ row, maxLanes }: Props) {
           y1={midY}
           x2={commitX}
           y2={midY + END_CAP_H}
-          style={{ stroke: commitColor, strokeWidth: STROKE_W }}
+          style={edgeStyle(commitColor)}
         />
       )}
       <circle
@@ -73,34 +72,34 @@ function EdgePath({ edge, yStart, yEnd }: { edge: GraphEdge; yStart: number; yEn
     return (
       <line
         x1={x1} y1={yStart} x2={x2} y2={yEnd}
-        style={{
-          stroke: color,
-          strokeWidth: STROKE_W,
-        }}
+        style={edgeStyle(color)}
       />
     );
   }
 
   const midY = (yStart + yEnd) / 2;
-  const stepY = yStart + STEP_H;
 
   const d = [
     `M ${x1} ${yStart}`,
-    `L ${x1} ${stepY}`,
-    `L ${x2} ${midY}`,
-    `L ${x2} ${yEnd}`,
+    `C ${x1} ${midY} ${x2} ${midY} ${x2} ${yEnd}`,
   ].join(' ');
 
   return (
     <path
       d={d}
       fill="none"
-      style={{
-        stroke: color,
-        strokeWidth: STROKE_W,
-      }}
+      style={edgeStyle(color)}
     />
   );
+}
+
+function edgeStyle(color: string) {
+  return {
+    stroke: color,
+    strokeWidth: STROKE_W,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+  };
 }
 
 function laneX(lane: number): number {

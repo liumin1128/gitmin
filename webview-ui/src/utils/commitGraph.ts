@@ -3,10 +3,11 @@
  * - First parent inherits current lane color
  * - Other parents create independent color lanes
  * - Unrelated histories use different colors and stay disconnected
- * - Only draws parent-child relationships visible in the current list
+ * - Filtered histories only connect visible parents
+ * - Incomplete unfiltered pages may keep unresolved parent lanes open
  * Pure function, no side effects
  */
-import type { Commit } from '../../../shared/domain';
+import type { Commit, CommitFilters } from '../../../shared/domain';
 
 export type EdgeType = 'normal' | 'branch' | 'merge';
 
@@ -30,8 +31,29 @@ export interface GraphLayout {
   maxLanes: number;
 }
 
-export function layoutCommits(commits: Commit[]): GraphLayout {
+export interface GraphLayoutOptions {
+  preserveUnresolvedParents?: boolean;
+}
+
+export function shouldPreserveUnresolvedParents(
+  hasMore: boolean,
+  filters: CommitFilters
+): boolean {
+  if (!hasMore) return false;
+  return ![
+    filters.search,
+    filters.author,
+    filters.dateAfter,
+    filters.dateBefore,
+  ].some((value) => value?.trim());
+}
+
+export function layoutCommits(
+  commits: Commit[],
+  options: GraphLayoutOptions = {}
+): GraphLayout {
   const visibleHashes = new Set(commits.map((c) => c.hash));
+  const preserveUnresolvedParents = options.preserveUnresolvedParents === true;
   const activeLanes: (string | null)[] = [];
   const laneColors: (number | null)[] = [];
   const rows: GraphRow[] = [];
@@ -63,7 +85,7 @@ export function layoutCommits(commits: Commit[]): GraphLayout {
     const p0 = commit.parents[0] ?? null;
     let mergeTargetLane: number | null = null;
 
-    if (p0 && visibleHashes.has(p0)) {
+    if (p0 && (visibleHashes.has(p0) || preserveUnresolvedParents)) {
       const existingLane = activeLanes.indexOf(p0);
       if (existingLane >= 0 && existingLane !== commitLane) {
         mergeTargetLane = existingLane;
@@ -79,7 +101,7 @@ export function layoutCommits(commits: Commit[]): GraphLayout {
 
     for (let k = 1; k < commit.parents.length; k++) {
       const p = commit.parents[k]!;
-      if (!visibleHashes.has(p)) continue;
+      if (!visibleHashes.has(p) && !preserveUnresolvedParents) continue;
       const existing = activeLanes.indexOf(p);
       if (existing >= 0) continue;
       const target = findFirstEmpty(activeLanes);
@@ -110,7 +132,11 @@ export function layoutCommits(commits: Commit[]): GraphLayout {
     const bottomEdges: GraphEdge[] = [];
     const handledLanes = new Set<number>();
 
-    if (p0 && visibleHashes.has(p0) && mergeTargetLane === null) {
+    if (
+      p0 &&
+      (visibleHashes.has(p0) || preserveUnresolvedParents) &&
+      mergeTargetLane === null
+    ) {
       bottomEdges.push({
         fromLane: commitLane,
         toLane: commitLane,
@@ -140,7 +166,9 @@ export function layoutCommits(commits: Commit[]): GraphLayout {
           color: afterColors[targetLane]!,
           type: 'branch',
         });
-        handledLanes.add(targetLane);
+        if (before[targetLane] == null) {
+          handledLanes.add(targetLane);
+        }
       }
     }
 

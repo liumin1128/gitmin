@@ -3,7 +3,10 @@
  * Run: node --experimental-strip-types test/commitGraph.mts
  */
 import assert from 'node:assert/strict';
-import { layoutCommits } from '../webview-ui/src/utils/commitGraph.ts';
+import {
+  layoutCommits,
+  shouldPreserveUnresolvedParents,
+} from '../webview-ui/src/utils/commitGraph.ts';
 import type { Commit } from '../shared/domain.ts';
 
 function mk(hash: string, parents: string[]): Commit {
@@ -60,12 +63,71 @@ function laneOf(rows: { commitLane: number }[]): number[] {
     'incoming top edge shares the side-branch color');
 }
 
+// ===== Merge into a parent lane already crossing the row =====
+//   head -------- shared
+//          merge -/
+//          |
+//          main
+{
+  const commits = [
+    mk('head', ['shared']),
+    mk('merge', ['main', 'shared']),
+    mk('shared', []),
+    mk('main', []),
+  ];
+  const { rows } = layoutCommits(commits);
+  const mergeRow = rows[1]!;
+
+  assert.ok(
+    mergeRow.bottomEdges.some(
+      (e) => e.type === 'branch' && e.fromLane === 1 && e.toLane === 0
+    ),
+    'the merge commit must connect to its existing secondary-parent lane'
+  );
+  assert.ok(
+    mergeRow.bottomEdges.some(
+      (e) => e.type === 'normal' && e.fromLane === 0 && e.toLane === 0
+    ),
+    'the existing parent lane must remain continuous below the merge row'
+  );
+}
+
 // ===== Parent not visible → end current segment =====
 {
   const commits = [mk('c2', ['c1'])];
   const { rows } = layoutCommits(commits);
   assert.equal(rows[0]!.bottomEdges.length, 0,
     'missing parents must not produce a dangling edge');
+}
+
+// ===== Parent beyond the loaded page -> keep its lane open =====
+//   merge -- main-next (next page)
+//      \
+//       side
+{
+  const commits = [mk('merge', ['main-next', 'side']), mk('side', [])];
+  const { rows } = layoutCommits(commits, { preserveUnresolvedParents: true });
+
+  assert.deepEqual(
+    rows[0]!.bottomEdges.map((e) => `${e.type}:${e.fromLane}->${e.toLane}`),
+    ['normal:0->0', 'branch:0->1'],
+    'the first parent lane must continue when its commit may be on the next page'
+  );
+  assert.ok(
+    rows[1]!.bottomEdges.some((e) => e.fromLane === 0 && e.toLane === 0),
+    'an unresolved parent lane must continue to the loaded page boundary'
+  );
+}
+
+// ===== Only unfiltered pagination may keep unresolved parents =====
+{
+  assert.equal(shouldPreserveUnresolvedParents(true, {}), true);
+  assert.equal(shouldPreserveUnresolvedParents(true, { branch: '__all__' }), true);
+  assert.equal(shouldPreserveUnresolvedParents(false, {}), false);
+  assert.equal(shouldPreserveUnresolvedParents(true, { search: 'fix' }), false);
+  assert.equal(shouldPreserveUnresolvedParents(true, { author: 'Ada' }), false);
+  assert.equal(shouldPreserveUnresolvedParents(true, { dateAfter: '2026-01-01' }), false);
+  assert.equal(shouldPreserveUnresolvedParents(true, { dateBefore: '2026-12-31' }), false);
 }
 
 // ===== Invisible merge parent should not override visible mainline =====
