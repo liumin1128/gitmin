@@ -124,7 +124,7 @@ export function layoutCommits(commits: Commit[]): GraphLayout {
       bottomEdges.push({
         fromLane: commitLane,
         toLane: mergeTargetLane,
-        color: laneColors[mergeTargetLane]!,
+        color: commitColor,
         type: 'merge',
       });
       handledLanes.add(commitLane);

@@ -50,6 +50,14 @@ function laneOf(rows: { commitLane: number }[]): number[] {
   const b2Edges = rows[1]!.bottomEdges;
   const merge = b2Edges.find((e) => e.type === 'merge')!;
   assert.ok(merge);
+
+  // color continuity: merge diagonal carries the side-branch color
+  // (matches b2's dot + incoming top edge), not the mainline target color
+  assert.equal(merge.color, rows[1]!.commitColor,
+    'merge edge must use the side-branch (commit) color for continuity');
+  const b2TopInto = rows[1]!.topEdges.find((e) => e.toLane === rows[1]!.commitLane)!;
+  assert.equal(b2TopInto.color, rows[1]!.commitColor,
+    'incoming top edge shares the side-branch color');
 }
 
 // ===== Parent not visible → end current segment =====
