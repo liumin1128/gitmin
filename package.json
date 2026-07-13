@@ -2,8 +2,12 @@
   "name": "gitmin",
   "displayName": "GitMin",
   "description": "WebStorm-like Git commit management panel for VSCode",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "publisher": "liumin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/liumin1128/gitmin.git"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
