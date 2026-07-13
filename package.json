@@ -1,9 +1,9 @@
 {
-  "name": "git-managment",
-  "displayName": "Git Managment",
+  "name": "gitmin",
+  "displayName": "GitMin",
   "description": "WebStorm-like Git commit management panel for VSCode",
-  "version": "0.0.3",
-  "publisher": "local",
+  "version": "0.0.4",
+  "publisher": "liumin",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -15,39 +15,39 @@
   "contributes": {
     "commands": [
       {
-        "command": "gitMgr.openPanel",
-        "title": "Git Mgr: Open Panel in Editor",
-        "category": "Git Mgr",
+        "command": "gitmin.openPanel",
+        "title": "GitMin: Open Panel in Editor",
+        "category": "GitMin",
         "icon": "$(link-external)"
       },
       {
-        "command": "gitMgr.previousFileDiff",
-        "title": "Git Mgr: Previous File Diff",
-        "category": "Git Mgr",
+        "command": "gitmin.previousFileDiff",
+        "title": "GitMin: Previous File Diff",
+        "category": "GitMin",
         "icon": "$(arrow-left)",
-        "enablement": "gitMgr.fileDiffActive"
+        "enablement": "gitmin.fileDiffActive"
       },
       {
-        "command": "gitMgr.nextFileDiff",
-        "title": "Git Mgr: Next File Diff",
-        "category": "Git Mgr",
+        "command": "gitmin.nextFileDiff",
+        "title": "GitMin: Next File Diff",
+        "category": "GitMin",
         "icon": "$(arrow-right)",
-        "enablement": "gitMgr.fileDiffActive"
+        "enablement": "gitmin.fileDiffActive"
       }
     ],
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "gitMgr",
-          "title": "Git Managment",
+          "id": "gitmin",
+          "title": "GitMin",
           "icon": "$(git-commit)"
         }
       ]
     },
     "views": {
-      "gitMgr": [
+      "gitmin": [
         {
-          "id": "gitMgr.panel",
+          "id": "gitmin.panel",
           "name": "Commits",
           "type": "webview"
         }
@@ -56,20 +56,20 @@
     "menus": {
       "editor/title": [
         {
-          "command": "gitMgr.previousFileDiff",
-          "when": "gitMgr.fileDiffActive",
+          "command": "gitmin.previousFileDiff",
+          "when": "gitmin.fileDiffActive",
           "group": "navigation@12"
         },
         {
-          "command": "gitMgr.nextFileDiff",
-          "when": "gitMgr.fileDiffActive",
+          "command": "gitmin.nextFileDiff",
+          "when": "gitmin.fileDiffActive",
           "group": "navigation@13"
         }
       ],
       "view/title": [
         {
-          "command": "gitMgr.openPanel",
-          "when": "view == gitMgr.panel",
+          "command": "gitmin.openPanel",
+          "when": "view == gitmin.panel",
           "group": "navigation"
         }
       ]
