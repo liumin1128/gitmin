@@ -26,6 +26,7 @@ export function useWorkingTree({ onRefreshCommits, onRefreshStashes }: Options) 
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const loadRequestIdRef = useRef(0);
   const actionRequestIdRef = useRef(0);
   const itemKeys = useMemo(
@@ -64,10 +65,12 @@ export function useWorkingTree({ onRefreshCommits, onRefreshStashes }: Options) 
     if (response.requestId !== actionRequestIdRef.current) return;
     setBusy(false);
     if (!response.ok) {
+      setNotice(null);
       if (response.message !== 'Cancelled') setError(response.message ?? 'Operation failed');
     } else {
       setError(null);
       if (response.operation === 'commit' || response.operation === 'stash') setMessage('');
+      setNotice(response.operation === 'stash' ? response.message ?? 'Changes stashed' : null);
     }
     if (response.refresh.includes('changes')) refresh();
     if (response.refresh.includes('commits')) onRefreshCommits();
@@ -77,6 +80,7 @@ export function useWorkingTree({ onRefreshCommits, onRefreshStashes }: Options) 
   const nextActionId = useCallback(() => {
     setBusy(true);
     setError(null);
+    setNotice(null);
     return ++actionRequestIdRef.current;
   }, []);
 
@@ -105,16 +109,22 @@ export function useWorkingTree({ onRefreshCommits, onRefreshStashes }: Options) 
     postMessage({ type: 'workingTree/openDiff', group, path });
   }, []);
 
+  const updateMessage = useCallback((nextMessage: string) => {
+    setMessage(nextMessage);
+    setNotice(null);
+  }, []);
+
   return {
     snapshot,
     message,
     loading,
     busy,
     error,
+    notice,
     selectedKeys: selection.selected,
     commitEnabled: canCommit(message, snapshot),
     stashEnabled: canStash(snapshot),
-    setMessage,
+    setMessage: updateMessage,
     onSelect: selection.onItemClick,
     runAction,
     commit,

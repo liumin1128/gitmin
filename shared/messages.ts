@@ -60,6 +60,7 @@ export type WebviewMessage =
       hash: string;
     }
   | { type: 'selectionDetails/request'; requestId: number; selection: DetailSelection }
+  | { type: 'selectionDetails/clear' }
   | { type: 'action/execute'; action: GitAction; hashes: string[]; squashMessage?: string };
 
 // ===== Extension -> Webview =====

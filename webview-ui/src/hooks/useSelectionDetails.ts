@@ -31,6 +31,7 @@ export function useSelectionDetails(selection: DetailSelection | null) {
       setFiles([]);
       setDetails([]);
       setLoading(false);
+      postMessage({ type: 'selectionDetails/clear' });
       return;
     }
     setLoading(true);

@@ -12,6 +12,7 @@ interface Props {
   selectedKeys: ReadonlySet<string>;
   busy: boolean;
   error: string | null;
+  notice: string | null;
   commitEnabled: boolean;
   stashEnabled: boolean;
   onMessageChange: (message: string) => void;
@@ -29,6 +30,7 @@ export function ChangesPanel({
   selectedKeys,
   busy,
   error,
+  notice,
   commitEnabled,
   stashEnabled,
   onMessageChange,
@@ -95,6 +97,7 @@ export function ChangesPanel({
         </button>
       </div>
       {error && <div className="section-error">{error}</div>}
+      {!error && notice && <div className="section-notice">{notice}</div>}
       <div className="change-groups">
         {changeCount === 0 ? (
           <div className="empty-hint">No changes</div>

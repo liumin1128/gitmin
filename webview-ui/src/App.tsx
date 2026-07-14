@@ -480,6 +480,7 @@ export function App() {
                   selectedKeys={workingTree.selectedKeys}
                   busy={workingTree.busy}
                   error={workingTree.error}
+                  notice={workingTree.notice}
                   commitEnabled={workingTree.commitEnabled}
                   stashEnabled={workingTree.stashEnabled}
                   onMessageChange={workingTree.setMessage}

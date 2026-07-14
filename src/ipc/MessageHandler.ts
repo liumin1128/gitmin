@@ -7,31 +7,19 @@ import * as vscode from "vscode";
 import type {
   WebviewMessage,
   ExtensionMessage,
-  GitWorkspaceOperation,
-  RefreshTarget,
 } from "../../shared/messages";
 import type {
   Commit,
   CommitFilters,
-  DetailSelection,
   DiffRange,
   FileChange,
-  StashEntry,
-  WorkingTreeGroup,
-  WorkingTreeSnapshot,
 } from "../../shared/domain";
 import type { GitAction } from "../../shared/actions";
 import { GitService, normalizeLogPagination } from "../services/GitService";
 import { CommitRequestGuard } from "./CommitRequestGuard";
 import { GitOpsService, type ResetMode } from "../services/GitOpsService";
 import { FileDiffNavigator } from "../services/FileDiffNavigator";
-import {
-  getActiveRepo,
-  getActiveRepository,
-} from "../services/RepoLocator";
-import { WorkingTreeService } from "../services/WorkingTreeService";
-import { StashService } from "../services/StashService";
-import { WorkingTreeDiffNavigator } from "../services/WorkingTreeDiffNavigator";
+import { getActiveRepo } from "../services/RepoLocator";
 import { computeDiffRange } from "../utils/diffRange";
 import { applySearch } from "../../shared/commitFilter";
 import type { CommitPage } from "../../shared/commitPagination";
@@ -39,6 +27,7 @@ import {
   commitFiltersStateKey,
   parsePersistedCommitFilters,
 } from "../../shared/persistedFilters";
+import { WorkspaceMessageController } from "./WorkspaceMessageController";
 
 export type PostMessage = (msg: ExtensionMessage) => void;
 
@@ -59,25 +48,13 @@ type CommitContinuation = {
 export class MessageHandler implements vscode.Disposable {
   private git: GitService | null = null;
   private ops: GitOpsService | null = null;
-  private workingTree: WorkingTreeService | null = null;
-  private stashes: StashService | null = null;
-  private workingTreeDiffNavigator: WorkingTreeDiffNavigator | null = null;
+  private workspaceController: WorkspaceMessageController | null = null;
   private commitsCache: Commit[] = [];
-  private workingTreeCache: WorkingTreeSnapshot = {
-    conflicts: [],
-    staged: [],
-    changes: [],
-  };
-  private stashCache: StashEntry[] = [];
   private repoRoot: string | null = null;
   private lastFilters: CommitFilters | undefined = undefined;
   private readonly commitRequestGuard = new CommitRequestGuard();
   private commitContinuation: CommitContinuation | null = null;
   private diffCache: { range: DiffRange; files: FileChange[] } | null = null;
-  private latestWorkingTreeRequestId = 0;
-  private latestStashRequestId = 0;
-  private latestSelectionRequestId = 0;
-  private repositoryChangeTimer: NodeJS.Timeout | null = null;
   private readonly disposables: vscode.Disposable[] = [];
 
   constructor(
@@ -99,8 +76,7 @@ export class MessageHandler implements vscode.Disposable {
   }
 
   dispose(): void {
-    if (this.repositoryChangeTimer) clearTimeout(this.repositoryChangeTimer);
-    this.workingTreeDiffNavigator?.dispose();
+    this.workspaceController?.dispose();
     this.disposables.forEach((disposable) => disposable.dispose());
   }
 
@@ -134,28 +110,37 @@ export class MessageHandler implements vscode.Disposable {
           await this.openFileDiff(msg.range, msg.filePath);
           break;
         case "workingTree/request":
-          await this.loadWorkingTree(msg.requestId);
+          await this.workspaceController?.loadWorkingTree(msg.requestId);
           break;
         case "workingTree/action":
-          await this.handleWorkingTreeAction(msg);
+          await this.workspaceController?.handleWorkingTreeAction(msg);
           break;
         case "workingTree/commit":
-          await this.handleWorkingTreeCommit(msg.requestId, msg.message);
+          await this.workspaceController?.handleCommit(msg.requestId, msg.message);
           break;
         case "workingTree/stash":
-          await this.handleWorkingTreeStash(msg.requestId, msg.message);
+          await this.workspaceController?.handleCreateStash(msg.requestId, msg.message);
           break;
         case "workingTree/openDiff":
-          await this.openWorkingTreeDiff(msg.group, msg.path);
+          await this.workspaceController?.openWorkingTreeDiff(msg.group, msg.path);
           break;
         case "stashes/request":
-          await this.loadStashes(msg.requestId);
+          await this.workspaceController?.loadStashes(msg.requestId);
           break;
         case "stashes/action":
-          await this.handleStashAction(msg);
+          await this.workspaceController?.handleStashAction(msg);
           break;
         case "selectionDetails/request":
-          await this.loadSelectionDetails(msg.requestId, msg.selection);
+          await this.workspaceController?.loadSelectionDetails(
+            msg.requestId,
+            msg.selection,
+            this.commitsCache,
+          );
+          break;
+        case "selectionDetails/clear":
+          this.fileDiffNavigator.clear();
+          this.diffCache = null;
+          this.post({ type: "diff/activeFile", filePath: null });
           break;
         case "action/execute":
           await this.handleAction(msg);
@@ -181,15 +166,16 @@ export class MessageHandler implements vscode.Disposable {
     this.repoRoot = repo.rootPath;
     this.git = new GitService(repo.rootPath);
     this.ops = new GitOpsService(repo.rootPath, this.extensionUri);
-    this.workingTree = new WorkingTreeService(repo.rootPath);
-    this.stashes = new StashService(repo.rootPath, this.git);
-    this.workingTreeDiffNavigator = new WorkingTreeDiffNavigator(repo.rootPath);
-    const repository = await getActiveRepository();
-    if (repository?.rootUri.fsPath === repo.rootPath) {
-      this.disposables.push(
-        repository.state.onDidChange(() => this.scheduleWorkingTreeChanged()),
-      );
-    }
+    this.workspaceController = new WorkspaceMessageController(
+      repo.rootPath,
+      this.git,
+      this.post,
+      this.fileDiffNavigator,
+      (range, files) => {
+        this.diffCache = { range, files };
+      },
+    );
+    await this.workspaceController.initialize();
     const stateKey = commitFiltersStateKey(repo.rootPath);
     const storedFilters = this.workspaceState.get<unknown>(stateKey);
     const filters = parsePersistedCommitFilters(
@@ -437,312 +423,6 @@ export class MessageHandler implements vscode.Disposable {
     );
   }
 
-  private async loadWorkingTree(requestId: number): Promise<void> {
-    this.latestWorkingTreeRequestId = Math.max(
-      this.latestWorkingTreeRequestId,
-      requestId,
-    );
-    if (!this.workingTree) {
-      this.post({
-        type: "workingTree/error",
-        requestId,
-        error: "Repository is not ready",
-      });
-      return;
-    }
-    try {
-      const snapshot = await this.workingTree.getSnapshot();
-      if (requestId !== this.latestWorkingTreeRequestId) return;
-      this.workingTreeCache = snapshot;
-      this.post({ type: "workingTree/loaded", requestId, snapshot });
-    } catch (error) {
-      if (requestId !== this.latestWorkingTreeRequestId) return;
-      this.post({
-        type: "workingTree/error",
-        requestId,
-        error: errorMessage(error),
-      });
-    }
-  }
-
-  private async openWorkingTreeDiff(
-    group: WorkingTreeGroup,
-    path: string,
-  ): Promise<void> {
-    if (!this.workingTreeDiffNavigator) return;
-    this.fileDiffNavigator.clear();
-    await this.workingTreeDiffNavigator.open(
-      this.workingTreeCache,
-      group,
-      path,
-    );
-  }
-
-  private scheduleWorkingTreeChanged(): void {
-    if (this.repositoryChangeTimer) clearTimeout(this.repositoryChangeTimer);
-    this.repositoryChangeTimer = setTimeout(() => {
-      this.repositoryChangeTimer = null;
-      this.post({ type: "workingTree/changed" });
-    }, 100);
-  }
-
-  private async loadStashes(requestId: number): Promise<void> {
-    this.latestStashRequestId = Math.max(this.latestStashRequestId, requestId);
-    if (!this.stashes) {
-      this.post({
-        type: "stashes/error",
-        requestId,
-        error: "Repository is not ready",
-      });
-      return;
-    }
-    try {
-      const entries = await this.stashes.listRecent(10);
-      if (requestId !== this.latestStashRequestId) return;
-      this.stashCache = entries;
-      this.post({ type: "stashes/loaded", requestId, entries });
-    } catch (error) {
-      if (requestId !== this.latestStashRequestId) return;
-      this.post({
-        type: "stashes/error",
-        requestId,
-        error: errorMessage(error),
-      });
-    }
-  }
-
-  private async handleWorkingTreeAction(
-    msg: Extract<WebviewMessage, { type: "workingTree/action" }>,
-  ): Promise<void> {
-    if (!this.workingTree) {
-      this.postWorkspaceResult(
-        msg.requestId,
-        msg.action,
-        false,
-        [],
-        "Repository is not ready",
-      );
-      return;
-    }
-
-    try {
-      const paths = this.validateWorkingTreePaths(msg.group, msg.paths);
-      if (msg.action === "discard") {
-        const answer = await vscode.window.showWarningMessage(
-          `Discard changes in ${paths.length} selected file(s)? This cannot be undone.`,
-          { modal: true },
-          "Discard",
-        );
-        if (answer !== "Discard") {
-          this.postWorkspaceResult(
-            msg.requestId,
-            msg.action,
-            false,
-            [],
-            "Cancelled",
-          );
-          return;
-        }
-      }
-
-      if (msg.action === "stage") await this.workingTree.stage(paths);
-      else if (msg.action === "unstage") await this.workingTree.unstage(paths);
-      else await this.workingTree.discard(msg.group, paths);
-      this.postWorkspaceResult(msg.requestId, msg.action, true, ["changes"]);
-    } catch (error) {
-      this.postWorkspaceResult(
-        msg.requestId,
-        msg.action,
-        false,
-        ["changes"],
-        errorMessage(error),
-      );
-    }
-  }
-
-  private async handleWorkingTreeCommit(
-    requestId: number,
-    message: string,
-  ): Promise<void> {
-    try {
-      if (!this.workingTree) throw new Error("Repository is not ready");
-      await this.workingTree.commit(message);
-      this.postWorkspaceResult(requestId, "commit", true, [
-        "changes",
-        "commits",
-      ]);
-    } catch (error) {
-      this.postWorkspaceResult(
-        requestId,
-        "commit",
-        false,
-        ["changes"],
-        errorMessage(error),
-      );
-    }
-  }
-
-  private async handleWorkingTreeStash(
-    requestId: number,
-    message: string,
-  ): Promise<void> {
-    try {
-      if (!this.workingTree) throw new Error("Repository is not ready");
-      const output = (await this.workingTree.createStash(message)).trim();
-      this.postWorkspaceResult(
-        requestId,
-        "stash",
-        true,
-        ["changes", "stashes"],
-        output || undefined,
-      );
-    } catch (error) {
-      this.postWorkspaceResult(
-        requestId,
-        "stash",
-        false,
-        ["changes", "stashes"],
-        errorMessage(error),
-      );
-    }
-  }
-
-  private async handleStashAction(
-    msg: Extract<WebviewMessage, { type: "stashes/action" }>,
-  ): Promise<void> {
-    const operation: GitWorkspaceOperation =
-      msg.action === "apply" ? "apply-stash" : "delete-stash";
-    try {
-      if (!this.stashes) throw new Error("Repository is not ready");
-      const entry = this.findCachedStash(msg.selector, msg.hash);
-      if (msg.action === "delete") {
-        const answer = await vscode.window.showWarningMessage(
-          `Delete ${entry.selector}? This cannot be undone.`,
-          { modal: true },
-          "Delete",
-        );
-        if (answer !== "Delete") {
-          this.postWorkspaceResult(
-            msg.requestId,
-            operation,
-            false,
-            [],
-            "Cancelled",
-          );
-          return;
-        }
-        await this.stashes.deleteVerified(entry);
-        this.postWorkspaceResult(msg.requestId, operation, true, ["stashes"]);
-        return;
-      }
-
-      await this.stashes.apply(entry.hash);
-      this.postWorkspaceResult(msg.requestId, operation, true, ["changes"]);
-    } catch (error) {
-      this.postWorkspaceResult(
-        msg.requestId,
-        operation,
-        false,
-        msg.action === "apply" ? ["changes"] : ["stashes"],
-        errorMessage(error),
-      );
-    }
-  }
-
-  private async loadSelectionDetails(
-    requestId: number,
-    selection: DetailSelection,
-  ): Promise<void> {
-    this.latestSelectionRequestId = Math.max(
-      this.latestSelectionRequestId,
-      requestId,
-    );
-    try {
-      if (!this.git) throw new Error("Repository is not ready");
-      let range: DiffRange;
-      let files: FileChange[];
-      let details;
-
-      if (selection.kind === "commits") {
-        const commitRange = computeDiffRange(
-          selection.hashes,
-          this.commitsCache,
-        );
-        if (!commitRange) throw new Error("Selected commits are unavailable");
-        range = commitRange;
-        [files, details] = await Promise.all([
-          this.git.getDiffSummary(range.base, range.head),
-          this.git.getCommitDetails(selection.hashes),
-        ]);
-      } else {
-        if (!this.stashes) throw new Error("Repository is not ready");
-        const entry = this.findCachedStash(selection.selector, selection.hash);
-        const stashDetails = await this.stashes.getDetails(entry);
-        range = stashDetails.range;
-        files = stashDetails.files;
-        details = stashDetails.details;
-      }
-
-      if (requestId !== this.latestSelectionRequestId) return;
-      this.fileDiffNavigator.clear();
-      this.diffCache = { range, files };
-      this.post({ type: "diff/activeFile", filePath: null });
-      this.post({
-        type: "selectionDetails/loaded",
-        requestId,
-        selection,
-        range,
-        files,
-        details,
-      });
-    } catch (error) {
-      if (requestId !== this.latestSelectionRequestId) return;
-      this.post({
-        type: "selectionDetails/error",
-        requestId,
-        selection,
-        error: errorMessage(error),
-      });
-    }
-  }
-
-  private validateWorkingTreePaths(
-    group: WorkingTreeGroup,
-    paths: string[],
-  ): string[] {
-    const available = new Set(this.workingTreeCache[group].map((item) => item.path));
-    const unique = [...new Set(paths)];
-    if (unique.length === 0 || unique.some((path) => !available.has(path))) {
-      throw new Error("The selected changes are stale; refresh and try again");
-    }
-    return unique;
-  }
-
-  private findCachedStash(selector: string, hash: string): StashEntry {
-    const entry = this.stashCache.find(
-      (candidate) => candidate.selector === selector && candidate.hash === hash,
-    );
-    if (!entry) throw new Error("The selected stash is stale; refresh and try again");
-    return entry;
-  }
-
-  private postWorkspaceResult(
-    requestId: number,
-    operation: GitWorkspaceOperation,
-    ok: boolean,
-    refresh: RefreshTarget[],
-    message?: string,
-  ): void {
-    this.post({
-      type: "workingTree/actionResult",
-      requestId,
-      operation,
-      ok,
-      refresh,
-      ...(message ? { message } : {}),
-    });
-  }
-
   private async handleAction(
     msg: Extract<WebviewMessage, { type: "action/execute" }>,
   ): Promise<void> {
@@ -808,8 +488,4 @@ export class MessageHandler implements vscode.Disposable {
       vscode.window.showErrorMessage(`Git operation failed: ${err}`);
     }
   }
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }

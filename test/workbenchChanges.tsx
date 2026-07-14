@@ -17,6 +17,7 @@ const baseProps: Parameters<typeof ChangesPanel>[0] = {
   selectedKeys: new Set(),
   busy: false,
   error: null,
+  notice: 'No local changes to save',
   commitEnabled: true,
   stashEnabled: true,
   onMessageChange: () => undefined,
@@ -39,6 +40,7 @@ assert.match(html, /codicon-add/);
 assert.match(html, /codicon-remove/);
 assert.match(html, /codicon-discard/);
 assert.match(html, /codicon-refresh/);
+assert.match(html, /No local changes to save/);
 
 const disabledHtml = renderToStaticMarkup(
   <ChangesPanel
@@ -107,5 +109,15 @@ const commitsSection = appSource.indexOf('id="commits"');
 const filterBar = appSource.indexOf('<FilterBar', commitsSection);
 const commitList = appSource.indexOf('<CommitList', commitsSection);
 assert.ok(commitsSection >= 0 && filterBar > commitsSection && filterBar < commitList);
+
+const styles = readFileSync('webview-ui/src/styles.css', 'utf8');
+assert.match(styles, /\.workbench-toolbar\s*\{[^}]*height:\s*26px/s);
+assert.match(styles, /\.change-item\s*\{[^}]*min-height:\s*24px/s);
+assert.match(styles, /\.change-message-input\s*\{[^}]*resize:\s*none/s);
+assert.match(styles, /\.stash-item\s*\{[^}]*grid-template-columns:/s);
+assert.match(styles, /@media\s*\(max-width:\s*499px\)[\s\S]*\.stash-item/s);
+assert.match(styles, /\.status-U\s+\.file-status/);
+assert.match(styles, /\.status-T\s+\.file-status/);
+assert.match(styles, /\.status-\\\?\s+\.file-status/);
 
 console.log('workbench changes component checks passed');

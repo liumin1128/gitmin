@@ -30,4 +30,16 @@ assert.deepEqual(
   ["navigation@12", "navigation@13"],
 );
 
+const selectionHook = readFileSync(
+  new URL('../webview-ui/src/hooks/useSelectionDetails.ts', import.meta.url),
+  'utf8',
+);
+const messageHandler = readFileSync(
+  new URL('../src/ipc/MessageHandler.ts', import.meta.url),
+  'utf8',
+);
+assert.match(selectionHook, /type:\s*'selectionDetails\/clear'/);
+assert.match(messageHandler, /case "selectionDetails\/clear"/);
+assert.match(messageHandler, /fileDiffNavigator\.clear\(\)/);
+
 console.log("editor navigation manifest checks passed");

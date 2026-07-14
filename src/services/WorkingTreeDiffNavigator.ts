@@ -9,7 +9,7 @@ import {
   workingTreeDiffSpec,
   type DiffEndpoint,
 } from '../utils/workingTreeDiff';
-import { getGitApi } from './RepoLocator';
+import { getGitApi, type GitApi } from './RepoLocator';
 
 export class WorkingTreeDiffNavigator implements vscode.Disposable {
   constructor(private readonly rootPath: string) {}
@@ -46,7 +46,7 @@ export class WorkingTreeDiffNavigator implements vscode.Disposable {
   dispose(): void {}
 
   private toUri(
-    api: Awaited<ReturnType<typeof getGitApi>> & {},
+    api: GitApi,
     rootUri: vscode.Uri,
     endpoint: DiffEndpoint,
     status: FileStatus,

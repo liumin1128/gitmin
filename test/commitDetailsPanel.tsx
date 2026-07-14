@@ -19,7 +19,7 @@ const detail: CommitDetails = {
 
 assert.match(
   renderToStaticMarkup(<CommitDetailsPanel details={[]} loading={false} error={null} />),
-  /Select one or more commits/
+  /Select commits or a stash/
 );
 assert.match(
   renderToStaticMarkup(<CommitDetailsPanel details={[]} loading error={null} />),
