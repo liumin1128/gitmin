@@ -16,7 +16,7 @@ export function CommitDetailsPanel({ details, loading, error }: Props) {
   if (loading) return <div className="empty-hint">Loading commit details...</div>;
   if (error) return <div className="commit-details-error">{error}</div>;
   if (details.length === 0) {
-    return <div className="empty-hint">Select one or more commits to view details</div>;
+    return <div className="empty-hint">Select commits or a stash to view details</div>;
   }
 
   return (

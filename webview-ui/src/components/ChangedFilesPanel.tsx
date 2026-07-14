@@ -28,7 +28,7 @@ export function ChangedFilesPanel({ range, files, activeFilePath, loading, onOpe
     return <div className="empty-hint">Loading diff...</div>;
   }
   if (!range) {
-    return <div className="empty-hint">Select one or more commits from the left to view cumulative changes</div>;
+    return <div className="empty-hint">Select commits or a stash to view changed files</div>;
   }
   if (files.length === 0) {
     return <div className="empty-hint">No file changes</div>;

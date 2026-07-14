@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { WorkingTreeSnapshot } from '../shared/domain';
 import { ChangesPanel } from '../webview-ui/src/components/ChangesPanel';
@@ -100,5 +101,11 @@ const noStashSelectionHtml = renderToStaticMarkup(
 );
 assert.match(noStashSelectionHtml, /title="Apply selected stash"[^>]*disabled/);
 assert.match(noStashSelectionHtml, /title="Delete selected stash"[^>]*disabled/);
+
+const appSource = readFileSync('webview-ui/src/App.tsx', 'utf8');
+const commitsSection = appSource.indexOf('id="commits"');
+const filterBar = appSource.indexOf('<FilterBar', commitsSection);
+const commitList = appSource.indexOf('<CommitList', commitsSection);
+assert.ok(commitsSection >= 0 && filterBar > commitsSection && filterBar < commitList);
 
 console.log('workbench changes component checks passed');

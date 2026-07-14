@@ -9,6 +9,19 @@ import {
 import { ViewSection } from '../webview-ui/src/components/ViewSection';
 import { ViewVisibilityMenu } from '../webview-ui/src/components/ViewVisibilityMenu';
 
+const changes = (
+  <ViewSection
+    id="changes"
+    title="Changes"
+    count={3}
+    visible
+    collapsed={false}
+    onCollapsedChange={() => undefined}
+  >
+    changes
+  </ViewSection>
+);
+
 const first = (
   <ViewSection
     id="commits"
@@ -44,9 +57,22 @@ const details = (
     commit details
   </ViewSection>
 );
+const stashes = (
+  <ViewSection
+    id="stashes"
+    title="Stashes"
+    count={2}
+    visible
+    collapsed={false}
+    onCollapsedChange={() => undefined}
+  >
+    stashes
+  </ViewSection>
+);
 
 const html = renderToStaticMarkup(
   <>
+    {changes}
     <ResizableSplitView
       ratio={60}
       firstVisible
@@ -57,14 +83,17 @@ const html = renderToStaticMarkup(
       first={first}
       second={second}
     />
+    {stashes}
     {details}
     <ViewVisibilityMenu
-      commitsVisible
-      filesVisible
-      detailsVisible
-      onCommitsVisibleChange={() => undefined}
-      onFilesVisibleChange={() => undefined}
-      onDetailsVisibleChange={() => undefined}
+      views={{
+        changes: { visible: true, collapsed: false },
+        commits: { visible: true, collapsed: false },
+        stashes: { visible: true, collapsed: false },
+        files: { visible: true, collapsed: false },
+        details: { visible: true, collapsed: false },
+      }}
+      onVisibleChange={() => undefined}
     />
   </>
 );
@@ -74,6 +103,8 @@ assert.match(html, /role="separator"/);
 assert.match(html, /aria-orientation="horizontal"/);
 assert.match(html, /title="Manage views"/);
 assert.match(html, />Commits</);
+assert.match(html, />Changes</);
+assert.match(html, />Stashes</);
 assert.match(html, />Changed Files</);
 assert.match(html, />Commit Details</);
 assert.match(html, /aria-label="CollapseCommit Details"/);
@@ -165,18 +196,24 @@ assert.match(
 const collapsedStackHtml = renderToStaticMarkup(
   <ResizablePanelStack
     panes={[
+      { id: 'changes', visible: true, collapsed: true, content: changes },
       { id: 'commits', visible: true, collapsed: true, content: first },
+      { id: 'stashes', visible: true, collapsed: true, content: stashes },
       { id: 'files', visible: true, collapsed: true, content: second },
       { id: 'details', visible: true, collapsed: true, content: details },
     ]}
-    sizes={{ commits: 42, files: 28, details: 30 }}
+    sizes={{ changes: 20, commits: 32, stashes: 16, files: 16, details: 16 }}
     onSizesChange={() => undefined}
   />
 );
-assert.equal((collapsedStackHtml.match(/data-stack-pane=/g) ?? []).length, 3);
+assert.equal((collapsedStackHtml.match(/data-stack-pane=/g) ?? []).length, 5);
 assert.doesNotMatch(collapsedStackHtml, /role="separator"/);
 assert.ok(
-  collapsedStackHtml.indexOf('data-view-id="commits"') <
+  collapsedStackHtml.indexOf('data-view-id="changes"') <
+    collapsedStackHtml.indexOf('data-view-id="commits"') &&
+    collapsedStackHtml.indexOf('data-view-id="commits"') <
+      collapsedStackHtml.indexOf('data-view-id="stashes"') &&
+    collapsedStackHtml.indexOf('data-view-id="stashes"') <
     collapsedStackHtml.indexOf('data-view-id="files"') &&
     collapsedStackHtml.indexOf('data-view-id="files"') <
       collapsedStackHtml.indexOf('data-view-id="details"'),
@@ -184,11 +221,11 @@ assert.ok(
 );
 
 const resized = resizeAdjacentPaneSizes(
-  { commits: 42, files: 28, details: 30 },
+  { changes: 20, commits: 32, stashes: 16, files: 16, details: 16 },
   'commits',
   'files',
   50
 );
-assert.deepEqual(resized, { commits: 35, files: 35, details: 30 });
+assert.deepEqual(resized, { changes: 20, commits: 24, stashes: 16, files: 24, details: 16 });
 
 console.log('workbench component checks passed');

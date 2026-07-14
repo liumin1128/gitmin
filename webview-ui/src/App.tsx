@@ -11,7 +11,9 @@ import { useMultiSelect } from './hooks/useMultiSelect';
 import { useContextMenu } from './hooks/useContextMenu';
 import { useWorkbenchLayout } from './hooks/useWorkbenchLayout';
 import { usePersistedFilters } from './hooks/usePersistedFilters';
-import { useCommitDetails } from './hooks/useCommitDetails';
+import { useSelectionDetails } from './hooks/useSelectionDetails';
+import { useStashes } from './hooks/useStashes';
+import { useWorkingTree } from './hooks/useWorkingTree';
 import { FilterBar } from './components/FilterBar';
 import { CommitList, DEFAULT_COLUMNS, type ColumnFlags } from './components/CommitList';
 import { ColumnsMenu } from './components/ColumnsMenu';
@@ -21,15 +23,17 @@ import { CommitContextMenu } from './components/CommitContextMenu';
 import { SquashModal } from './components/SquashModal';
 import { ResizablePanelStack } from './components/ResizablePanelStack';
 import { ViewSection } from './components/ViewSection';
-import { ViewVisibilityMenu } from './components/ViewVisibilityMenu';
+import { ChangesPanel } from './components/ChangesPanel';
+import { StashList } from './components/StashList';
+import { WorkbenchToolbar } from './components/WorkbenchToolbar';
 import { shouldPreserveUnresolvedParents } from './utils/commitGraph';
+import { commitSelection, stashSelection } from './utils/detailSelection';
 import { COMMIT_PAGE_SIZE, type CommitPage } from '../../shared/commitPagination';
 import type {
   Commit,
   CommitFilters,
-  DiffRange,
-  FileChange,
   FilterOptions,
+  StashEntry,
 } from '../../shared/domain';
 import type { WebviewMessage } from '../../shared/messages';
 import type { GitAction } from '../../shared/actions';
@@ -179,12 +183,9 @@ export function App() {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [commitPageError, setCommitPageError] = useState<string | null>(null);
-  const [range, setRange] = useState<DiffRange | null>(null);
-  const [files, setFiles] = useState<FileChange[]>([]);
-  const [activeFilePath, setActiveFilePath] = useState<string | null>(null);
-  const [diffLoading, setDiffLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [squashHashes, setSquashHashes] = useState<string[] | null>(null);
+  const [selectedStash, setSelectedStash] = useState<StashEntry | null>(null);
   const { filters, setFilters } = usePersistedFilters();
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     branches: [],
@@ -202,6 +203,9 @@ export function App() {
   const initialCommitLoadSettledRef = useRef(false);
   const queuedCommitResetFiltersRef = useRef<CommitFilters | null>(null);
   const dispatchResetRef = useRef<(filters: CommitFilters) => void>(() => undefined);
+  const refreshChangesRef = useRef<() => void>(() => undefined);
+  const refreshStashesRef = useRef<() => void>(() => undefined);
+  const clearStashSelectionRef = useRef<() => void>(() => undefined);
   const filtersRef = useRef(filters);
   filtersRef.current = filters;
   const pagination = {
@@ -247,17 +251,6 @@ export function App() {
     setFilters(m.filters);
   });
   useIpcListener('filters/options', (m) => setFilterOptions(m.options));
-  useIpcListener('diff/loaded', (m) => {
-    setRange(m.range);
-    setFiles(m.files);
-    setActiveFilePath(null);
-    setDiffLoading(false);
-  });
-  useIpcListener('diff/activeFile', (m) => setActiveFilePath(m.filePath));
-  useIpcListener('diff/error', (m) => {
-    setError(m.error);
-    setDiffLoading(false);
-  });
   // === Lifecycle: notify on mount ===
   useEffect(() => {
     const requestId = startCommitPageSession(pagination);
@@ -269,8 +262,13 @@ export function App() {
 
   // === Multi-select ===
   const commitHashes = useMemo(() => commits.map((c) => c.hash), [commits]);
-  const { selected, isSelected, onItemClick, selectOnly, clear } = useMultiSelect(commitHashes);
-  const commitDetails = useCommitDetails(commits, selected);
+  const {
+    selected,
+    isSelected,
+    onItemClick: selectCommit,
+    selectOnly,
+    clear,
+  } = useMultiSelect(commitHashes);
 
   const dispatchResetCommits = useCallback(
     (nextFilters: CommitFilters) => {
@@ -292,6 +290,43 @@ export function App() {
       queueCommitReset(initialLoadGate, nextFilters, dispatchResetCommits);
     },
     [dispatchResetCommits]
+  );
+
+  const refreshCommitsFromWorkspace = useCallback(() => {
+    resetCommits(filtersRef.current);
+  }, [resetCommits]);
+  const requestChangesRefresh = useCallback(() => refreshChangesRef.current(), []);
+  const requestStashesRefresh = useCallback(() => refreshStashesRef.current(), []);
+  const handleStashSelectionChange = useCallback(
+    (entry: StashEntry | null) => {
+      setSelectedStash(entry);
+      if (entry) clear();
+    },
+    [clear]
+  );
+  const workingTree = useWorkingTree({
+    onRefreshCommits: refreshCommitsFromWorkspace,
+    onRefreshStashes: requestStashesRefresh,
+  });
+  refreshChangesRef.current = workingTree.refresh;
+  const stashes = useStashes({
+    onSelectionChange: handleStashSelectionChange,
+    onRefreshChanges: requestChangesRefresh,
+  });
+  refreshStashesRef.current = stashes.refresh;
+  clearStashSelectionRef.current = stashes.clearSelection;
+
+  const activeSelection = useMemo(
+    () => stashSelection(selectedStash) ?? commitSelection([...selected]),
+    [selectedStash, selected]
+  );
+  const selectionDetails = useSelectionDetails(activeSelection);
+  const handleCommitClick = useCallback(
+    (hash: string, event: React.MouseEvent) => {
+      clearStashSelectionRef.current();
+      selectCommit(hash, event);
+    },
+    [selectCommit]
   );
 
   const loadMoreCommits = useCallback(() => {
@@ -346,24 +381,11 @@ export function App() {
     return max - min + 1 === indices.length;
   }, [selected, commits]);
 
-  // === Selection change → request diff ===
-  const selectionKey = useMemo(() => [...selected].sort().join('|'), [selected]);
-  useEffect(() => {
-    if (selected.size === 0) {
-      setRange(null);
-      setFiles([]);
-      setActiveFilePath(null);
-      return;
-    }
-    setDiffLoading(true);
-    postMessage({ type: 'diff/request', hashes: [...selected] });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectionKey]);
-
   // === Context menu ===
   const menu = useContextMenu();
   const handleContextMenu = useCallback(
     (hash: string, event: React.MouseEvent) => {
+      clearStashSelectionRef.current();
       if (!selected.has(hash)) selectOnly(hash);
       menu.open(event.clientX, event.clientY);
     },
@@ -415,14 +437,6 @@ export function App() {
     postMessage({ type: 'filters/refresh' });
   }, [filters, resetCommits]);
 
-  const handleOpenDiff = useCallback(
-    (filePath: string) => {
-      if (!range) return;
-      postMessage({ type: 'file/openDiff', range, filePath });
-    },
-    [range]
-  );
-
   if (repoError) {
     return (
       <div className="app-empty">
@@ -433,21 +447,9 @@ export function App() {
 
   return (
     <div className="app">
-      <FilterBar
-        filters={filters}
-        options={filterOptions}
-        onChange={setFilters}
-        onRefresh={handleRefresh}
-        actions={
-          <ViewVisibilityMenu
-            commitsVisible={layout.views.commits.visible}
-            filesVisible={layout.views.files.visible}
-            detailsVisible={layout.views.details.visible}
-            onCommitsVisibleChange={(visible) => setVisible('commits', visible)}
-            onFilesVisibleChange={(visible) => setVisible('files', visible)}
-            onDetailsVisibleChange={(visible) => setVisible('details', visible)}
-          />
-        }
+      <WorkbenchToolbar
+        views={layout.views}
+        onVisibleChange={(id, visible) => setVisible(id, visible)}
       />
       {(commitPageError ?? error) && <div className="error-bar">{commitPageError ?? error}</div>}
       {busy && <div className="busy-bar">Executing...</div>}
@@ -455,6 +457,42 @@ export function App() {
         sizes={layout.sizes}
         onSizesChange={setPaneSizes}
         panes={[
+          {
+            id: 'changes',
+            visible: layout.views.changes.visible,
+            collapsed: layout.views.changes.collapsed,
+            content: (
+              <ViewSection
+                id="changes"
+                title="Changes"
+                count={
+                  workingTree.snapshot.conflicts.length +
+                  workingTree.snapshot.staged.length +
+                  workingTree.snapshot.changes.length
+                }
+                visible={layout.views.changes.visible}
+                collapsed={layout.views.changes.collapsed}
+                onCollapsedChange={(collapsed) => setCollapsed('changes', collapsed)}
+              >
+                <ChangesPanel
+                  snapshot={workingTree.snapshot}
+                  message={workingTree.message}
+                  selectedKeys={workingTree.selectedKeys}
+                  busy={workingTree.busy}
+                  error={workingTree.error}
+                  commitEnabled={workingTree.commitEnabled}
+                  stashEnabled={workingTree.stashEnabled}
+                  onMessageChange={workingTree.setMessage}
+                  onSelect={workingTree.onSelect}
+                  onOpenDiff={workingTree.openDiff}
+                  onAction={workingTree.runAction}
+                  onCommit={workingTree.commit}
+                  onStash={workingTree.stash}
+                  onRefresh={workingTree.refresh}
+                />
+              </ViewSection>
+            ),
+          },
           {
             id: 'commits',
             visible: layout.views.commits.visible,
@@ -484,17 +522,51 @@ export function App() {
                   </>
                 }
               >
-                <CommitList
-                  commits={commits}
-                  columns={columns}
-                  isSelected={isSelected}
-                  onItemClick={onItemClick}
-                  onItemContextMenu={handleContextMenu}
-                  hasMore={hasMore}
-                  preserveUnresolvedParents={shouldPreserveUnresolvedParents(hasMore, filters)}
-                  loadingMore={loadingMore}
-                  automaticLoadEnabled={!commitPageError}
-                  onLoadMore={loadMoreCommits}
+                <div className="commits-panel-content">
+                  <FilterBar
+                    filters={filters}
+                    options={filterOptions}
+                    onChange={setFilters}
+                    onRefresh={handleRefresh}
+                  />
+                  <CommitList
+                    commits={commits}
+                    columns={columns}
+                    isSelected={isSelected}
+                    onItemClick={handleCommitClick}
+                    onItemContextMenu={handleContextMenu}
+                    hasMore={hasMore}
+                    preserveUnresolvedParents={shouldPreserveUnresolvedParents(hasMore, filters)}
+                    loadingMore={loadingMore}
+                    automaticLoadEnabled={!commitPageError}
+                    onLoadMore={loadMoreCommits}
+                  />
+                </div>
+              </ViewSection>
+            ),
+          },
+          {
+            id: 'stashes',
+            visible: layout.views.stashes.visible,
+            collapsed: layout.views.stashes.collapsed,
+            content: (
+              <ViewSection
+                id="stashes"
+                title="Stashes"
+                count={stashes.entries.length}
+                visible={layout.views.stashes.visible}
+                collapsed={layout.views.stashes.collapsed}
+                onCollapsedChange={(collapsed) => setCollapsed('stashes', collapsed)}
+              >
+                <StashList
+                  entries={stashes.entries}
+                  selectedHash={stashes.selected?.hash ?? null}
+                  busy={stashes.busy}
+                  error={stashes.error}
+                  onSelect={stashes.select}
+                  onRefresh={stashes.refresh}
+                  onApply={stashes.apply}
+                  onDelete={stashes.deleteSelected}
                 />
               </ViewSection>
             ),
@@ -507,12 +579,12 @@ export function App() {
               <ViewSection
                 id="files"
                 title="Changed Files"
-                count={range ? files.length : undefined}
+                count={selectionDetails.range ? selectionDetails.files.length : undefined}
                 visible={layout.views.files.visible}
                 collapsed={layout.views.files.collapsed}
                 onCollapsedChange={(collapsed) => setCollapsed('files', collapsed)}
                 actions={
-                  range && !range.contiguous ? (
+                  selectionDetails.range && !selectionDetails.range.contiguous ? (
                     <span
                       className="warn-tag"
                       title="Selected commits are not contiguous; the diff range includes changes from unselected commits"
@@ -523,11 +595,11 @@ export function App() {
                 }
               >
                 <ChangedFilesPanel
-                  range={range}
-                  files={files}
-                  activeFilePath={activeFilePath}
-                  loading={diffLoading}
-                  onOpenDiff={handleOpenDiff}
+                  range={selectionDetails.range}
+                  files={selectionDetails.files}
+                  activeFilePath={selectionDetails.activeFilePath}
+                  loading={selectionDetails.loading}
+                  onOpenDiff={selectionDetails.openDiff}
                 />
               </ViewSection>
             ),
@@ -540,15 +612,15 @@ export function App() {
               <ViewSection
                 id="details"
                 title="Commit Details"
-                count={commitDetails.hashes.length}
+                count={selectionDetails.details.length}
                 visible={layout.views.details.visible}
                 collapsed={layout.views.details.collapsed}
                 onCollapsedChange={(collapsed) => setCollapsed('details', collapsed)}
               >
                 <CommitDetailsPanel
-                  details={commitDetails.details}
-                  loading={commitDetails.loading}
-                  error={commitDetails.error}
+                  details={selectionDetails.details}
+                  loading={selectionDetails.loading}
+                  error={selectionDetails.error}
                 />
               </ViewSection>
             ),
