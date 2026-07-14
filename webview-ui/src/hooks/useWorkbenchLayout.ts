@@ -3,8 +3,6 @@ import { getWebviewState, setWebviewState } from './useIpc';
 import {
   parseWorkbenchLayout,
   setWorkbenchPaneSizes,
-  setDetailsSplitRatio,
-  setSplitRatio,
   setViewCollapsed,
   setViewVisible,
   type WorkbenchLayoutState,
@@ -29,14 +27,6 @@ export function useWorkbenchLayout() {
     });
   }, []);
 
-  const setRatio = useCallback(
-    (ratio: number) => update((current) => setSplitRatio(current, ratio)),
-    [update]
-  );
-  const setDetailsRatio = useCallback(
-    (ratio: number) => update((current) => setDetailsSplitRatio(current, ratio)),
-    [update]
-  );
   const setPaneSizes = useCallback(
     (sizes: WorkbenchPaneSizes) => update((current) => setWorkbenchPaneSizes(current, sizes)),
     [update]
@@ -52,5 +42,5 @@ export function useWorkbenchLayout() {
     [update]
   );
 
-  return { layout, setRatio, setDetailsRatio, setPaneSizes, setVisible, setCollapsed };
+  return { layout, setPaneSizes, setVisible, setCollapsed };
 }

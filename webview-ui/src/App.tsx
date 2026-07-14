@@ -22,7 +22,6 @@ import { SquashModal } from './components/SquashModal';
 import { ResizablePanelStack } from './components/ResizablePanelStack';
 import { ViewSection } from './components/ViewSection';
 import { ViewVisibilityMenu } from './components/ViewVisibilityMenu';
-import { getWorkbenchPaneSizes } from './utils/workbenchLayout';
 import { shouldPreserveUnresolvedParents } from './utils/commitGraph';
 import { COMMIT_PAGE_SIZE, type CommitPage } from '../../shared/commitPagination';
 import type {
@@ -453,7 +452,7 @@ export function App() {
       {(commitPageError ?? error) && <div className="error-bar">{commitPageError ?? error}</div>}
       {busy && <div className="busy-bar">Executing...</div>}
       <ResizablePanelStack
-        sizes={getWorkbenchPaneSizes(layout)}
+        sizes={layout.sizes}
         onSizesChange={setPaneSizes}
         panes={[
           {

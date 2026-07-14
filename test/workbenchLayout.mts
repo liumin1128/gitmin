@@ -1,61 +1,58 @@
 import assert from 'node:assert/strict';
 import {
   DEFAULT_WORKBENCH_LAYOUT,
-  getWorkbenchPaneSizes,
-  setDetailsSplitRatio,
-  setWorkbenchPaneSizes,
-  clampSplitRatio,
   parseWorkbenchLayout,
-  setSplitRatio,
+  setWorkbenchPaneSizes,
   setViewCollapsed,
   setViewVisible,
 } from '../webview-ui/src/utils/workbenchLayout.ts';
 
-assert.equal(clampSplitRatio(5), 20);
-assert.equal(clampSplitRatio(95), 80);
-assert.equal(clampSplitRatio(62), 62);
 assert.deepEqual(parseWorkbenchLayout(undefined), DEFAULT_WORKBENCH_LAYOUT);
-assert.deepEqual(parseWorkbenchLayout({ version: 2 }), DEFAULT_WORKBENCH_LAYOUT);
+assert.deepEqual(Object.keys(DEFAULT_WORKBENCH_LAYOUT.views), [
+  'changes',
+  'commits',
+  'stashes',
+  'files',
+  'details',
+]);
+assert.equal(
+  Object.values(DEFAULT_WORKBENCH_LAYOUT.sizes).reduce((sum, size) => sum + size, 0),
+  100
+);
 
-const saved = {
-  version: 1 as const,
-  splitRatio: 72,
+const version1 = {
+  version: 1,
+  splitRatio: 60,
+  detailsSplitRatio: 70,
   views: {
     commits: { visible: true, collapsed: false },
     files: { visible: false, collapsed: true },
-  },
-};
-
-const migratedSaved = {
-  ...saved,
-  detailsSplitRatio: DEFAULT_WORKBENCH_LAYOUT.detailsSplitRatio,
-  views: {
-    ...saved.views,
     details: { visible: true, collapsed: false },
   },
 };
+const migrated = parseWorkbenchLayout(version1);
+assert.equal(migrated.version, 2);
+assert.equal(migrated.views.files.visible, false);
+assert.equal(migrated.views.changes.visible, true);
+assert.equal(migrated.views.stashes.visible, true);
+assert.equal(setViewVisible(migrated, 'stashes', false).views.stashes.visible, false);
+assert.equal(setViewCollapsed(migrated, 'changes', true).views.changes.collapsed, true);
 
-assert.deepEqual(parseWorkbenchLayout(saved), migratedSaved);
-assert.equal(setViewVisible(migratedSaved, 'files', true).views.files.visible, true);
-assert.equal(setViewCollapsed(migratedSaved, 'commits', true).views.commits.collapsed, true);
-assert.equal(setViewCollapsed(migratedSaved, 'details', true).views.details.collapsed, true);
-assert.equal(setSplitRatio(migratedSaved, 100).splitRatio, 80);
-assert.equal(setDetailsSplitRatio(migratedSaved, 10).detailsSplitRatio, 20);
-assert.deepEqual(getWorkbenchPaneSizes(migratedSaved), {
-  commits: 50.4,
-  files: 19.6,
-  details: 30,
+const resized = setWorkbenchPaneSizes(migrated, {
+  changes: 20,
+  commits: 32,
+  stashes: 16,
+  files: 16,
+  details: 16,
 });
-assert.deepEqual(
-  getWorkbenchPaneSizes(
-    setWorkbenchPaneSizes(migratedSaved, { commits: 35, files: 35, details: 30 })
-  ),
-  { commits: 35, files: 35, details: 30 }
-);
-assert.equal(saved.views.files.visible, false, 'updates must be immutable');
-assert.deepEqual(
-  parseWorkbenchLayout({ ...saved, views: { commits: saved.views.commits } }),
-  DEFAULT_WORKBENCH_LAYOUT
-);
+assert.deepEqual(resized.sizes, {
+  changes: 20,
+  commits: 32,
+  stashes: 16,
+  files: 16,
+  details: 16,
+});
+assert.notEqual(resized, migrated);
+assert.equal(migrated.views.files.visible, false, 'updates must be immutable');
 
 console.log('workbench layout checks passed');

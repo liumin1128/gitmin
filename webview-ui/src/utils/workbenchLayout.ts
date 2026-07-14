@@ -1,25 +1,39 @@
-export type WorkbenchViewId = 'commits' | 'files' | 'details';
+export const WORKBENCH_VIEW_IDS = [
+  'changes',
+  'commits',
+  'stashes',
+  'files',
+  'details',
+] as const;
+
+export type WorkbenchViewId = (typeof WORKBENCH_VIEW_IDS)[number];
 
 export interface WorkbenchViewState {
   visible: boolean;
   collapsed: boolean;
 }
 
+export type WorkbenchPaneSizes = Record<WorkbenchViewId, number>;
+
 export interface WorkbenchLayoutState {
-  version: 1;
-  splitRatio: number;
-  detailsSplitRatio: number;
+  version: 2;
+  sizes: WorkbenchPaneSizes;
   views: Record<WorkbenchViewId, WorkbenchViewState>;
 }
 
-export type WorkbenchPaneSizes = Record<WorkbenchViewId, number>;
-
 export const DEFAULT_WORKBENCH_LAYOUT: WorkbenchLayoutState = {
-  version: 1,
-  splitRatio: 60,
-  detailsSplitRatio: 70,
+  version: 2,
+  sizes: {
+    changes: 20,
+    commits: 32,
+    stashes: 16,
+    files: 16,
+    details: 16,
+  },
   views: {
+    changes: { visible: true, collapsed: false },
     commits: { visible: true, collapsed: false },
+    stashes: { visible: true, collapsed: false },
     files: { visible: true, collapsed: false },
     details: { visible: true, collapsed: false },
   },
@@ -27,12 +41,11 @@ export const DEFAULT_WORKBENCH_LAYOUT: WorkbenchLayoutState = {
 
 function defaultLayout(): WorkbenchLayoutState {
   return {
-    ...DEFAULT_WORKBENCH_LAYOUT,
-    views: {
-      commits: { ...DEFAULT_WORKBENCH_LAYOUT.views.commits },
-      files: { ...DEFAULT_WORKBENCH_LAYOUT.views.files },
-      details: { ...DEFAULT_WORKBENCH_LAYOUT.views.details },
-    },
+    version: 2,
+    sizes: { ...DEFAULT_WORKBENCH_LAYOUT.sizes },
+    views: Object.fromEntries(
+      WORKBENCH_VIEW_IDS.map((id) => [id, { ...DEFAULT_WORKBENCH_LAYOUT.views[id] }])
+    ) as Record<WorkbenchViewId, WorkbenchViewState>,
   };
 }
 
@@ -40,6 +53,22 @@ function isViewState(value: unknown): value is WorkbenchViewState {
   if (!value || typeof value !== 'object') return false;
   const view = value as Record<string, unknown>;
   return typeof view.visible === 'boolean' && typeof view.collapsed === 'boolean';
+}
+
+function isPaneSizes(value: unknown): value is WorkbenchPaneSizes {
+  if (!value || typeof value !== 'object') return false;
+  const sizes = value as Record<string, unknown>;
+  return WORKBENCH_VIEW_IDS.every(
+    (id) => typeof sizes[id] === 'number' && Number.isFinite(sizes[id]) && sizes[id] > 0
+  );
+}
+
+function normalizePaneSizes(sizes: WorkbenchPaneSizes): WorkbenchPaneSizes {
+  const total = WORKBENCH_VIEW_IDS.reduce((sum, id) => sum + sizes[id], 0);
+  if (total <= 0) return { ...DEFAULT_WORKBENCH_LAYOUT.sizes };
+  return Object.fromEntries(
+    WORKBENCH_VIEW_IDS.map((id) => [id, (sizes[id] / total) * 100])
+  ) as WorkbenchPaneSizes;
 }
 
 export function clampSplitRatio(value: number): number {
@@ -50,73 +79,42 @@ export function parseWorkbenchLayout(value: unknown): WorkbenchLayoutState {
   if (!value || typeof value !== 'object') return defaultLayout();
   const state = value as {
     version?: unknown;
-    splitRatio?: unknown;
-    detailsSplitRatio?: unknown;
+    sizes?: unknown;
     views?: Record<string, unknown>;
   };
+
   if (
-    state.version !== 1 ||
-    typeof state.splitRatio !== 'number' ||
-    !Number.isFinite(state.splitRatio) ||
-    !state.views ||
-    !isViewState(state.views.commits) ||
-    !isViewState(state.views.files)
+    state.version === 2 &&
+    isPaneSizes(state.sizes) &&
+    state.views &&
+    WORKBENCH_VIEW_IDS.every((id) => isViewState(state.views?.[id]))
   ) {
-    return defaultLayout();
+    return {
+      version: 2,
+      sizes: normalizePaneSizes(state.sizes),
+      views: Object.fromEntries(
+        WORKBENCH_VIEW_IDS.map((id) => [id, { ...(state.views![id] as WorkbenchViewState) }])
+      ) as Record<WorkbenchViewId, WorkbenchViewState>,
+    };
   }
-  return {
-    version: 1,
-    splitRatio: clampSplitRatio(state.splitRatio),
-    detailsSplitRatio:
-      typeof state.detailsSplitRatio === 'number' && Number.isFinite(state.detailsSplitRatio)
-        ? clampSplitRatio(state.detailsSplitRatio)
-        : DEFAULT_WORKBENCH_LAYOUT.detailsSplitRatio,
-    views: {
-      commits: { ...state.views.commits },
-      files: { ...state.views.files },
-      details: isViewState(state.views.details)
-        ? { ...state.views.details }
-        : { ...DEFAULT_WORKBENCH_LAYOUT.views.details },
-    },
-  };
-}
 
-export function setSplitRatio(
-  state: WorkbenchLayoutState,
-  splitRatio: number
-): WorkbenchLayoutState {
-  return { ...state, splitRatio: clampSplitRatio(splitRatio) };
-}
+  if (state.version === 1 && state.views) {
+    const next = defaultLayout();
+    for (const id of ['commits', 'files', 'details'] as const) {
+      if (isViewState(state.views[id])) next.views[id] = { ...state.views[id] };
+    }
+    return next;
+  }
 
-export function setDetailsSplitRatio(
-  state: WorkbenchLayoutState,
-  detailsSplitRatio: number
-): WorkbenchLayoutState {
-  return { ...state, detailsSplitRatio: clampSplitRatio(detailsSplitRatio) };
-}
-
-export function getWorkbenchPaneSizes(state: WorkbenchLayoutState): WorkbenchPaneSizes {
-  const commits = (state.detailsSplitRatio * state.splitRatio) / 100;
-  return {
-    commits,
-    files: state.detailsSplitRatio - commits,
-    details: 100 - state.detailsSplitRatio,
-  };
+  return defaultLayout();
 }
 
 export function setWorkbenchPaneSizes(
   state: WorkbenchLayoutState,
   sizes: WorkbenchPaneSizes
 ): WorkbenchLayoutState {
-  const total = sizes.commits + sizes.files + sizes.details;
-  const main = sizes.commits + sizes.files;
-  if (total <= 0 || main <= 0) return state;
-
-  return {
-    ...state,
-    detailsSplitRatio: clampSplitRatio((main / total) * 100),
-    splitRatio: clampSplitRatio((sizes.commits / main) * 100),
-  };
+  if (!isPaneSizes(sizes)) return state;
+  return { ...state, sizes: normalizePaneSizes(sizes) };
 }
 
 export function setViewVisible(
