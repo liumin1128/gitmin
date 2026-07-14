@@ -41,7 +41,7 @@ export interface CommitDetails {
   signature: CommitSignature;
 }
 
-export type FileStatus = 'A' | 'M' | 'D' | 'R' | 'C' | 'U' | '?';
+export type FileStatus = 'A' | 'M' | 'D' | 'R' | 'C' | 'U' | 'T' | '?';
 
 export interface FileChange {
   path: string;
@@ -51,6 +51,33 @@ export interface FileChange {
   deletions: number;
   binary: boolean;
 }
+
+export type WorkingTreeGroup = 'conflicts' | 'staged' | 'changes';
+
+export interface WorkingTreeChange {
+  path: string;
+  oldPath?: string;
+  status: FileStatus;
+  group: WorkingTreeGroup;
+}
+
+export interface WorkingTreeSnapshot {
+  conflicts: WorkingTreeChange[];
+  staged: WorkingTreeChange[];
+  changes: WorkingTreeChange[];
+}
+
+export interface StashEntry {
+  selector: string;
+  hash: string;
+  parentHash: string;
+  message: string;
+  date: string;
+}
+
+export type DetailSelection =
+  | { kind: 'commits'; hashes: string[] }
+  | { kind: 'stash'; selector: string; hash: string };
 
 export interface RepoInfo {
   rootPath: string;

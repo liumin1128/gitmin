@@ -19,6 +19,7 @@ const STATUS_LABEL: Record<FileStatus, string> = {
   R: 'R',
   C: 'C',
   U: 'U',
+  T: 'T',
   '?': '?',
 };
 
