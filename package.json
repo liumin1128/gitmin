@@ -90,6 +90,8 @@
     "test:commit-details": "node --experimental-strip-types test/commitDetails.mts && node test/runTsxTest.mjs test/commitDetailsPanel.tsx",
     "test:commit-graph": "node --experimental-strip-types test/commitGraph.mts && node test/runTsxTest.mjs test/commitGraphSVG.tsx",
     "test:persisted-filters": "node --experimental-strip-types test/persistedFilters.mts",
+    "test:working-tree": "node --experimental-strip-types test/workingTree.mts && node test/runTsxTest.mjs test/gitWorkspaceServices.mts",
+    "test:stashes": "node --experimental-strip-types test/stashParser.mts",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.webview.json --noEmit",
     "vscode:prepublish": "npm run build"
   },
