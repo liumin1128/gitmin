@@ -9,12 +9,17 @@ export interface RepositoryLocation {
   currentBranch: string;
 }
 
+export interface GitRepository {
+  rootUri: vscode.Uri;
+  state: {
+    HEAD?: { name?: string };
+    onDidChange: vscode.Event<void>;
+  };
+}
+
 /** Minimal type description for the vscode.git API, avoiding full .d.ts import */
 export interface GitApi {
-  repositories: Array<{
-    rootUri: vscode.Uri;
-    state: { HEAD?: { name?: string } };
-  }>;
+  repositories: GitRepository[];
   toGitUri(uri: vscode.Uri, ref: string): vscode.Uri;
   onDidOpenRepository: vscode.Event<unknown>;
 }
@@ -58,4 +63,9 @@ export async function getActiveRepo(): Promise<RepositoryLocation | null> {
 
 export async function getGitApi(): Promise<GitApi | null> {
   return ensureGitApi();
+}
+
+export async function getActiveRepository(): Promise<GitRepository | null> {
+  const api = await ensureGitApi();
+  return api?.repositories[0] ?? null;
 }

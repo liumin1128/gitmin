@@ -25,9 +25,13 @@ import { GitService, normalizeLogPagination } from "../services/GitService";
 import { CommitRequestGuard } from "./CommitRequestGuard";
 import { GitOpsService, type ResetMode } from "../services/GitOpsService";
 import { FileDiffNavigator } from "../services/FileDiffNavigator";
-import { getActiveRepo } from "../services/RepoLocator";
+import {
+  getActiveRepo,
+  getActiveRepository,
+} from "../services/RepoLocator";
 import { WorkingTreeService } from "../services/WorkingTreeService";
 import { StashService } from "../services/StashService";
+import { WorkingTreeDiffNavigator } from "../services/WorkingTreeDiffNavigator";
 import { computeDiffRange } from "../utils/diffRange";
 import { applySearch } from "../../shared/commitFilter";
 import type { CommitPage } from "../../shared/commitPagination";
@@ -57,6 +61,7 @@ export class MessageHandler implements vscode.Disposable {
   private ops: GitOpsService | null = null;
   private workingTree: WorkingTreeService | null = null;
   private stashes: StashService | null = null;
+  private workingTreeDiffNavigator: WorkingTreeDiffNavigator | null = null;
   private commitsCache: Commit[] = [];
   private workingTreeCache: WorkingTreeSnapshot = {
     conflicts: [],
@@ -72,6 +77,7 @@ export class MessageHandler implements vscode.Disposable {
   private latestWorkingTreeRequestId = 0;
   private latestStashRequestId = 0;
   private latestSelectionRequestId = 0;
+  private repositoryChangeTimer: NodeJS.Timeout | null = null;
   private readonly disposables: vscode.Disposable[] = [];
 
   constructor(
@@ -93,6 +99,8 @@ export class MessageHandler implements vscode.Disposable {
   }
 
   dispose(): void {
+    if (this.repositoryChangeTimer) clearTimeout(this.repositoryChangeTimer);
+    this.workingTreeDiffNavigator?.dispose();
     this.disposables.forEach((disposable) => disposable.dispose());
   }
 
@@ -138,6 +146,7 @@ export class MessageHandler implements vscode.Disposable {
           await this.handleWorkingTreeStash(msg.requestId, msg.message);
           break;
         case "workingTree/openDiff":
+          await this.openWorkingTreeDiff(msg.group, msg.path);
           break;
         case "stashes/request":
           await this.loadStashes(msg.requestId);
@@ -174,6 +183,13 @@ export class MessageHandler implements vscode.Disposable {
     this.ops = new GitOpsService(repo.rootPath, this.extensionUri);
     this.workingTree = new WorkingTreeService(repo.rootPath);
     this.stashes = new StashService(repo.rootPath, this.git);
+    this.workingTreeDiffNavigator = new WorkingTreeDiffNavigator(repo.rootPath);
+    const repository = await getActiveRepository();
+    if (repository?.rootUri.fsPath === repo.rootPath) {
+      this.disposables.push(
+        repository.state.onDidChange(() => this.scheduleWorkingTreeChanged()),
+      );
+    }
     const stateKey = commitFiltersStateKey(repo.rootPath);
     const storedFilters = this.workspaceState.get<unknown>(stateKey);
     const filters = parsePersistedCommitFilters(
@@ -447,6 +463,27 @@ export class MessageHandler implements vscode.Disposable {
         error: errorMessage(error),
       });
     }
+  }
+
+  private async openWorkingTreeDiff(
+    group: WorkingTreeGroup,
+    path: string,
+  ): Promise<void> {
+    if (!this.workingTreeDiffNavigator) return;
+    this.fileDiffNavigator.clear();
+    await this.workingTreeDiffNavigator.open(
+      this.workingTreeCache,
+      group,
+      path,
+    );
+  }
+
+  private scheduleWorkingTreeChanged(): void {
+    if (this.repositoryChangeTimer) clearTimeout(this.repositoryChangeTimer);
+    this.repositoryChangeTimer = setTimeout(() => {
+      this.repositoryChangeTimer = null;
+      this.post({ type: "workingTree/changed" });
+    }, 100);
   }
 
   private async loadStashes(requestId: number): Promise<void> {
