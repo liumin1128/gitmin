@@ -1,18 +1,11 @@
 import {
   WORKBENCH_VIEW_IDS,
+  WORKBENCH_VIEW_METADATA,
   type WorkbenchViewId,
-  type WorkbenchViewState,
-} from '../utils/workbenchLayout';
+} from '../../../shared/workbenchViews';
+import type { WorkbenchViewState } from '../utils/workbenchLayout';
 import { CheckedMenuItem } from './CheckedMenuItem';
 import { FilterDropdown } from './FilterDropdown';
-
-const VIEW_LABEL: Record<WorkbenchViewId, string> = {
-  changes: 'Changes',
-  commits: 'Commits',
-  stashes: 'Stashes',
-  files: 'Changed Files',
-  details: 'Commit Details',
-};
 
 interface Props {
   views: Record<WorkbenchViewId, WorkbenchViewState>;
@@ -35,7 +28,7 @@ export function ViewVisibilityMenu({ views, onVisibleChange }: Props) {
               checked={views[id].visible}
               onChange={(visible) => onVisibleChange(id, visible)}
             >
-              {VIEW_LABEL[id]}
+              {WORKBENCH_VIEW_METADATA[id].label}
             </CheckedMenuItem>
           ))}
         </div>

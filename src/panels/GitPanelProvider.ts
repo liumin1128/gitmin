@@ -46,6 +46,7 @@ export class GitPanelProvider {
     this.panel.webview.html = buildWebviewHtml(
       this.panel.webview,
       extensionUri,
+      "panel",
     );
     const handler = new MessageHandler(
       (msg) => {

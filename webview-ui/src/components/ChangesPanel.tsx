@@ -65,36 +65,39 @@ export function ChangesPanel({
           disabled={busy}
           onChange={handleMessageChange}
         />
-        <button
-          type="button"
-          className="btn change-command-button"
-          title="Commit staged changes"
-          disabled={busy || !commitEnabled}
-          onClick={onCommit}
-        >
-          <span className="codicon codicon-check" aria-hidden="true" />
-          <span>Commit</span>
-        </button>
-        <button
-          type="button"
-          className="btn-secondary change-command-button"
-          title="Stash changes"
-          disabled={busy || !stashEnabled}
-          onClick={onStash}
-        >
-          <span className="codicon codicon-archive" aria-hidden="true" />
-          <span>Stash</span>
-        </button>
-        <button
-          type="button"
-          className="toolbar-icon-button"
-          title="Refresh changes"
-          aria-label="Refresh changes"
-          disabled={busy}
-          onClick={onRefresh}
-        >
-          <span className="codicon codicon-refresh" aria-hidden="true" />
-        </button>
+        <div className="change-message-controls">
+          <button
+            type="button"
+            className="btn-secondary change-command-button"
+            title="Stash changes"
+            disabled={busy || !stashEnabled}
+            onClick={onStash}
+          >
+            <span className="codicon codicon-archive" aria-hidden="true" />
+            <span>Stash</span>
+          </button>
+          <button
+            type="button"
+            className="toolbar-icon-button"
+            title="Refresh changes"
+            aria-label="Refresh changes"
+            disabled={busy}
+            onClick={onRefresh}
+          >
+            <span className="codicon codicon-refresh" aria-hidden="true" />
+          </button>
+          <span className="change-message-controls-spacer" />
+          <button
+            type="button"
+            className="btn change-command-button"
+            title="Commit staged changes"
+            disabled={busy || !commitEnabled}
+            onClick={onCommit}
+          >
+            <span className="codicon codicon-check" aria-hidden="true" />
+            <span>Commit</span>
+          </button>
+        </div>
       </div>
       {error && <div className="section-error">{error}</div>}
       {!error && notice && <div className="section-notice">{notice}</div>}

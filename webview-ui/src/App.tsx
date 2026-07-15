@@ -26,6 +26,10 @@ import { ViewSection } from './components/ViewSection';
 import { ChangesPanel } from './components/ChangesPanel';
 import { StashList } from './components/StashList';
 import { WorkbenchToolbar } from './components/WorkbenchToolbar';
+import {
+  WORKBENCH_VIEW_IDS,
+  type WorkbenchViewVisibility,
+} from '../../shared/workbenchViews';
 import { shouldPreserveUnresolvedParents } from './utils/commitGraph';
 import { commitSelection, stashSelection } from './utils/detailSelection';
 import { COMMIT_PAGE_SIZE, type CommitPage } from '../../shared/commitPagination';
@@ -192,7 +196,8 @@ export function App() {
     authors: [],
   });
   const [columns, setColumns] = useState<ColumnFlags>(DEFAULT_COLUMNS);
-  const { layout, setPaneSizes, setVisible, setCollapsed } = useWorkbenchLayout();
+  const { layout, setPaneSizes, setVisible, toggleVisible, setCollapsed } = useWorkbenchLayout();
+  const showWorkbenchToolbar = document.body.dataset.gitminHost === 'panel';
   const filtersReadyRef = useRef(false);
   const restoringFiltersRef = useRef(false);
   const commitRequestIdRef = useRef(0);
@@ -251,6 +256,17 @@ export function App() {
     setFilters(m.filters);
   });
   useIpcListener('filters/options', (m) => setFilterOptions(m.options));
+  useIpcListener('workbenchViews/toggle', (m) => {
+    toggleVisible(m.id);
+  });
+
+  useEffect(() => {
+    if (showWorkbenchToolbar) return;
+    const visibility = Object.fromEntries(
+      WORKBENCH_VIEW_IDS.map((id) => [id, layout.views[id].visible])
+    ) as WorkbenchViewVisibility;
+    postMessage({ type: 'workbenchViews/visibility', visibility });
+  }, [layout.views, showWorkbenchToolbar]);
   // === Lifecycle: notify on mount ===
   useEffect(() => {
     const requestId = startCommitPageSession(pagination);
@@ -447,10 +463,12 @@ export function App() {
 
   return (
     <div className="app">
-      <WorkbenchToolbar
-        views={layout.views}
-        onVisibleChange={(id, visible) => setVisible(id, visible)}
-      />
+      {showWorkbenchToolbar && (
+        <WorkbenchToolbar
+          views={layout.views}
+          onVisibleChange={(id, visible) => setVisible(id, visible)}
+        />
+      )}
       {(commitPageError ?? error) && <div className="error-bar">{commitPageError ?? error}</div>}
       {busy && <div className="busy-bar">Executing...</div>}
       <ResizablePanelStack
@@ -507,20 +525,17 @@ export function App() {
                 collapsed={layout.views.commits.collapsed}
                 onCollapsedChange={(collapsed) => setCollapsed('commits', collapsed)}
                 actions={
-                  <>
-                    {commitPageError && (
-                      <button
-                        type="button"
-                        className="toolbar-icon-button"
-                        title="Retry loading commits"
-                        aria-label="Retry loading commits"
-                        onClick={retryFailedCommitPageRequest}
-                      >
-                        <span className="codicon codicon-refresh" aria-hidden="true" />
-                      </button>
-                    )}
-                    <ColumnsMenu columns={columns} onChange={setColumns} />
-                  </>
+                  commitPageError ? (
+                    <button
+                      type="button"
+                      className="toolbar-icon-button"
+                      title="Retry loading commits"
+                      aria-label="Retry loading commits"
+                      onClick={retryFailedCommitPageRequest}
+                    >
+                      <span className="codicon codicon-refresh" aria-hidden="true" />
+                    </button>
+                  ) : undefined
                 }
               >
                 <div className="commits-panel-content">
@@ -529,6 +544,7 @@ export function App() {
                     options={filterOptions}
                     onChange={setFilters}
                     onRefresh={handleRefresh}
+                    actions={<ColumnsMenu columns={columns} onChange={setColumns} />}
                   />
                   <CommitList
                     commits={commits}

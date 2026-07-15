@@ -41,7 +41,9 @@ export function ViewSection({
         >
           <span className="view-section-chevron" aria-hidden="true">›</span>
           <span className="view-section-title">{title}</span>
-          {count !== undefined && <span className="view-section-count">{count}</span>}
+          {count !== undefined && count > 0 && (
+            <span className="view-section-count">{count}</span>
+          )}
         </button>
         {actions && (
           <div className="view-section-actions" onClick={stopPropagation}>

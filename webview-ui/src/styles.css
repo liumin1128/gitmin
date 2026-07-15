@@ -563,6 +563,7 @@ body.vscode-high-contrast-light .filter-form-row > input {
   white-space: nowrap;
 }
 .view-section-count {
+  margin-left: auto;
   color: var(--vscode-descriptionForeground);
   font-weight: 400;
 }
@@ -590,16 +591,17 @@ body.vscode-high-contrast-light .filter-form-row > input {
   min-width: 0;
 }
 .change-message-row {
-  display: grid;
-  grid-template-columns: minmax(100px, 1fr) auto auto 24px;
-  gap: 4px;
+  display: flex;
+  gap: 2px;
   align-items: start;
   padding: 5px 8px;
   border-bottom: 1px solid var(--vscode-panel-border);
   background: var(--vscode-sideBar-background);
 }
 .change-message-input {
-  width: 100%;
+  flex: 1 1 220px;
+  width: auto;
+  max-width: 360px;
   min-width: 0;
   min-height: 24px;
   max-height: 120px;
@@ -616,6 +618,17 @@ body.vscode-high-contrast-light .filter-form-row > input {
 }
 .change-message-input:focus {
   border-color: var(--vscode-focusBorder);
+}
+.change-message-controls {
+  display: flex;
+  align-items: start;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 2px;
+}
+.change-message-controls-spacer {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .change-command-button {
   display: inline-flex;
@@ -767,13 +780,23 @@ body.vscode-high-contrast-light .filter-form-row > input {
   color: inherit;
 }
 
-@media (max-width: 499px) {
+@media (max-width: 640px) {
   .change-message-row {
-    grid-template-columns: minmax(0, 1fr) auto auto 24px;
+    flex-direction: column;
+    align-items: stretch;
   }
   .change-message-input {
-    grid-column: 1 / -1;
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 100%;
   }
+  .change-message-controls {
+    flex: 0 0 24px;
+    width: 100%;
+  }
+}
+
+@media (max-width: 499px) {
   .change-item {
     padding-left: 4px;
   }

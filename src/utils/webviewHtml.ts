@@ -7,7 +7,8 @@ import { getNonce } from './nonce';
 
 export function buildWebviewHtml(
   webview: vscode.Webview,
-  extensionUri: vscode.Uri
+  extensionUri: vscode.Uri,
+  host: 'view' | 'panel',
 ): string {
   const scriptUri = webview.asWebviewUri(
     vscode.Uri.joinPath(extensionUri, 'out', 'webview', 'index.js')
@@ -30,7 +31,7 @@ export function buildWebviewHtml(
     #__err { display: none; padding: 12px; color: #ff6b6b; font-family: monospace; white-space: pre-wrap; background: #2a1414; border-bottom: 1px solid #ff6b6b; font-size: 12px; }
   </style>
 </head>
-<body>
+<body data-gitmin-host="${host}">
   <div id="__err"></div>
   <div id="root"></div>
   <script nonce="${nonce}">

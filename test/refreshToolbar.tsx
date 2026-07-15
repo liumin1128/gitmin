@@ -18,7 +18,7 @@ const refreshIndex = html.indexOf('aria-label="Refresh commit list"');
 
 assert.equal(DEFAULT_COLUMNS.tags, false, 'tag column should be hidden by default');
 assert.notEqual(refreshIndex, -1, 'filter toolbar should render refresh action');
-assert.doesNotMatch(html, /title="Display columns"/, 'column settings belongs to the commit panel header');
+assert.doesNotMatch(html, /title="Display columns"/, 'column settings are optional');
 assert.match(html, /codicon-search/, 'search should use the VS Code search icon');
 assert.match(html, /codicon-refresh/, 'refresh should use the VS Code refresh icon');
 assert.doesNotMatch(html, /🔍/, 'toolbar should not render emoji icons');
@@ -90,15 +90,27 @@ const columnsMenuHtml = renderToStaticMarkup(
 );
 assert.match(columnsMenuHtml, /codicon-more/, 'column settings should use the VS Code overflow icon');
 
+const filterWithColumnsHtml = renderToStaticMarkup(
+  <FilterBar
+    {...props}
+    actions={<ColumnsMenu columns={DEFAULT_COLUMNS} onChange={() => undefined} />}
+  />
+);
+assert.ok(
+  filterWithColumnsHtml.indexOf('aria-label="Refresh commit list"') <
+    filterWithColumnsHtml.indexOf('title="Display columns"'),
+  'column settings should render immediately after refresh'
+);
+
 const appSource = readFileSync('webview-ui/src/App.tsx', 'utf8');
-const commitSectionStart = appSource.indexOf('id="commits"');
-const commitListStart = appSource.indexOf('<CommitList', commitSectionStart);
-assert.notEqual(commitSectionStart, -1);
+const filterBarStart = appSource.indexOf('<FilterBar');
+const commitListStart = appSource.indexOf('<CommitList', filterBarStart);
+assert.notEqual(filterBarStart, -1);
 assert.notEqual(commitListStart, -1);
 assert.match(
-  appSource.slice(commitSectionStart, commitListStart),
-  /<ColumnsMenu/,
-  'column settings should render in the commit panel header actions'
+  appSource.slice(filterBarStart, commitListStart),
+  /actions=\{<ColumnsMenu/,
+  'column settings should render in the commit filter toolbar'
 );
 
 console.log('refresh toolbar checks passed');

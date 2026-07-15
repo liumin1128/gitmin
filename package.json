@@ -37,6 +37,31 @@
         "category": "GitMin",
         "icon": "$(arrow-right)",
         "enablement": "gitmin.fileDiffActive"
+      },
+      {
+        "command": "gitmin.toggleChangesView",
+        "title": "Changes",
+        "category": "GitMin"
+      },
+      {
+        "command": "gitmin.toggleCommitsView",
+        "title": "Commits",
+        "category": "GitMin"
+      },
+      {
+        "command": "gitmin.toggleStashesView",
+        "title": "Stashes",
+        "category": "GitMin"
+      },
+      {
+        "command": "gitmin.toggleChangedFilesView",
+        "title": "Changed Files",
+        "category": "GitMin"
+      },
+      {
+        "command": "gitmin.toggleCommitDetailsView",
+        "title": "Commit Details",
+        "category": "GitMin"
       }
     ],
     "viewsContainers": {
@@ -52,7 +77,7 @@
       "gitmin": [
         {
           "id": "gitmin.panel",
-          "name": "Commits",
+          "name": "GitMin",
           "type": "webview"
         }
       ]
@@ -75,6 +100,36 @@
           "command": "gitmin.openPanel",
           "when": "view == gitmin.panel",
           "group": "navigation"
+        },
+        {
+          "command": "gitmin.toggleChangesView",
+          "when": "view == gitmin.panel",
+          "group": "1_views@1",
+          "toggled": "gitmin.workbenchView.changes.visible"
+        },
+        {
+          "command": "gitmin.toggleCommitsView",
+          "when": "view == gitmin.panel",
+          "group": "1_views@2",
+          "toggled": "gitmin.workbenchView.commits.visible"
+        },
+        {
+          "command": "gitmin.toggleStashesView",
+          "when": "view == gitmin.panel",
+          "group": "1_views@3",
+          "toggled": "gitmin.workbenchView.stashes.visible"
+        },
+        {
+          "command": "gitmin.toggleChangedFilesView",
+          "when": "view == gitmin.panel",
+          "group": "1_views@4",
+          "toggled": "gitmin.workbenchView.files.visible"
+        },
+        {
+          "command": "gitmin.toggleCommitDetailsView",
+          "when": "view == gitmin.panel",
+          "group": "1_views@5",
+          "toggled": "gitmin.workbenchView.details.visible"
         }
       ]
     }

@@ -2,6 +2,10 @@ import * as vscode from "vscode";
 import { GitPanelProvider } from "./panels/GitPanelProvider";
 import { GitPanelViewProvider } from "./panels/GitPanelViewProvider";
 import { FileDiffNavigator } from "./services/FileDiffNavigator";
+import {
+  WORKBENCH_VIEW_IDS,
+  WORKBENCH_VIEW_METADATA,
+} from "../shared/workbenchViews";
 
 export function activate(context: vscode.ExtensionContext) {
   const fileDiffNavigator = new FileDiffNavigator();
@@ -25,6 +29,12 @@ export function activate(context: vscode.ExtensionContext) {
     ),
     vscode.commands.registerCommand("gitmin.nextFileDiff", () =>
       fileDiffNavigator.navigate(1),
+    ),
+    ...WORKBENCH_VIEW_IDS.map((id) =>
+      vscode.commands.registerCommand(
+        WORKBENCH_VIEW_METADATA[id].toggleCommand,
+        () => viewProvider.toggleWorkbenchView(id),
+      ),
     ),
   );
 }

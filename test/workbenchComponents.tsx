@@ -109,6 +109,20 @@ assert.match(html, />Changed Files</);
 assert.match(html, />Commit Details</);
 assert.match(html, /aria-label="CollapseCommit Details"/);
 
+const zeroCountHtml = renderToStaticMarkup(
+  <ViewSection
+    id="empty"
+    title="Empty"
+    count={0}
+    visible
+    collapsed={false}
+    onCollapsedChange={() => undefined}
+  >
+    empty
+  </ViewSection>
+);
+assert.doesNotMatch(zeroCountHtml, /view-section-count/);
+
 const collapsedHtml = renderToStaticMarkup(
   <ResizableSplitView
     ratio={60}
@@ -182,6 +196,7 @@ const collapsedGroupHtml = renderToStaticMarkup(
 assert.match(collapsedGroupHtml, /--collapsed-pane-size:52px/);
 
 const styles = readFileSync('webview-ui/src/styles.css', 'utf8');
+assert.match(styles, /\.view-section-count\s*\{[^}]*margin-left:\s*auto/s);
 assert.match(
   styles,
   /\.workbench-pane\s*\{[^}]*flex-direction:\s*column/s,

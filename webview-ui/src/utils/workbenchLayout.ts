@@ -1,12 +1,10 @@
-export const WORKBENCH_VIEW_IDS = [
-  'changes',
-  'commits',
-  'stashes',
-  'files',
-  'details',
-] as const;
+import {
+  WORKBENCH_VIEW_IDS,
+  type WorkbenchViewId,
+} from '../../../shared/workbenchViews.ts';
 
-export type WorkbenchViewId = (typeof WORKBENCH_VIEW_IDS)[number];
+export { WORKBENCH_VIEW_IDS };
+export type { WorkbenchViewId };
 
 export interface WorkbenchViewState {
   visible: boolean;

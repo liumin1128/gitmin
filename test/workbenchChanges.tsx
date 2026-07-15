@@ -41,6 +41,12 @@ assert.match(html, /codicon-remove/);
 assert.match(html, /codicon-discard/);
 assert.match(html, /codicon-refresh/);
 assert.match(html, /No local changes to save/);
+assert.ok(
+  html.indexOf('title="Stash changes"') < html.indexOf('class="change-message-controls-spacer"') &&
+    html.indexOf('class="change-message-controls-spacer"') <
+      html.indexOf('title="Commit staged changes"'),
+  'Commit should be the rightmost message action'
+);
 
 const disabledHtml = renderToStaticMarkup(
   <ChangesPanel
@@ -114,6 +120,12 @@ const styles = readFileSync('webview-ui/src/styles.css', 'utf8');
 assert.match(styles, /\.workbench-toolbar\s*\{[^}]*height:\s*26px/s);
 assert.match(styles, /\.change-item\s*\{[^}]*min-height:\s*24px/s);
 assert.match(styles, /\.change-message-input\s*\{[^}]*resize:\s*none/s);
+assert.match(styles, /\.change-message-input\s*\{[^}]*flex:\s*1\s+1\s+220px[^}]*max-width:\s*360px/s);
+assert.match(styles, /\.change-message-controls\s*\{[^}]*flex:\s*1\s+1\s+auto/s);
+assert.match(
+  styles,
+  /@media\s*\(max-width:\s*640px\)[\s\S]*?\.change-message-row\s*\{[^}]*flex-direction:\s*column[\s\S]*?\.change-message-input\s*\{[^}]*max-width:\s*100%/s
+);
 assert.match(styles, /\.stash-item\s*\{[^}]*grid-template-columns:/s);
 assert.match(styles, /@media\s*\(max-width:\s*499px\)[\s\S]*\.stash-item/s);
 assert.match(styles, /\.status-U\s+\.file-status/);

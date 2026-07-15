@@ -36,11 +36,16 @@ export function useWorkbenchLayout() {
       update((current) => setViewVisible(current, id, visible)),
     [update]
   );
+  const toggleVisible = useCallback(
+    (id: WorkbenchViewId) =>
+      update((current) => setViewVisible(current, id, !current.views[id].visible)),
+    [update]
+  );
   const setCollapsed = useCallback(
     (id: WorkbenchViewId, collapsed: boolean) =>
       update((current) => setViewCollapsed(current, id, collapsed)),
     [update]
   );
 
-  return { layout, setPaneSizes, setVisible, setCollapsed };
+  return { layout, setPaneSizes, setVisible, toggleVisible, setCollapsed };
 }
