@@ -148,6 +148,9 @@ export class MessageHandler implements vscode.Disposable {
         case "workingTree/commit":
           await this.workspaceController?.handleCommit(msg.requestId, msg.message);
           break;
+        case "workingTree/generateCommitMessage":
+          await this.workspaceController?.handleGenerateCommitMessage(msg.requestId);
+          break;
         case "workingTree/stash":
           await this.workspaceController?.handleCreateStash(msg.requestId, msg.message);
           break;

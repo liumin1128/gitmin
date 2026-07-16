@@ -30,6 +30,9 @@ async function main() {
     await workingTree.stage(['tracked.txt']);
     snapshot = await workingTree.getSnapshot();
     assert.deepEqual(snapshot.staged.map((file) => file.path), ['tracked.txt']);
+    const stagedDiff = await workingTree.getStagedDiff();
+    assert.match(stagedDiff, /\+changed/);
+    assert.doesNotMatch(stagedDiff, /untracked\.txt/);
 
     await workingTree.unstage(['tracked.txt']);
     assert.equal((await workingTree.getSnapshot()).staged.length, 0);

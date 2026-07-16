@@ -11,15 +11,18 @@ interface Props {
   message: string;
   selectedKeys: ReadonlySet<string>;
   busy: boolean;
+  generating: boolean;
   error: string | null;
   notice: string | null;
   commitEnabled: boolean;
+  generateEnabled: boolean;
   stashEnabled: boolean;
   onMessageChange: (message: string) => void;
   onSelect: (key: string, event: MouseEvent) => void;
   onOpenDiff: (group: WorkingTreeGroup, path: string) => void;
   onAction: (action: WorkingTreeAction, group: WorkingTreeGroup, paths: string[]) => void;
   onCommit: () => void;
+  onGenerateCommitMessage: () => void;
   onStash: () => void;
   onRefresh: () => void;
 }
@@ -29,21 +32,25 @@ export function ChangesPanel({
   message,
   selectedKeys,
   busy,
+  generating,
   error,
   notice,
   commitEnabled,
+  generateEnabled,
   stashEnabled,
   onMessageChange,
   onSelect,
   onOpenDiff,
   onAction,
   onCommit,
+  onGenerateCommitMessage,
   onStash,
   onRefresh,
 }: Props) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const changeCount =
     snapshot.conflicts.length + snapshot.staged.length + snapshot.changes.length;
+  const locked = busy || generating;
 
   const handleMessageChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     const input = event.currentTarget;
@@ -62,16 +69,41 @@ export function ChangesPanel({
           value={message}
           placeholder="Message"
           aria-label="Commit or stash message"
-          disabled={busy}
+          disabled={locked}
           onChange={handleMessageChange}
         />
         <div className="change-message-controls">
           <button
             type="button"
             className="toolbar-icon-button"
+            title={
+              generating
+                ? 'Generating commit message with Copilot'
+                : 'Generate commit message with Copilot'
+            }
+            aria-label={
+              generating
+                ? 'Generating commit message with Copilot'
+                : 'Generate commit message with Copilot'
+            }
+            disabled={locked || !generateEnabled}
+            onClick={onGenerateCommitMessage}
+          >
+            <span
+              className={
+                generating
+                  ? 'codicon codicon-loading codicon-modifier-spin'
+                  : 'codicon codicon-sparkle'
+              }
+              aria-hidden="true"
+            />
+          </button>
+          <button
+            type="button"
+            className="toolbar-icon-button"
             title="Stash changes"
             aria-label="Stash changes"
-            disabled={busy || !stashEnabled}
+            disabled={locked || !stashEnabled}
             onClick={onStash}
           >
             <span className="codicon codicon-archive" aria-hidden="true" />
@@ -81,7 +113,7 @@ export function ChangesPanel({
             className="toolbar-icon-button"
             title="Refresh changes"
             aria-label="Refresh changes"
-            disabled={busy}
+            disabled={locked}
             onClick={onRefresh}
           >
             <span className="codicon codicon-refresh" aria-hidden="true" />
@@ -91,7 +123,7 @@ export function ChangesPanel({
             type="button"
             className="btn change-command-button"
             title="Commit staged changes"
-            disabled={busy || !commitEnabled}
+            disabled={locked || !commitEnabled}
             onClick={onCommit}
           >
             <span className="codicon codicon-check" aria-hidden="true" />
@@ -111,7 +143,7 @@ export function ChangesPanel({
               group="conflicts"
               changes={snapshot.conflicts}
               selectedKeys={selectedKeys}
-              busy={busy}
+              busy={locked}
               onSelect={onSelect}
               onOpenDiff={onOpenDiff}
               onAction={onAction}
@@ -121,7 +153,7 @@ export function ChangesPanel({
               group="staged"
               changes={snapshot.staged}
               selectedKeys={selectedKeys}
-              busy={busy}
+              busy={locked}
               onSelect={onSelect}
               onOpenDiff={onOpenDiff}
               onAction={onAction}
@@ -131,7 +163,7 @@ export function ChangesPanel({
               group="changes"
               changes={snapshot.changes}
               selectedKeys={selectedKeys}
-              busy={busy}
+              busy={locked}
               onSelect={onSelect}
               onOpenDiff={onOpenDiff}
               onAction={onAction}

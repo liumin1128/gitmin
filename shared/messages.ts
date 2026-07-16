@@ -54,6 +54,7 @@ export type WebviewMessage =
       paths: string[];
     }
   | { type: 'workingTree/commit'; requestId: number; message: string }
+  | { type: 'workingTree/generateCommitMessage'; requestId: number }
   | { type: 'workingTree/stash'; requestId: number; message: string }
   | { type: 'workingTree/openDiff'; group: WorkingTreeGroup; path: string }
   | { type: 'stashes/request'; requestId: number }
@@ -95,6 +96,15 @@ export type ExtensionMessage =
       ok: boolean;
       message?: string;
       refresh: RefreshTarget[];
+    }
+  | {
+      type: 'workingTree/commitMessageResult';
+      requestId: number;
+      ok: boolean;
+      message?: string;
+      model?: string;
+      error?: string;
+      cancelled?: boolean;
     }
   | { type: 'stashes/loaded'; requestId: number; entries: StashEntry[] }
   | { type: 'stashes/error'; requestId: number; error: string }

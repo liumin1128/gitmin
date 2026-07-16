@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { toWorkingTreeSnapshot } from '../src/utils/workingTreeStatus.ts';
-import { canCommit, canStash } from '../shared/workingTree.ts';
+import { canCommit, canGenerateCommitMessage, canStash } from '../shared/workingTree.ts';
 
 const snapshot = toWorkingTreeSnapshot([
   { path: 'both.ts', index: 'M', working_dir: 'M' },
@@ -18,6 +18,8 @@ assert.equal(snapshot.staged[2]?.status, 'T');
 assert.equal(canCommit('message', snapshot), true);
 assert.equal(canCommit('   ', snapshot), false);
 assert.equal(canCommit('message', { conflicts: [], staged: [], changes: [] }), false);
+assert.equal(canGenerateCommitMessage(snapshot), true);
+assert.equal(canGenerateCommitMessage({ conflicts: [], staged: [], changes: [] }), false);
 assert.equal(canStash(snapshot), true);
 assert.equal(canStash({ conflicts: [], staged: [], changes: [] }), false);
 

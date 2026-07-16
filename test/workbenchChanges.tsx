@@ -18,13 +18,16 @@ const baseProps: Parameters<typeof ChangesPanel>[0] = {
   busy: false,
   error: null,
   notice: 'No local changes to save',
+  generating: false,
   commitEnabled: true,
+  generateEnabled: true,
   stashEnabled: true,
   onMessageChange: () => undefined,
   onSelect: () => undefined,
   onOpenDiff: () => undefined,
   onAction: () => undefined,
   onCommit: () => undefined,
+  onGenerateCommitMessage: () => undefined,
   onStash: () => undefined,
   onRefresh: () => undefined,
 };
@@ -35,6 +38,7 @@ assert.match(html, />Staged Changes</);
 assert.match(html, />Changes</);
 assert.match(html, /<textarea[^>]*rows="1"/);
 assert.match(html, /title="Commit staged changes"/);
+assert.match(html, /title="Generate commit message with Copilot"/);
 assert.match(html, /title="Stash changes"/);
 assert.match(html, /class="toolbar-icon-button" title="Stash changes" aria-label="Stash changes"/);
 assert.doesNotMatch(html, />Stash<\/span>/);
@@ -45,6 +49,7 @@ assert.match(html, /codicon-add/);
 assert.match(html, /codicon-remove/);
 assert.match(html, /codicon-discard/);
 assert.match(html, /codicon-refresh/);
+assert.match(html, /codicon-sparkle/);
 assert.match(html, /No local changes to save/);
 assert.ok(
   html.indexOf('title="Stash changes"') < html.indexOf('class="change-message-controls-spacer"') &&
@@ -59,11 +64,19 @@ const disabledHtml = renderToStaticMarkup(
     snapshot={{ conflicts: [], staged: [], changes: [] }}
     message=" "
     commitEnabled={false}
+    generateEnabled={false}
     stashEnabled={false}
   />
 );
 assert.match(disabledHtml, /title="Commit staged changes"[^>]*disabled/);
+assert.match(disabledHtml, /title="Generate commit message with Copilot"[^>]*disabled/);
 assert.match(disabledHtml, /title="Stash changes"[^>]*disabled/);
+
+const generatingHtml = renderToStaticMarkup(
+  <ChangesPanel {...baseProps} generating busy />
+);
+assert.match(generatingHtml, /title="Generating commit message with Copilot"/);
+assert.match(generatingHtml, /codicon-loading codicon-modifier-spin/);
 
 const stashEntries = [
   {
@@ -116,7 +129,7 @@ assert.match(noStashSelectionHtml, /title="Apply selected stash"[^>]*disabled/);
 assert.match(noStashSelectionHtml, /title="Delete selected stash"[^>]*disabled/);
 
 const appSource = readFileSync('webview-ui/src/App.tsx', 'utf8');
-const commitsSection = appSource.indexOf('id="commits"');
+const commitsSection = appSource.indexOf("id: 'commits'");
 const filterBar = appSource.indexOf('<FilterBar', commitsSection);
 const commitList = appSource.indexOf('<CommitList', commitsSection);
 assert.ok(commitsSection >= 0 && filterBar > commitsSection && filterBar < commitList);

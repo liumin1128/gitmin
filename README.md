@@ -10,6 +10,7 @@ WebStorm-like Git commit management panel for VSCode. Browse commit history, ins
 - Repository picker for switching between Git repositories in multi-root workspaces
 - Working tree panel with staged, unstaged, and merge changes
 - Stage, unstage, discard, commit, and stash workflows
+- Copilot-powered commit message generation from staged changes
 - Recent stash inspection with apply and delete actions
 - Commit graph with branch lanes
 - Filter by search (text / regex / case-sensitive), branch, author, and date range
@@ -31,7 +32,7 @@ WebStorm-like Git commit management panel for VSCode. Browse commit history, ins
 
 ## Requirements
 
-- VSCode 1.85.0 or newer
+- VSCode 1.90.0 or newer
 - The built-in `git` extension must be enabled
 - A git repository in the current workspace
 

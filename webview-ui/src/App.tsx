@@ -538,15 +538,18 @@ export function App() {
                 message={workingTree.message}
                 selectedKeys={workingTree.selectedKeys}
                 busy={workingTree.busy}
+                generating={workingTree.generating}
                 error={workingTree.error}
                 notice={workingTree.notice}
                 commitEnabled={workingTree.commitEnabled}
+                generateEnabled={workingTree.generateEnabled}
                 stashEnabled={workingTree.stashEnabled}
                 onMessageChange={workingTree.setMessage}
                 onSelect={workingTree.onSelect}
                 onOpenDiff={workingTree.openDiff}
                 onAction={workingTree.runAction}
                 onCommit={workingTree.commit}
+                onGenerateCommitMessage={workingTree.generateCommitMessage}
                 onStash={workingTree.stash}
                 onRefresh={workingTree.refresh}
               />

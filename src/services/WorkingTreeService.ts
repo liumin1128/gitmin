@@ -64,6 +64,18 @@ export class WorkingTreeService {
     await this.git.raw(['commit', '-m', message]);
   }
 
+  async getStagedDiff(): Promise<string> {
+    const diff = await this.git.raw([
+      'diff',
+      '--cached',
+      '--no-ext-diff',
+      '--unified=3',
+      '--',
+    ]);
+    if (!diff.trim()) throw new Error('No staged changes to generate a commit message from');
+    return diff;
+  }
+
   async createStash(message: string): Promise<string> {
     const trimmed = message.trim();
     return this.git.raw(trimmed ? ['stash', 'push', '-m', trimmed] : ['stash']);

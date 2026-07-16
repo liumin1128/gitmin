@@ -16,6 +16,7 @@ import type {
   WebviewMessage,
 } from '../../shared/messages';
 import { FileDiffNavigator } from '../services/FileDiffNavigator';
+import { CommitMessageGenerator } from '../services/CommitMessageGenerator';
 import { GitService } from '../services/GitService';
 import { getRepository } from '../services/RepoLocator';
 import { StashService } from '../services/StashService';
@@ -28,6 +29,7 @@ type SetDiffCache = (range: DiffRange, files: FileChange[]) => void;
 
 export class WorkspaceMessageController implements vscode.Disposable {
   private readonly workingTree: WorkingTreeService;
+  private readonly commitMessageGenerator: CommitMessageGenerator;
   private readonly stashes: StashService;
   private readonly workingTreeDiffNavigator: WorkingTreeDiffNavigator;
   private workingTreeCache: WorkingTreeSnapshot = {
@@ -50,6 +52,7 @@ export class WorkspaceMessageController implements vscode.Disposable {
     private readonly setDiffCache: SetDiffCache
   ) {
     this.workingTree = new WorkingTreeService(rootPath);
+    this.commitMessageGenerator = new CommitMessageGenerator();
     this.stashes = new StashService(rootPath, git);
     this.workingTreeDiffNavigator = new WorkingTreeDiffNavigator(rootPath);
   }
@@ -137,6 +140,36 @@ export class WorkspaceMessageController implements vscode.Disposable {
       this.postResult(requestId, 'commit', true, ['changes', 'commits']);
     } catch (error) {
       this.postResult(requestId, 'commit', false, ['changes'], errorMessage(error));
+    }
+  }
+
+  async handleGenerateCommitMessage(requestId: number): Promise<void> {
+    try {
+      const diff = await this.workingTree.getStagedDiff();
+      const generated = await this.commitMessageGenerator.generate(diff);
+      if (!generated) {
+        this.post({
+          type: 'workingTree/commitMessageResult',
+          requestId,
+          ok: false,
+          cancelled: true,
+        });
+        return;
+      }
+      this.post({
+        type: 'workingTree/commitMessageResult',
+        requestId,
+        ok: true,
+        message: generated.message,
+        model: generated.model,
+      });
+    } catch (error) {
+      this.post({
+        type: 'workingTree/commitMessageResult',
+        requestId,
+        ok: false,
+        error: errorMessage(error),
+      });
     }
   }
 

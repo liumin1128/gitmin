@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import type { WorkingTreeGroup, WorkingTreeSnapshot } from '../../../shared/domain';
 import {
   canCommit,
+  canGenerateCommitMessage,
   canStash,
   workingTreeChangeKey,
   type WorkingTreeAction,
@@ -25,10 +26,12 @@ export function useWorkingTree({ onRefreshCommits, onRefreshStashes }: Options) 
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const loadRequestIdRef = useRef(0);
   const actionRequestIdRef = useRef(0);
+  const generationRequestIdRef = useRef(0);
   const itemKeys = useMemo(
     () => [
       ...snapshot.conflicts.map((item) => workingTreeChangeKey('conflicts', item.path)),
@@ -50,10 +53,12 @@ export function useWorkingTree({ onRefreshCommits, onRefreshStashes }: Options) 
   useIpcListener('repositories/selectionChanged', () => {
     loadRequestIdRef.current += 1;
     actionRequestIdRef.current += 1;
+    generationRequestIdRef.current += 1;
     setSnapshot(EMPTY_SNAPSHOT);
     setMessage('');
     setLoading(false);
     setBusy(false);
+    setGenerating(false);
     setError(null);
     setNotice(null);
     selection.clear();
@@ -87,6 +92,17 @@ export function useWorkingTree({ onRefreshCommits, onRefreshStashes }: Options) 
     if (response.refresh.includes('commits')) onRefreshCommits();
     if (response.refresh.includes('stashes')) onRefreshStashes();
   });
+  useIpcListener('workingTree/commitMessageResult', (response) => {
+    if (response.requestId !== generationRequestIdRef.current) return;
+    setGenerating(false);
+    if (!response.ok) {
+      if (!response.cancelled) setError(response.error ?? 'Commit message generation failed');
+      return;
+    }
+    setMessage(response.message ?? '');
+    setError(null);
+    setNotice(null);
+  });
 
   const nextActionId = useCallback(() => {
     setBusy(true);
@@ -112,6 +128,14 @@ export function useWorkingTree({ onRefreshCommits, onRefreshStashes }: Options) 
     postMessage({ type: 'workingTree/commit', requestId: nextActionId(), message });
   }, [message, nextActionId]);
 
+  const generateCommitMessage = useCallback(() => {
+    const requestId = ++generationRequestIdRef.current;
+    setGenerating(true);
+    setError(null);
+    setNotice(null);
+    postMessage({ type: 'workingTree/generateCommitMessage', requestId });
+  }, []);
+
   const stash = useCallback(() => {
     postMessage({ type: 'workingTree/stash', requestId: nextActionId(), message });
   }, [message, nextActionId]);
@@ -130,15 +154,18 @@ export function useWorkingTree({ onRefreshCommits, onRefreshStashes }: Options) 
     message,
     loading,
     busy,
+    generating,
     error,
     notice,
     selectedKeys: selection.selected,
     commitEnabled: canCommit(message, snapshot),
+    generateEnabled: canGenerateCommitMessage(snapshot),
     stashEnabled: canStash(snapshot),
     setMessage: updateMessage,
     onSelect: selection.onItemClick,
     runAction,
     commit,
+    generateCommitMessage,
     stash,
     refresh,
     openDiff,
