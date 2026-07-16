@@ -46,4 +46,10 @@ export class CommitRequestGuard {
   release(requestId: number, offset: number): void {
     if (this.isReserved(requestId, offset)) this.inFlightOffset = null;
   }
+
+  reset(): void {
+    this.activeRequestId = null;
+    this.expectedOffset = 0;
+    this.inFlightOffset = null;
+  }
 }

@@ -17,7 +17,7 @@ import type {
 } from '../../shared/messages';
 import { FileDiffNavigator } from '../services/FileDiffNavigator';
 import { GitService } from '../services/GitService';
-import { getActiveRepository } from '../services/RepoLocator';
+import { getRepository } from '../services/RepoLocator';
 import { StashService } from '../services/StashService';
 import { WorkingTreeDiffNavigator } from '../services/WorkingTreeDiffNavigator';
 import { WorkingTreeService } from '../services/WorkingTreeService';
@@ -55,8 +55,8 @@ export class WorkspaceMessageController implements vscode.Disposable {
   }
 
   async initialize(): Promise<void> {
-    const repository = await getActiveRepository();
-    if (repository?.rootUri.fsPath !== this.rootPath) return;
+    const repository = await getRepository(this.rootPath);
+    if (!repository) return;
     this.disposables.push(
       repository.state.onDidChange(() => this.scheduleWorkingTreeChanged())
     );

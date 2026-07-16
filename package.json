@@ -39,6 +39,11 @@
         "enablement": "gitmin.fileDiffActive"
       },
       {
+        "command": "gitmin.toggleRepositoriesView",
+        "title": "Repositories",
+        "category": "GitMin"
+      },
+      {
         "command": "gitmin.toggleChangesView",
         "title": "Changes",
         "category": "GitMin"
@@ -102,33 +107,39 @@
           "group": "navigation"
         },
         {
-          "command": "gitmin.toggleChangesView",
+          "command": "gitmin.toggleRepositoriesView",
           "when": "view == gitmin.panel",
           "group": "1_views@1",
+          "toggled": "gitmin.workbenchView.repositories.visible"
+        },
+        {
+          "command": "gitmin.toggleChangesView",
+          "when": "view == gitmin.panel",
+          "group": "1_views@2",
           "toggled": "gitmin.workbenchView.changes.visible"
         },
         {
           "command": "gitmin.toggleCommitsView",
           "when": "view == gitmin.panel",
-          "group": "1_views@2",
+          "group": "1_views@3",
           "toggled": "gitmin.workbenchView.commits.visible"
         },
         {
           "command": "gitmin.toggleStashesView",
           "when": "view == gitmin.panel",
-          "group": "1_views@3",
+          "group": "1_views@4",
           "toggled": "gitmin.workbenchView.stashes.visible"
         },
         {
           "command": "gitmin.toggleChangedFilesView",
           "when": "view == gitmin.panel",
-          "group": "1_views@4",
+          "group": "1_views@5",
           "toggled": "gitmin.workbenchView.files.visible"
         },
         {
           "command": "gitmin.toggleCommitDetailsView",
           "when": "view == gitmin.panel",
-          "group": "1_views@5",
+          "group": "1_views@6",
           "toggled": "gitmin.workbenchView.details.visible"
         }
       ]
@@ -148,6 +159,7 @@
     "test:working-tree": "node --experimental-strip-types test/workingTree.mts && node test/runTsxTest.mjs test/gitWorkspaceServices.mts",
     "test:stashes": "node --experimental-strip-types test/stashParser.mts",
     "test:workbench-changes": "node --experimental-strip-types test/detailSelection.mts && node --experimental-strip-types test/workingTreeDiff.mts && node test/runTsxTest.mjs test/workbenchChanges.tsx",
+    "test:repositories": "node test/runTsxTest.mjs test/repositories.mts && node test/runTsxTest.mjs test/repositoryList.tsx",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.webview.json --noEmit",
     "vscode:prepublish": "npm run build"
   },

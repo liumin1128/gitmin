@@ -2,11 +2,10 @@ import { useCallback, useState } from 'react';
 import { getWebviewState, setWebviewState } from './useIpc';
 import {
   parseWorkbenchLayout,
-  setWorkbenchPaneSizes,
+  setWorkbenchPanelHeight,
   setViewCollapsed,
   setViewVisible,
   type WorkbenchLayoutState,
-  type WorkbenchPaneSizes,
   type WorkbenchViewId,
 } from '../utils/workbenchLayout';
 import type { PersistedWebviewState } from '../utils/persistedWebviewState';
@@ -27,8 +26,9 @@ export function useWorkbenchLayout() {
     });
   }, []);
 
-  const setPaneSizes = useCallback(
-    (sizes: WorkbenchPaneSizes) => update((current) => setWorkbenchPaneSizes(current, sizes)),
+  const setPanelHeight = useCallback(
+    (id: WorkbenchViewId, height: number | null) =>
+      update((current) => setWorkbenchPanelHeight(current, id, height)),
     [update]
   );
   const setVisible = useCallback(
@@ -47,5 +47,11 @@ export function useWorkbenchLayout() {
     [update]
   );
 
-  return { layout, setPaneSizes, setVisible, toggleVisible, setCollapsed };
+  return {
+    layout,
+    setPanelHeight,
+    setVisible,
+    toggleVisible,
+    setCollapsed,
+  };
 }

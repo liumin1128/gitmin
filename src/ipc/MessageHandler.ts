@@ -19,7 +19,10 @@ import { GitService, normalizeLogPagination } from "../services/GitService";
 import { CommitRequestGuard } from "./CommitRequestGuard";
 import { GitOpsService, type ResetMode } from "../services/GitOpsService";
 import { FileDiffNavigator } from "../services/FileDiffNavigator";
-import { getActiveRepo } from "../services/RepoLocator";
+import {
+  RepositorySelectionService,
+  type RepositorySelectionChange,
+} from "../services/RepositorySelectionService";
 import { computeDiffRange } from "../utils/diffRange";
 import { applySearch } from "../../shared/commitFilter";
 import type { CommitPage } from "../../shared/commitPagination";
@@ -55,6 +58,8 @@ export class MessageHandler implements vscode.Disposable {
   private readonly commitRequestGuard = new CommitRequestGuard();
   private commitContinuation: CommitContinuation | null = null;
   private diffCache: { range: DiffRange; files: FileChange[] } | null = null;
+  private repositoryGeneration = 0;
+  private webviewReady = false;
   private readonly disposables: vscode.Disposable[] = [];
 
   constructor(
@@ -62,6 +67,7 @@ export class MessageHandler implements vscode.Disposable {
     private readonly extensionUri: vscode.Uri,
     private readonly fileDiffNavigator: FileDiffNavigator,
     private readonly workspaceState: vscode.Memento,
+    private readonly repositorySelection: RepositorySelectionService,
   ) {
     this.disposables.push(
       this.fileDiffNavigator.onDidChangeActiveFile(({ range, filePath }) => {
@@ -72,11 +78,15 @@ export class MessageHandler implements vscode.Disposable {
           this.post({ type: "diff/activeFile", filePath });
         }
       }),
+      this.repositorySelection.onDidChange((change) =>
+        this.handleRepositorySelectionChange(change),
+      ),
     );
   }
 
   dispose(): void {
-    this.workspaceController?.dispose();
+    this.webviewReady = false;
+    this.clearRepositoryContext();
     this.disposables.forEach((disposable) => disposable.dispose());
   }
 
@@ -84,6 +94,26 @@ export class MessageHandler implements vscode.Disposable {
     try {
       switch (msg.type) {
         case "webview/ready": {
+          const request = this.normalizeCommitRequest({ ...msg, offset: 0 });
+          if (!this.reserveCommitRequest(request)) return;
+          await this.repositorySelection.initialize();
+          if (!this.isReservedCommitRequest(request)) return;
+          this.webviewReady = true;
+          this.postRepositorySnapshot();
+          await this.initRepo(request);
+          break;
+        }
+        case "repositories/select":
+          try {
+            await this.repositorySelection.select(msg.rootPath);
+          } catch (error) {
+            this.post({
+              type: "repositories/error",
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+          break;
+        case "repositories/load": {
           const request = this.normalizeCommitRequest({ ...msg, offset: 0 });
           if (!this.reserveCommitRequest(request)) return;
           await this.initRepo(request);
@@ -153,8 +183,10 @@ export class MessageHandler implements vscode.Disposable {
   }
 
   private async initRepo(ready: CommitLoadRequest): Promise<void> {
-    const repo = await getActiveRepo();
-    if (!this.isReservedCommitRequest(ready)) return;
+    const snapshot = this.repositorySelection.getSnapshot();
+    const repo = snapshot.repositories.find(
+      (repository) => repository.rootPath === snapshot.selectedRootPath,
+    );
     if (!repo) {
       this.post({
         type: "repo/none",
@@ -163,19 +195,28 @@ export class MessageHandler implements vscode.Disposable {
       this.commitRequestGuard.release(ready.requestId, ready.offset);
       return;
     }
+    this.clearRepositoryContext();
+    const generation = this.repositoryGeneration;
     this.repoRoot = repo.rootPath;
     this.git = new GitService(repo.rootPath);
     this.ops = new GitOpsService(repo.rootPath, this.extensionUri);
     this.workspaceController = new WorkspaceMessageController(
       repo.rootPath,
       this.git,
-      this.post,
+      (message) => {
+        if (this.repositoryGeneration === generation) this.post(message);
+      },
       this.fileDiffNavigator,
       (range, files) => {
         this.diffCache = { range, files };
       },
     );
     await this.workspaceController.initialize();
+    if (
+      generation !== this.repositoryGeneration ||
+      !this.isReservedCommitRequest(ready)
+    )
+      return;
     const stateKey = commitFiltersStateKey(repo.rootPath);
     const storedFilters = this.workspaceState.get<unknown>(stateKey);
     const filters = parsePersistedCommitFilters(
@@ -201,6 +242,54 @@ export class MessageHandler implements vscode.Disposable {
       filters,
     });
     await this.loadFilterOptions();
+  }
+
+  private handleRepositorySelectionChange(
+    change: RepositorySelectionChange,
+  ): void {
+    if (!this.webviewReady) return;
+    this.post({
+      type: "repositories/loaded",
+      snapshot: {
+        repositories: change.repositories,
+        selectedRootPath: change.selectedRootPath,
+      },
+    });
+    if (!change.selectionChanged) return;
+
+    this.commitRequestGuard.reset();
+    this.clearRepositoryContext();
+    this.fileDiffNavigator.clear();
+    this.post({
+      type: "repositories/selectionChanged",
+      rootPath: change.selectedRootPath,
+    });
+    if (!change.selectedRootPath) {
+      this.post({
+        type: "repo/none",
+        reason: "No git repository detected in the current workspace",
+      });
+    }
+  }
+
+  private postRepositorySnapshot(): void {
+    this.post({
+      type: "repositories/loaded",
+      snapshot: this.repositorySelection.getSnapshot(),
+    });
+  }
+
+  private clearRepositoryContext(): void {
+    this.repositoryGeneration += 1;
+    this.workspaceController?.dispose();
+    this.workspaceController = null;
+    this.git = null;
+    this.ops = null;
+    this.repoRoot = null;
+    this.commitsCache = [];
+    this.lastFilters = undefined;
+    this.commitContinuation = null;
+    this.diffCache = null;
   }
 
   private async persistFilters(filters?: CommitFilters): Promise<void> {
@@ -359,12 +448,15 @@ export class MessageHandler implements vscode.Disposable {
   }
 
   private async loadFilterOptions(): Promise<void> {
-    if (!this.git) return;
+    const git = this.git;
+    const generation = this.repositoryGeneration;
+    if (!git) return;
     try {
       const [branches, authors] = await Promise.all([
-        this.git.getBranches(),
-        this.git.getAuthors(),
+        git.getBranches(),
+        git.getAuthors(),
       ]);
+      if (generation !== this.repositoryGeneration) return;
       this.post({ type: "filters/options", options: { branches, authors } });
     } catch (e) {
       console.error("[gitmin] loadFilterOptions error:", e);
@@ -372,11 +464,15 @@ export class MessageHandler implements vscode.Disposable {
   }
 
   private async loadCommitDetails(hashes: string[]): Promise<void> {
-    if (!this.git) return;
+    const git = this.git;
+    const generation = this.repositoryGeneration;
+    if (!git) return;
     try {
-      const details = await this.git.getCommitDetails(hashes);
+      const details = await git.getCommitDetails(hashes);
+      if (generation !== this.repositoryGeneration) return;
       this.post({ type: "commitDetails/loaded", hashes, details });
     } catch (error) {
+      if (generation !== this.repositoryGeneration) return;
       this.post({
         type: "commitDetails/error",
         hashes,
@@ -386,17 +482,21 @@ export class MessageHandler implements vscode.Disposable {
   }
 
   private async loadDiff(hashes: string[]): Promise<void> {
-    if (!this.git) return;
+    const git = this.git;
+    const generation = this.repositoryGeneration;
+    if (!git) return;
     const range = computeDiffRange(hashes, this.commitsCache);
     if (!range) return;
     this.fileDiffNavigator.clear();
     this.diffCache = null;
     this.post({ type: "diff/activeFile", filePath: null });
     try {
-      const files = await this.git.getDiffSummary(range.base, range.head);
+      const files = await git.getDiffSummary(range.base, range.head);
+      if (generation !== this.repositoryGeneration) return;
       this.diffCache = { range, files };
       this.post({ type: "diff/loaded", range, files });
     } catch (e) {
+      if (generation !== this.repositoryGeneration) return;
       this.post({
         type: "diff/error",
         error: e instanceof Error ? e.message : String(e),
@@ -426,7 +526,10 @@ export class MessageHandler implements vscode.Disposable {
   private async handleAction(
     msg: Extract<WebviewMessage, { type: "action/execute" }>,
   ): Promise<void> {
-    if (!this.ops) return;
+    const ops = this.ops;
+    const generation = this.repositoryGeneration;
+    const commits = this.commitsCache;
+    if (!ops) return;
     const { action, hashes } = msg;
 
     // reset --hard second confirmation (may lose working tree changes)
@@ -438,6 +541,7 @@ export class MessageHandler implements vscode.Disposable {
         "Continue",
       );
       if (answer !== "Continue") {
+        if (generation !== this.repositoryGeneration) return;
         this.post({
           type: "action/result",
           action,
@@ -449,22 +553,23 @@ export class MessageHandler implements vscode.Disposable {
     }
 
     try {
+      if (generation !== this.repositoryGeneration) return;
       switch (action) {
         case "copy-hash":
-          await this.ops.copyHash(hashes);
+          await ops.copyHash(hashes);
           break;
         case "revert":
-          await this.ops.revert(hashes, this.commitsCache);
+          await ops.revert(hashes, commits);
           break;
         case "squash":
-          await this.ops.squash(
+          await ops.squash(
             hashes,
-            this.commitsCache,
+            commits,
             msg.squashMessage ?? "squash",
           );
           break;
         case "drop":
-          await this.ops.drop(hashes, this.commitsCache);
+          await ops.drop(hashes, commits);
           break;
         case "reset-soft":
         case "reset-mixed":
@@ -472,10 +577,11 @@ export class MessageHandler implements vscode.Disposable {
           if (hashes.length !== 1)
             throw new Error("reset requires single selection");
           const mode = action.slice("reset-".length) as ResetMode;
-          await this.ops.reset(mode, hashes[0]!);
+          await ops.reset(mode, hashes[0]!);
           break;
         }
       }
+      if (generation !== this.repositoryGeneration) return;
       this.post({ type: "action/result", action, ok: true });
       if (action === "copy-hash") {
         vscode.window.showInformationMessage(
@@ -483,6 +589,7 @@ export class MessageHandler implements vscode.Disposable {
         );
       }
     } catch (e) {
+      if (generation !== this.repositoryGeneration) return;
       const err = e instanceof Error ? e.message : String(e);
       this.post({ type: "action/result", action, ok: false, message: err });
       vscode.window.showErrorMessage(`Git operation failed: ${err}`);

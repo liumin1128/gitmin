@@ -4,11 +4,6 @@
  */
 import * as vscode from 'vscode';
 
-export interface RepositoryLocation {
-  rootPath: string;
-  currentBranch: string;
-}
-
 export interface GitRepository {
   rootUri: vscode.Uri;
   state: {
@@ -22,6 +17,7 @@ export interface GitApi {
   repositories: GitRepository[];
   toGitUri(uri: vscode.Uri, ref: string): vscode.Uri;
   onDidOpenRepository: vscode.Event<unknown>;
+  onDidCloseRepository?: vscode.Event<unknown>;
 }
 
 let cachedApi: GitApi | null = null;
@@ -50,22 +46,11 @@ async function ensureGitApi(): Promise<GitApi | null> {
   return cachedApi;
 }
 
-export async function getActiveRepo(): Promise<RepositoryLocation | null> {
-  const api = await ensureGitApi();
-  if (!api) return null;
-  const repo = api.repositories[0];
-  if (!repo) return null;
-  return {
-    rootPath: repo.rootUri.fsPath,
-    currentBranch: repo.state.HEAD?.name ?? '(detached)',
-  };
-}
-
 export async function getGitApi(): Promise<GitApi | null> {
   return ensureGitApi();
 }
 
-export async function getActiveRepository(): Promise<GitRepository | null> {
+export async function getRepository(rootPath: string): Promise<GitRepository | null> {
   const api = await ensureGitApi();
-  return api?.repositories[0] ?? null;
+  return api?.repositories.find((repository) => repository.rootUri.fsPath === rootPath) ?? null;
 }

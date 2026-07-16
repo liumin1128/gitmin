@@ -444,72 +444,33 @@ body.vscode-high-contrast-light .filter-form-row > input {
   font-size: 0.9em;
 }
 
-/* ===== VS Code workbench sections ===== */
-.workbench-stack {
+/* ===== VS Code-style workbench panels ===== */
+.workbench-panel-stack {
   display: flex;
   flex: 1;
   flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
   min-height: 0;
   min-width: 0;
   overflow: hidden;
 }
-.workbench-stack > .workbench-pane:not(.is-collapsed) {
-  flex: var(--pane-grow) 1 0;
-}
-.workbench-split {
+.workbench-panel {
+  position: relative;
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
+  flex: 0 0 var(--panel-height);
+  height: var(--panel-height);
+  min-height: 26px;
   min-width: 0;
   overflow: hidden;
+  border-bottom: 1px solid var(--vscode-panel-border);
 }
-.workbench-split.is-horizontal {
-  flex-direction: row;
+.workbench-panel.is-collapsed {
+  flex-basis: 26px;
+  height: 26px;
 }
-.workbench-pane {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  min-width: 0;
-  overflow: hidden;
-}
-.workbench-pane.is-first {
-  flex: 0 0 calc(var(--split-ratio) - 2px);
-}
-.workbench-pane.is-second {
-  flex: 1 1 auto;
-}
-.workbench-split > .workbench-pane:only-child {
-  flex: 1 1 auto;
-}
-.workbench-pane.is-collapsed {
-  flex: 0 0 var(--collapsed-pane-size, 26px) !important;
-}
-.workbench-split.is-second-collapsed > .workbench-pane.is-first {
-  flex: 1 1 auto;
-}
-.workbench-split.is-first-collapsed > .workbench-pane.is-second {
-  flex: 1 1 auto;
-}
-.workbench-pane > .view-section,
-.workbench-pane > .workbench-split {
-  flex: 1;
-}
-.workbench-split.is-vertical > .workbench-pane.is-second {
-  border-top: 1px solid var(--vscode-panel-border);
-}
-.view-section {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  min-width: 0;
-  overflow: hidden;
-}
-.view-section.is-collapsed {
-  flex: 0 0 26px !important;
-}
-.view-section-header {
+.workbench-panel-header {
   display: flex;
   align-items: center;
   height: 26px;
@@ -519,7 +480,7 @@ body.vscode-high-contrast-light .filter-form-row > input {
   background: var(--vscode-sideBarSectionHeader-background, var(--vscode-sideBar-background));
   color: var(--vscode-sideBarSectionHeader-foreground, var(--vscode-foreground));
 }
-.view-section-toggle {
+.workbench-panel-toggle {
   display: flex;
   align-items: center;
   gap: 5px;
@@ -537,14 +498,14 @@ body.vscode-high-contrast-light .filter-form-row > input {
   text-transform: uppercase;
   cursor: pointer;
 }
-.view-section-toggle:hover {
+.workbench-panel-toggle:hover {
   background: var(--vscode-list-hoverBackground);
 }
-.view-section-toggle:focus-visible {
+.workbench-panel-toggle:focus-visible {
   outline: 1px solid var(--vscode-focusBorder);
   outline-offset: -1px;
 }
-.view-section-chevron {
+.workbench-panel-chevron {
   width: 10px;
   flex: 0 0 10px;
   color: var(--vscode-icon-foreground, var(--vscode-foreground));
@@ -554,39 +515,123 @@ body.vscode-high-contrast-light .filter-form-row > input {
   transform: rotate(90deg);
   transform-origin: center;
 }
-.view-section.is-collapsed .view-section-chevron {
+.workbench-panel.is-collapsed .workbench-panel-chevron {
   transform: none;
 }
-.view-section-title {
+.workbench-panel-title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.view-section-count {
+.workbench-panel-count {
   margin-left: auto;
   color: var(--vscode-descriptionForeground);
   font-weight: 400;
 }
-.view-section-actions {
+.workbench-panel-actions {
   display: flex;
   align-items: center;
   flex: 0 0 auto;
   padding-right: 6px;
 }
-.view-section-content {
-  flex: 1;
+.workbench-panel-content {
+  flex: 1 1 auto;
   min-height: 0;
   min-width: 0;
   overflow: auto;
 }
+.workbench-panel-sash {
+  position: absolute;
+  z-index: 3;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  background: transparent;
+  cursor: row-resize;
+  touch-action: none;
+  outline: none;
+}
+.workbench-panel-sash::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  background: var(--vscode-panel-border);
+}
+.workbench-panel-sash:hover::after,
+.workbench-panel-sash:focus-visible::after {
+  height: 2px;
+  background: var(--vscode-sash-hoverBorder, var(--vscode-focusBorder));
+}
 
+/* ===== Repositories ===== */
+.repository-list {
+  min-width: 0;
+  overflow: visible;
+}
+.repository-item {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) minmax(64px, 38%) 18px;
+  gap: 4px;
+  align-items: center;
+  width: 100%;
+  min-height: 24px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.repository-item:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+.repository-item:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+.repository-item.is-selected {
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+}
+.repository-item:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+.repository-icon,
+.repository-check {
+  justify-self: center;
+}
+.repository-name,
+.repository-branch > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.repository-branch {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 3px;
+  color: var(--vscode-descriptionForeground);
+  font-size: 11px;
+}
+.repository-item.is-selected .repository-branch {
+  color: inherit;
+}
 /* ===== Changes ===== */
 .changes-panel,
 .stashes-panel,
 .commits-panel-content {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: auto;
   min-height: 0;
   min-width: 0;
 }
@@ -640,9 +685,9 @@ body.vscode-high-contrast-light .filter-form-row > input {
 }
 .change-groups,
 .stash-list {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
-  overflow: auto;
+  overflow: visible;
 }
 .change-group-header {
   position: sticky;
@@ -809,57 +854,6 @@ body.vscode-high-contrast-light .filter-form-row > input {
     display: none;
   }
 }
-.workbench-separator {
-  position: relative;
-  z-index: 2;
-  flex: 0 0 4px;
-  min-width: 0;
-  min-height: 0;
-  background: transparent;
-  cursor: row-resize;
-  touch-action: none;
-  outline: none;
-}
-.workbench-separator::after {
-  content: '';
-  position: absolute;
-  top: 1px;
-  right: 0;
-  bottom: 1px;
-  left: 0;
-  background: var(--vscode-panel-border);
-}
-.workbench-split.is-horizontal > .workbench-separator {
-  cursor: col-resize;
-}
-.workbench-split.is-horizontal > .workbench-separator::after {
-  top: 0;
-  right: 1px;
-  bottom: 0;
-  left: 1px;
-}
-.workbench-separator:hover::after,
-.workbench-separator:focus-visible::after {
-  background: var(--vscode-sash-hoverBorder, var(--vscode-focusBorder));
-}
-@media (min-width: 700px) {
-  .workbench-split.is-horizontal > .workbench-pane.is-collapsed .view-section-header {
-    width: 26px;
-    height: 100%;
-    flex: 1;
-    border-right: 1px solid var(--vscode-panel-border);
-    border-bottom: 0;
-  }
-  .workbench-split.is-horizontal > .workbench-pane.is-collapsed .view-section-toggle {
-    justify-content: center;
-    padding: 0;
-  }
-  .workbench-split.is-horizontal > .workbench-pane.is-collapsed .view-section-title,
-  .workbench-split.is-horizontal > .workbench-pane.is-collapsed .view-section-count,
-  .workbench-split.is-horizontal > .workbench-pane.is-collapsed .view-section-actions {
-    display: none;
-  }
-}
 
 /* ===== Commit list ===== */
 .commit-list {
@@ -940,12 +934,12 @@ body.vscode-high-contrast-light .filter-form-row > input {
 }
 
 /* ===== Files panel ===== */
-.files-panel { display: flex; flex-direction: column; height: 100%; }
+.files-panel { display: flex; flex-direction: column; height: auto; }
 .warn-tag {
   color: var(--vscode-editorWarning-foreground, orange);
   cursor: help;
 }
-.files-list { flex: 1; overflow: auto; }
+.files-list { flex: 0 0 auto; overflow: visible; }
 .file-item {
   display: grid;
   grid-template-columns: 24px 1fr auto;

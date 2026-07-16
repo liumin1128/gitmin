@@ -14,6 +14,7 @@ import { usePersistedFilters } from './hooks/usePersistedFilters';
 import { useSelectionDetails } from './hooks/useSelectionDetails';
 import { useStashes } from './hooks/useStashes';
 import { useWorkingTree } from './hooks/useWorkingTree';
+import { useRepositories } from './hooks/useRepositories';
 import { FilterBar } from './components/FilterBar';
 import { CommitList, DEFAULT_COLUMNS, type ColumnFlags } from './components/CommitList';
 import { ColumnsMenu } from './components/ColumnsMenu';
@@ -21,11 +22,11 @@ import { ChangedFilesPanel } from './components/ChangedFilesPanel';
 import { CommitDetailsPanel } from './components/CommitDetailsPanel';
 import { CommitContextMenu } from './components/CommitContextMenu';
 import { SquashModal } from './components/SquashModal';
-import { ResizablePanelStack } from './components/ResizablePanelStack';
-import { ViewSection } from './components/ViewSection';
+import { WorkbenchPanelStack } from './components/WorkbenchPanelStack';
 import { ChangesPanel } from './components/ChangesPanel';
 import { StashList } from './components/StashList';
 import { WorkbenchToolbar } from './components/WorkbenchToolbar';
+import { RepositoryList } from './components/RepositoryList';
 import {
   WORKBENCH_VIEW_IDS,
   type WorkbenchViewVisibility,
@@ -190,13 +191,20 @@ export function App() {
   const [busy, setBusy] = useState(false);
   const [squashHashes, setSquashHashes] = useState<string[] | null>(null);
   const [selectedStash, setSelectedStash] = useState<StashEntry | null>(null);
+  const repositories = useRepositories();
   const { filters, setFilters } = usePersistedFilters();
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     branches: [],
     authors: [],
   });
   const [columns, setColumns] = useState<ColumnFlags>(DEFAULT_COLUMNS);
-  const { layout, setPaneSizes, setVisible, toggleVisible, setCollapsed } = useWorkbenchLayout();
+  const {
+    layout,
+    setPanelHeight,
+    setVisible,
+    toggleVisible,
+    setCollapsed,
+  } = useWorkbenchLayout();
   const showWorkbenchToolbar = document.body.dataset.gitminHost === 'panel';
   const filtersReadyRef = useRef(false);
   const restoringFiltersRef = useRef(false);
@@ -448,18 +456,36 @@ export function App() {
     setSquashHashes(null);
   }, []);
 
+  useIpcListener('repositories/selectionChanged', ({ rootPath }) => {
+    const requestId = startCommitPageSession(pagination);
+    clear();
+    clearStashSelectionRef.current();
+    menu.close();
+    setCommits([]);
+    setSelectedStash(null);
+    setHasMore(true);
+    setLoadingMore(Boolean(rootPath));
+    setCommitPageError(null);
+    setError(null);
+    setBusy(false);
+    setSquashHashes(null);
+    setFilterOptions({ branches: [], authors: [] });
+    failedCommitOffsetRef.current = null;
+    initialCommitLoadSettledRef.current = false;
+    queuedCommitResetFiltersRef.current = null;
+    setRepoError(rootPath ? null : 'No git repository detected in the current workspace');
+    if (rootPath) {
+      postMessage({ type: 'repositories/load', requestId, limit: COMMIT_PAGE_SIZE });
+    } else {
+      loadingMoreRef.current = false;
+      pendingCommitOffsetRef.current = null;
+    }
+  });
+
   const handleRefresh = useCallback(() => {
     resetCommits(filters);
     postMessage({ type: 'filters/refresh' });
   }, [filters, resetCommits]);
-
-  if (repoError) {
-    return (
-      <div className="app-empty">
-        <p>{repoError}</p>
-      </div>
-    );
-  }
 
   return (
     <div className="app">
@@ -469,177 +495,160 @@ export function App() {
           onVisibleChange={(id, visible) => setVisible(id, visible)}
         />
       )}
-      {(commitPageError ?? error) && <div className="error-bar">{commitPageError ?? error}</div>}
-      {busy && <div className="busy-bar">Executing...</div>}
-      <ResizablePanelStack
-        sizes={layout.sizes}
-        onSizesChange={setPaneSizes}
-        panes={[
+      {repoError && (
+        <div className="error-bar">{repoError}</div>
+      )}
+      {!repoError && (commitPageError ?? error) && (
+        <div className="error-bar">{commitPageError ?? error}</div>
+      )}
+      {!repoError && busy && <div className="busy-bar">Executing...</div>}
+      <WorkbenchPanelStack
+        heights={layout.heights}
+        onCollapsedChange={setCollapsed}
+        onHeightChange={setPanelHeight}
+        panels={[
+          {
+            id: 'repositories',
+            title: 'Repositories',
+            count: repositories.repositories.length,
+            visible: layout.views.repositories.visible,
+            collapsed: layout.views.repositories.collapsed,
+            content: (
+              <RepositoryList
+                repositories={repositories.repositories}
+                selectedRootPath={repositories.selectedRootPath}
+                pendingRootPath={repositories.pendingRootPath}
+                error={repositories.error}
+                onSelect={repositories.select}
+              />
+            ),
+          },
           {
             id: 'changes',
+            title: 'Changes',
+            count:
+              workingTree.snapshot.conflicts.length +
+              workingTree.snapshot.staged.length +
+              workingTree.snapshot.changes.length,
             visible: layout.views.changes.visible,
             collapsed: layout.views.changes.collapsed,
             content: (
-              <ViewSection
-                id="changes"
-                title="Changes"
-                count={
-                  workingTree.snapshot.conflicts.length +
-                  workingTree.snapshot.staged.length +
-                  workingTree.snapshot.changes.length
-                }
-                visible={layout.views.changes.visible}
-                collapsed={layout.views.changes.collapsed}
-                onCollapsedChange={(collapsed) => setCollapsed('changes', collapsed)}
-              >
-                <ChangesPanel
-                  snapshot={workingTree.snapshot}
-                  message={workingTree.message}
-                  selectedKeys={workingTree.selectedKeys}
-                  busy={workingTree.busy}
-                  error={workingTree.error}
-                  notice={workingTree.notice}
-                  commitEnabled={workingTree.commitEnabled}
-                  stashEnabled={workingTree.stashEnabled}
-                  onMessageChange={workingTree.setMessage}
-                  onSelect={workingTree.onSelect}
-                  onOpenDiff={workingTree.openDiff}
-                  onAction={workingTree.runAction}
-                  onCommit={workingTree.commit}
-                  onStash={workingTree.stash}
-                  onRefresh={workingTree.refresh}
-                />
-              </ViewSection>
+              <ChangesPanel
+                snapshot={workingTree.snapshot}
+                message={workingTree.message}
+                selectedKeys={workingTree.selectedKeys}
+                busy={workingTree.busy}
+                error={workingTree.error}
+                notice={workingTree.notice}
+                commitEnabled={workingTree.commitEnabled}
+                stashEnabled={workingTree.stashEnabled}
+                onMessageChange={workingTree.setMessage}
+                onSelect={workingTree.onSelect}
+                onOpenDiff={workingTree.openDiff}
+                onAction={workingTree.runAction}
+                onCommit={workingTree.commit}
+                onStash={workingTree.stash}
+                onRefresh={workingTree.refresh}
+              />
             ),
           },
           {
             id: 'commits',
+            title: 'Commits',
+            count: commits.length,
             visible: layout.views.commits.visible,
             collapsed: layout.views.commits.collapsed,
-            content: (
-              <ViewSection
-                id="commits"
-                title="Commits"
-                count={commits.length}
-                visible={layout.views.commits.visible}
-                collapsed={layout.views.commits.collapsed}
-                onCollapsedChange={(collapsed) => setCollapsed('commits', collapsed)}
-                actions={
-                  commitPageError ? (
-                    <button
-                      type="button"
-                      className="toolbar-icon-button"
-                      title="Retry loading commits"
-                      aria-label="Retry loading commits"
-                      onClick={retryFailedCommitPageRequest}
-                    >
-                      <span className="codicon codicon-refresh" aria-hidden="true" />
-                    </button>
-                  ) : undefined
-                }
+            actions: commitPageError ? (
+              <button
+                type="button"
+                className="toolbar-icon-button"
+                title="Retry loading commits"
+                aria-label="Retry loading commits"
+                onClick={retryFailedCommitPageRequest}
               >
-                <div className="commits-panel-content">
-                  <FilterBar
-                    filters={filters}
-                    options={filterOptions}
-                    onChange={setFilters}
-                    onRefresh={handleRefresh}
-                    actions={<ColumnsMenu columns={columns} onChange={setColumns} />}
-                  />
-                  <CommitList
-                    commits={commits}
-                    columns={columns}
-                    isSelected={isSelected}
-                    onItemClick={handleCommitClick}
-                    onItemContextMenu={handleContextMenu}
-                    hasMore={hasMore}
-                    preserveUnresolvedParents={shouldPreserveUnresolvedParents(hasMore, filters)}
-                    loadingMore={loadingMore}
-                    automaticLoadEnabled={!commitPageError}
-                    onLoadMore={loadMoreCommits}
-                  />
-                </div>
-              </ViewSection>
+                <span className="codicon codicon-refresh" aria-hidden="true" />
+              </button>
+            ) : undefined,
+            content: (
+              <div className="commits-panel-content">
+                <FilterBar
+                  filters={filters}
+                  options={filterOptions}
+                  onChange={setFilters}
+                  onRefresh={handleRefresh}
+                  actions={<ColumnsMenu columns={columns} onChange={setColumns} />}
+                />
+                <CommitList
+                  commits={commits}
+                  columns={columns}
+                  isSelected={isSelected}
+                  onItemClick={handleCommitClick}
+                  onItemContextMenu={handleContextMenu}
+                  hasMore={hasMore}
+                  preserveUnresolvedParents={shouldPreserveUnresolvedParents(hasMore, filters)}
+                  loadingMore={loadingMore}
+                  automaticLoadEnabled={!commitPageError}
+                  onLoadMore={loadMoreCommits}
+                />
+              </div>
             ),
           },
           {
             id: 'stashes',
+            title: 'Stashes',
+            count: stashes.entries.length,
             visible: layout.views.stashes.visible,
             collapsed: layout.views.stashes.collapsed,
             content: (
-              <ViewSection
-                id="stashes"
-                title="Stashes"
-                count={stashes.entries.length}
-                visible={layout.views.stashes.visible}
-                collapsed={layout.views.stashes.collapsed}
-                onCollapsedChange={(collapsed) => setCollapsed('stashes', collapsed)}
-              >
-                <StashList
-                  entries={stashes.entries}
-                  selectedHash={stashes.selected?.hash ?? null}
-                  busy={stashes.busy}
-                  error={stashes.error}
-                  onSelect={stashes.select}
-                  onRefresh={stashes.refresh}
-                  onApply={stashes.apply}
-                  onDelete={stashes.deleteSelected}
-                />
-              </ViewSection>
+              <StashList
+                entries={stashes.entries}
+                selectedHash={stashes.selected?.hash ?? null}
+                busy={stashes.busy}
+                error={stashes.error}
+                onSelect={stashes.select}
+                onRefresh={stashes.refresh}
+                onApply={stashes.apply}
+                onDelete={stashes.deleteSelected}
+              />
             ),
           },
           {
             id: 'files',
+            title: 'Changed Files',
+            count: selectionDetails.range ? selectionDetails.files.length : undefined,
             visible: layout.views.files.visible,
             collapsed: layout.views.files.collapsed,
+            actions:
+              selectionDetails.range && !selectionDetails.range.contiguous ? (
+                <span
+                  className="warn-tag"
+                  title="Selected commits are not contiguous; the diff range includes changes from unselected commits"
+                >
+                  ⚠
+                </span>
+              ) : undefined,
             content: (
-              <ViewSection
-                id="files"
-                title="Changed Files"
-                count={selectionDetails.range ? selectionDetails.files.length : undefined}
-                visible={layout.views.files.visible}
-                collapsed={layout.views.files.collapsed}
-                onCollapsedChange={(collapsed) => setCollapsed('files', collapsed)}
-                actions={
-                  selectionDetails.range && !selectionDetails.range.contiguous ? (
-                    <span
-                      className="warn-tag"
-                      title="Selected commits are not contiguous; the diff range includes changes from unselected commits"
-                    >
-                      ⚠
-                    </span>
-                  ) : undefined
-                }
-              >
-                <ChangedFilesPanel
-                  range={selectionDetails.range}
-                  files={selectionDetails.files}
-                  activeFilePath={selectionDetails.activeFilePath}
-                  loading={selectionDetails.loading}
-                  onOpenDiff={selectionDetails.openDiff}
-                />
-              </ViewSection>
+              <ChangedFilesPanel
+                range={selectionDetails.range}
+                files={selectionDetails.files}
+                activeFilePath={selectionDetails.activeFilePath}
+                loading={selectionDetails.loading}
+                onOpenDiff={selectionDetails.openDiff}
+              />
             ),
           },
           {
             id: 'details',
+            title: 'Commit Details',
+            count: selectionDetails.details.length,
             visible: layout.views.details.visible,
             collapsed: layout.views.details.collapsed,
             content: (
-              <ViewSection
-                id="details"
-                title="Commit Details"
-                count={selectionDetails.details.length}
-                visible={layout.views.details.visible}
-                collapsed={layout.views.details.collapsed}
-                onCollapsedChange={(collapsed) => setCollapsed('details', collapsed)}
-              >
-                <CommitDetailsPanel
-                  details={selectionDetails.details}
-                  loading={selectionDetails.loading}
-                  error={selectionDetails.error}
-                />
-              </ViewSection>
+              <CommitDetailsPanel
+                details={selectionDetails.details}
+                loading={selectionDetails.loading}
+                error={selectionDetails.error}
+              />
             ),
           },
         ]}

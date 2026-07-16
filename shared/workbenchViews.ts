@@ -1,4 +1,5 @@
 export const WORKBENCH_VIEW_IDS = [
+  'repositories',
   'changes',
   'commits',
   'stashes',
@@ -14,6 +15,11 @@ export const WORKBENCH_VIEW_METADATA: Record<
   WorkbenchViewId,
   { label: string; toggleCommand: string; visibilityContext: string }
 > = {
+  repositories: {
+    label: 'Repositories',
+    toggleCommand: 'gitmin.toggleRepositoriesView',
+    visibilityContext: 'gitmin.workbenchView.repositories.visible',
+  },
   changes: {
     label: 'Changes',
     toggleCommand: 'gitmin.toggleChangesView',

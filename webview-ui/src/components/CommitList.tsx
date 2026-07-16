@@ -131,7 +131,7 @@ export function CommitList({
   }, [commits, columns]);
 
   useEffect(() => {
-    const scrollContainer = listRef.current?.closest<HTMLElement>('.view-section-content');
+    const scrollContainer = listRef.current?.closest<HTMLElement>('.workbench-panel-content');
     if (!scrollContainer) return;
 
     const scrollMetrics = () => [

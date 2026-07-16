@@ -11,24 +11,26 @@ export interface WorkbenchViewState {
   collapsed: boolean;
 }
 
-export type WorkbenchPaneSizes = Record<WorkbenchViewId, number>;
+export type WorkbenchPanelHeights = Record<WorkbenchViewId, number | null>;
 
 export interface WorkbenchLayoutState {
-  version: 2;
-  sizes: WorkbenchPaneSizes;
+  version: 4;
+  heights: WorkbenchPanelHeights;
   views: Record<WorkbenchViewId, WorkbenchViewState>;
 }
 
 export const DEFAULT_WORKBENCH_LAYOUT: WorkbenchLayoutState = {
-  version: 2,
-  sizes: {
-    changes: 20,
-    commits: 32,
-    stashes: 16,
-    files: 16,
-    details: 16,
+  version: 4,
+  heights: {
+    repositories: null,
+    changes: null,
+    commits: null,
+    stashes: null,
+    files: null,
+    details: null,
   },
   views: {
+    repositories: { visible: true, collapsed: false },
     changes: { visible: true, collapsed: false },
     commits: { visible: true, collapsed: false },
     stashes: { visible: true, collapsed: false },
@@ -37,10 +39,12 @@ export const DEFAULT_WORKBENCH_LAYOUT: WorkbenchLayoutState = {
   },
 };
 
+const VERSION_2_VIEW_IDS = ['changes', 'commits', 'stashes', 'files', 'details'] as const;
+
 function defaultLayout(): WorkbenchLayoutState {
   return {
-    version: 2,
-    sizes: { ...DEFAULT_WORKBENCH_LAYOUT.sizes },
+    version: 4,
+    heights: { ...DEFAULT_WORKBENCH_LAYOUT.heights },
     views: Object.fromEntries(
       WORKBENCH_VIEW_IDS.map((id) => [id, { ...DEFAULT_WORKBENCH_LAYOUT.views[id] }])
     ) as Record<WorkbenchViewId, WorkbenchViewState>,
@@ -53,47 +57,55 @@ function isViewState(value: unknown): value is WorkbenchViewState {
   return typeof view.visible === 'boolean' && typeof view.collapsed === 'boolean';
 }
 
-function isPaneSizes(value: unknown): value is WorkbenchPaneSizes {
-  if (!value || typeof value !== 'object') return false;
-  const sizes = value as Record<string, unknown>;
-  return WORKBENCH_VIEW_IDS.every(
-    (id) => typeof sizes[id] === 'number' && Number.isFinite(sizes[id]) && sizes[id] > 0
+function isPanelHeight(value: unknown): value is number | null {
+  return value === null || (
+    typeof value === 'number' && Number.isFinite(value) && value >= 26
   );
 }
 
-function normalizePaneSizes(sizes: WorkbenchPaneSizes): WorkbenchPaneSizes {
-  const total = WORKBENCH_VIEW_IDS.reduce((sum, id) => sum + sizes[id], 0);
-  if (total <= 0) return { ...DEFAULT_WORKBENCH_LAYOUT.sizes };
-  return Object.fromEntries(
-    WORKBENCH_VIEW_IDS.map((id) => [id, (sizes[id] / total) * 100])
-  ) as WorkbenchPaneSizes;
-}
-
-export function clampSplitRatio(value: number): number {
-  return Math.min(80, Math.max(20, Math.round(value)));
+function isPanelHeights(value: unknown): value is WorkbenchPanelHeights {
+  if (!value || typeof value !== 'object') return false;
+  const heights = value as Record<string, unknown>;
+  return WORKBENCH_VIEW_IDS.every((id) => isPanelHeight(heights[id]));
 }
 
 export function parseWorkbenchLayout(value: unknown): WorkbenchLayoutState {
   if (!value || typeof value !== 'object') return defaultLayout();
   const state = value as {
     version?: unknown;
-    sizes?: unknown;
+    heights?: unknown;
     views?: Record<string, unknown>;
   };
 
   if (
-    state.version === 2 &&
-    isPaneSizes(state.sizes) &&
+    state.version === 4 &&
+    isPanelHeights(state.heights) &&
     state.views &&
     WORKBENCH_VIEW_IDS.every((id) => isViewState(state.views?.[id]))
   ) {
     return {
-      version: 2,
-      sizes: normalizePaneSizes(state.sizes),
+      version: 4,
+      heights: { ...state.heights },
       views: Object.fromEntries(
         WORKBENCH_VIEW_IDS.map((id) => [id, { ...(state.views![id] as WorkbenchViewState) }])
       ) as Record<WorkbenchViewId, WorkbenchViewState>,
     };
+  }
+
+  if (state.version === 3 && state.views) {
+    const next = defaultLayout();
+    WORKBENCH_VIEW_IDS.forEach((id) => {
+      if (isViewState(state.views?.[id])) next.views[id] = { ...state.views[id] };
+    });
+    return next;
+  }
+
+  if (state.version === 2 && state.views) {
+    const next = defaultLayout();
+    VERSION_2_VIEW_IDS.forEach((id) => {
+      if (isViewState(state.views?.[id])) next.views[id] = { ...state.views[id] };
+    });
+    return next;
   }
 
   if (state.version === 1 && state.views) {
@@ -107,12 +119,13 @@ export function parseWorkbenchLayout(value: unknown): WorkbenchLayoutState {
   return defaultLayout();
 }
 
-export function setWorkbenchPaneSizes(
+export function setWorkbenchPanelHeight(
   state: WorkbenchLayoutState,
-  sizes: WorkbenchPaneSizes
+  id: WorkbenchViewId,
+  height: number | null
 ): WorkbenchLayoutState {
-  if (!isPaneSizes(sizes)) return state;
-  return { ...state, sizes: normalizePaneSizes(sizes) };
+  if (!isPanelHeight(height)) return state;
+  return { ...state, heights: { ...state.heights, [id]: height } };
 }
 
 export function setViewVisible(

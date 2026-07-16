@@ -41,6 +41,15 @@ export function useStashes({ onSelectionChange, onRefreshChanges }: Options) {
   );
 
   useIpcListener('repo/info', refresh);
+  useIpcListener('repositories/selectionChanged', () => {
+    loadRequestIdRef.current += 1;
+    actionRequestIdRef.current += 1;
+    setEntries([]);
+    setLoading(false);
+    setBusy(false);
+    setError(null);
+    clearSelection();
+  });
   useIpcListener('stashes/loaded', (response) => {
     if (response.requestId !== loadRequestIdRef.current) return;
     setEntries(response.entries);

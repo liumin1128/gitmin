@@ -47,6 +47,17 @@ export function useWorkingTree({ onRefreshCommits, onRefreshStashes }: Options) 
   }, []);
 
   useIpcListener('repo/info', refresh);
+  useIpcListener('repositories/selectionChanged', () => {
+    loadRequestIdRef.current += 1;
+    actionRequestIdRef.current += 1;
+    setSnapshot(EMPTY_SNAPSHOT);
+    setMessage('');
+    setLoading(false);
+    setBusy(false);
+    setError(null);
+    setNotice(null);
+    selection.clear();
+  });
   useIpcListener('workingTree/changed', refresh);
   useIpcListener('workingTree/loaded', (response) => {
     if (response.requestId !== loadRequestIdRef.current) return;

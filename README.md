@@ -7,6 +7,7 @@ WebStorm-like Git commit management panel for VSCode. Browse commit history, ins
 ## Features
 
 - Commit history panel in the activity bar, with an option to open as an editor tab
+- Repository picker for switching between Git repositories in multi-root workspaces
 - Working tree panel with staged, unstaged, and merge changes
 - Stage, unstage, discard, commit, and stash workflows
 - Recent stash inspection with apply and delete actions
@@ -17,7 +18,7 @@ WebStorm-like Git commit management panel for VSCode. Browse commit history, ins
 - Previous / Next file diff navigation in the editor toolbar
 - History rewriting: copy hash, revert, squash, drop, reset --soft / --mixed / --hard
 - Infinite scroll pagination for large repositories
-- Resizable split panels and configurable columns
+- Content-sized, independently resizable workbench panels and configurable columns
 - Persisted filters across sessions
 
 ## Commands
