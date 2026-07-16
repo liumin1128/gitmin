@@ -17,12 +17,40 @@
   "main": "./out/extension.js",
   "activationEvents": [],
   "contributes": {
+    "configuration": {
+      "title": "GitMin",
+      "properties": {
+        "gitmin.commitMessageLanguage": {
+          "type": "string",
+          "enum": [
+            "en",
+            "zh"
+          ],
+          "enumItemLabels": [
+            "English",
+            "中文"
+          ],
+          "enumDescriptions": [
+            "Generate commit messages in English.",
+            "使用中文生成 Commit Message。"
+          ],
+          "default": "en",
+          "description": "Language used when generating commit messages with Copilot."
+        }
+      }
+    },
     "commands": [
       {
         "command": "gitmin.openPanel",
         "title": "GitMin: Open Panel in Editor",
         "category": "GitMin",
         "icon": "$(link-external)"
+      },
+      {
+        "command": "gitmin.openSettings",
+        "title": "GitMin: Open Settings",
+        "category": "GitMin",
+        "icon": "$(gear)"
       },
       {
         "command": "gitmin.previousFileDiff",
@@ -90,6 +118,11 @@
     "menus": {
       "editor/title": [
         {
+          "command": "gitmin.openSettings",
+          "when": "activeWebviewPanelId == gitmin.panel",
+          "group": "navigation@100"
+        },
+        {
           "command": "gitmin.previousFileDiff",
           "when": "gitmin.fileDiffActive",
           "group": "navigation@12"
@@ -105,6 +138,11 @@
           "command": "gitmin.openPanel",
           "when": "view == gitmin.panel",
           "group": "navigation"
+        },
+        {
+          "command": "gitmin.openSettings",
+          "when": "view == gitmin.panel",
+          "group": "navigation@100"
         },
         {
           "command": "gitmin.toggleRepositoriesView",

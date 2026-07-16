@@ -1,6 +1,7 @@
 import type { WorkingTreeGroup, WorkingTreeSnapshot } from './domain';
 
 export type WorkingTreeAction = 'stage' | 'unstage' | 'discard';
+export type CommitMessageLanguage = 'en' | 'zh';
 
 export function workingTreeChangeKey(group: WorkingTreeGroup, path: string): string {
   return `${group}:${path}`;

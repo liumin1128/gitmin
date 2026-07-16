@@ -8,6 +8,7 @@ import {
   WORKBENCH_VIEW_IDS,
   WORKBENCH_VIEW_METADATA,
 } from "../shared/workbenchViews";
+import { openGitMinSettings } from "./configuration";
 
 export function activate(context: vscode.ExtensionContext) {
   const fileDiffNavigator = new FileDiffNavigator();
@@ -32,6 +33,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("gitmin.openPanel", () => {
       GitPanelProvider.show(context, fileDiffNavigator, repositorySelection);
     }),
+    vscode.commands.registerCommand("gitmin.openSettings", openGitMinSettings),
     vscode.commands.registerCommand("gitmin.previousFileDiff", () =>
       fileDiffNavigator.navigate(-1),
     ),

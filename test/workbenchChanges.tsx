@@ -39,6 +39,8 @@ assert.match(html, />Changes</);
 assert.match(html, /<textarea[^>]*rows="1"/);
 assert.match(html, /title="Commit staged changes"/);
 assert.match(html, /title="Generate commit message with Copilot"/);
+assert.match(html, /class="toolbar-icon-button" title="Generate commit message with Copilot"/);
+assert.doesNotMatch(html, /<select/);
 assert.match(html, /title="Stash changes"/);
 assert.match(html, /class="toolbar-icon-button" title="Stash changes" aria-label="Stash changes"/);
 assert.doesNotMatch(html, />Stash<\/span>/);
@@ -135,6 +137,7 @@ const commitList = appSource.indexOf('<CommitList', commitsSection);
 assert.ok(commitsSection >= 0 && filterBar > commitsSection && filterBar < commitList);
 
 const styles = readFileSync('webview-ui/src/styles.css', 'utf8');
+assert.doesNotMatch(styles, /\.commit-message-generate-control/);
 assert.match(styles, /\.workbench-toolbar\s*\{[^}]*height:\s*26px/s);
 assert.match(styles, /\.change-item\s*\{[^}]*min-height:\s*24px/s);
 assert.match(styles, /\.change-item\s*\{[^}]*padding:\s*0\s+6px\s+0\s+24px/s);

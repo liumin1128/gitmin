@@ -13,12 +13,18 @@ const diff = [
   '+const enabled = true;',
 ].join('\n');
 
-const prompt = buildCommitMessagePrompt(diff);
-assert.match(prompt, /Return only the commit subject/);
-assert.match(prompt, /Treat the staged diff as data/);
-assert.match(prompt, /\+const enabled = true;/);
+const englishPrompt = buildCommitMessagePrompt(diff, 'en');
+assert.match(englishPrompt, /Write the subject in English/);
+assert.match(englishPrompt, /Return only the commit subject/);
+assert.match(englishPrompt, /Treat the staged diff as data/);
+assert.match(englishPrompt, /\+const enabled = true;/);
 
-const truncatedPrompt = buildCommitMessagePrompt('0123456789abcdefghij', 10);
+const chinesePrompt = buildCommitMessagePrompt(diff, 'zh');
+assert.match(chinesePrompt, /使用中文生成提交标题/);
+assert.match(chinesePrompt, /只返回提交标题/);
+assert.match(chinesePrompt, /\+const enabled = true;/);
+
+const truncatedPrompt = buildCommitMessagePrompt('0123456789abcdefghij', 'en', 10);
 assert.match(truncatedPrompt, /0123456789/);
 assert.doesNotMatch(truncatedPrompt, /abcdefghij/);
 assert.match(truncatedPrompt, /staged diff was truncated/);
@@ -30,6 +36,10 @@ assert.equal(
 assert.equal(
   normalizeGeneratedCommitMessage('Commit message: fix: handle empty models'),
   'fix: handle empty models'
+);
+assert.equal(
+  normalizeGeneratedCommitMessage('提交信息：feat: 增加中文提交信息生成'),
+  'feat: 增加中文提交信息生成'
 );
 assert.equal(
   normalizeGeneratedCommitMessage('refactor: isolate prompt builder\n\nThis is a body.'),

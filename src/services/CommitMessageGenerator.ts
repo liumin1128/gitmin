@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import type { CommitMessageLanguage } from '../../shared/workingTree';
 import {
   buildCommitMessagePrompt,
   normalizeGeneratedCommitMessage,
@@ -14,7 +15,10 @@ export interface GeneratedCommitMessage {
 }
 
 export class CommitMessageGenerator {
-  async generate(diff: string): Promise<GeneratedCommitMessage | null> {
+  async generate(
+    diff: string,
+    language: CommitMessageLanguage
+  ): Promise<GeneratedCommitMessage | null> {
     const models = await vscode.lm.selectChatModels({ vendor: 'copilot' });
     if (models.length === 0) {
       throw new Error(
@@ -27,7 +31,7 @@ export class CommitMessageGenerator {
 
     const cancellation = new vscode.CancellationTokenSource();
     try {
-      const prompt = await this.fitPrompt(diff, model, cancellation.token);
+      const prompt = await this.fitPrompt(diff, language, model, cancellation.token);
       const response = await model.sendRequest(
         [vscode.LanguageModelChatMessage.User(prompt)],
         { justification: 'Generate a Git commit message from the staged diff.' },
@@ -69,6 +73,7 @@ export class CommitMessageGenerator {
 
   private async fitPrompt(
     diff: string,
+    language: CommitMessageLanguage,
     model: vscode.LanguageModelChat,
     token: vscode.CancellationToken
   ): Promise<string> {
@@ -76,7 +81,7 @@ export class CommitMessageGenerator {
     const tokenBudget = Math.max(128, Math.floor(model.maxInputTokens * 0.85));
 
     for (let attempt = 0; attempt < 6; attempt += 1) {
-      const prompt = buildCommitMessagePrompt(diff, diffLimit);
+      const prompt = buildCommitMessagePrompt(diff, language, diffLimit);
       const tokenCount = await model.countTokens(
         vscode.LanguageModelChatMessage.User(prompt),
         token
@@ -87,7 +92,7 @@ export class CommitMessageGenerator {
       diffLimit = Math.max(256, Math.min(diffLimit - 1, nextLimit));
     }
 
-    const prompt = buildCommitMessagePrompt(diff, diffLimit);
+    const prompt = buildCommitMessagePrompt(diff, language, diffLimit);
     const tokenCount = await model.countTokens(
       vscode.LanguageModelChatMessage.User(prompt),
       token

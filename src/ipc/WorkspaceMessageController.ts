@@ -15,6 +15,7 @@ import type {
   RefreshTarget,
   WebviewMessage,
 } from '../../shared/messages';
+import { getCommitMessageLanguage } from '../configuration';
 import { FileDiffNavigator } from '../services/FileDiffNavigator';
 import { CommitMessageGenerator } from '../services/CommitMessageGenerator';
 import { GitService } from '../services/GitService';
@@ -146,7 +147,10 @@ export class WorkspaceMessageController implements vscode.Disposable {
   async handleGenerateCommitMessage(requestId: number): Promise<void> {
     try {
       const diff = await this.workingTree.getStagedDiff();
-      const generated = await this.commitMessageGenerator.generate(diff);
+      const generated = await this.commitMessageGenerator.generate(
+        diff,
+        getCommitMessageLanguage()
+      );
       if (!generated) {
         this.post({
           type: 'workingTree/commitMessageResult',
