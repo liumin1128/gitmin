@@ -2,36 +2,37 @@
  * Git output parsing pure function collection
  * All pure functions with no side effects, easy to unit test
  */
-import type { Commit, FileChange, FileStatus } from '../../shared/domain';
-
+import type { Commit, FileChange, FileStatus } from "../../shared/domain";
+// 1
 /** git log --pretty=format separator uses \x00 (NUL) to avoid conflicts with message content */
-export const LOG_FORMAT = '%H%x00%h%x00%s%x00%an%x00%ae%x00%aI%x00%P%x00%D';
+export const LOG_FORMAT = "%H%x00%h%x00%s%x00%an%x00%ae%x00%aI%x00%P%x00%D";
 
 export function parseLogLine(line: string): Commit {
-  const [hash, shortHash, message, author, email, date, parentsRaw, refsRaw] = line.split('\x00');
+  const [hash, shortHash, message, author, email, date, parentsRaw, refsRaw] =
+    line.split("\x00");
   return {
-    hash: hash ?? '',
-    shortHash: shortHash ?? '',
-    message: message ?? '',
-    author: author ?? '',
-    email: email ?? '',
-    date: date ?? '',
-    parents: parentsRaw ? parentsRaw.split(' ').filter(Boolean) : [],
-    refs: parseCommitRefs(refsRaw ?? ''),
+    hash: hash ?? "",
+    shortHash: shortHash ?? "",
+    message: message ?? "",
+    author: author ?? "",
+    email: email ?? "",
+    date: date ?? "",
+    parents: parentsRaw ? parentsRaw.split(" ").filter(Boolean) : [],
+    refs: parseCommitRefs(refsRaw ?? ""),
   };
 }
 
 export function parseCommitRefs(raw: string): string[] {
   if (!raw || raw.trim().length === 0) return [];
   return raw
-    .split(',')
+    .split(",")
     .map((r) => r.trim())
     .filter((r) => r.length > 0);
 }
 
 export function parseLogOutput(output: string): Commit[] {
   return output
-    .split('\n')
+    .split("\n")
     .filter((l) => l.trim().length > 0)
     .map(parseLogLine);
 }
@@ -52,19 +53,24 @@ export interface StatusEntry {
 
 export function parseNameStatus(output: string): Map<string, StatusEntry> {
   const map = new Map<string, StatusEntry>();
-  for (const line of output.split('\n')) {
+  for (const line of output.split("\n")) {
     if (!line.trim()) continue;
-    const parts = line.split('\t');
+    const parts = line.split("\t");
     const raw = parts[0]!;
     const first = raw[0];
-    if (first === 'R') {
-      map.set(parts[2]!, { status: 'R', oldPath: parts[1] });
-    } else if (first === 'C') {
-      map.set(parts[2]!, { status: 'C', oldPath: parts[1] });
-    } else if (first === 'A' || first === 'M' || first === 'D' || first === 'U') {
+    if (first === "R") {
+      map.set(parts[2]!, { status: "R", oldPath: parts[1] });
+    } else if (first === "C") {
+      map.set(parts[2]!, { status: "C", oldPath: parts[1] });
+    } else if (
+      first === "A" ||
+      first === "M" ||
+      first === "D" ||
+      first === "U"
+    ) {
       map.set(parts[1]!, { status: first as FileStatus });
     } else {
-      map.set(parts[1] ?? '?', { status: '?' });
+      map.set(parts[1] ?? "?", { status: "?" });
     }
   }
   return map;
@@ -83,16 +89,16 @@ export interface NumstatEntry {
 
 export function parseNumstat(output: string): Map<string, NumstatEntry> {
   const map = new Map<string, NumstatEntry>();
-  for (const line of output.split('\n')) {
+  for (const line of output.split("\n")) {
     if (!line.trim()) continue;
-    const parts = line.split('\t');
+    const parts = line.split("\t");
     const [insStr, delStr, ...pathParts] = parts;
-    const path = pathParts.join('\t');
+    const path = pathParts.join("\t");
     if (!path) continue;
-    const binary = insStr === '-' && delStr === '-';
+    const binary = insStr === "-" && delStr === "-";
     map.set(path, {
-      insertions: binary ? 0 : parseInt(insStr ?? '0', 10) || 0,
-      deletions: binary ? 0 : parseInt(delStr ?? '0', 10) || 0,
+      insertions: binary ? 0 : parseInt(insStr ?? "0", 10) || 0,
+      deletions: binary ? 0 : parseInt(delStr ?? "0", 10) || 0,
       binary,
     });
   }
@@ -104,7 +110,7 @@ export function parseNumstat(output: string): Map<string, NumstatEntry> {
  */
 export function mergeFileChanges(
   statusMap: Map<string, StatusEntry>,
-  numstatMap: Map<string, NumstatEntry>
+  numstatMap: Map<string, NumstatEntry>,
 ): FileChange[] {
   const paths = new Set<string>([...statusMap.keys(), ...numstatMap.keys()]);
   const result: FileChange[] = [];
@@ -114,7 +120,7 @@ export function mergeFileChanges(
     result.push({
       path,
       oldPath: s?.oldPath,
-      status: s?.status ?? '?',
+      status: s?.status ?? "?",
       insertions: n?.insertions ?? 0,
       deletions: n?.deletions ?? 0,
       binary: n?.binary ?? false,

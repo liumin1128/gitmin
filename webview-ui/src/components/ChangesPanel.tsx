@@ -68,13 +68,13 @@ export function ChangesPanel({
         <div className="change-message-controls">
           <button
             type="button"
-            className="btn-secondary change-command-button"
+            className="toolbar-icon-button"
             title="Stash changes"
+            aria-label="Stash changes"
             disabled={busy || !stashEnabled}
             onClick={onStash}
           >
             <span className="codicon codicon-archive" aria-hidden="true" />
-            <span>Stash</span>
           </button>
           <button
             type="button"

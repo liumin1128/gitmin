@@ -80,79 +80,76 @@ export function FilterBar({
       </div>
 
       <div className="filter-bar-controls">
-        {/* Branch */}
-        <FilterDropdown
-          label={`Branch: ${branchLabel(filters.branch)}`}
-          active={!!filters.branch}
-          disabled={options.branches.length === 0}
-          onClear={() => patch({ branch: undefined })}
-          clearLabel="Clear branch filter"
-        >
-          {(close) => (
-            <BranchPanel
-              branches={options.branches}
-              value={filters.branch}
-              onSelect={(v) => {
-                patch({ branch: v });
-                close();
-              }}
-            />
-          )}
-        </FilterDropdown>
+        <div className="filter-options">
+          <FilterDropdown
+            label={`Branch: ${branchLabel(filters.branch)}`}
+            active={!!filters.branch}
+            disabled={options.branches.length === 0}
+            onClear={() => patch({ branch: undefined })}
+            clearLabel="Clear branch filter"
+          >
+            {(close) => (
+              <BranchPanel
+                branches={options.branches}
+                value={filters.branch}
+                onSelect={(v) => {
+                  patch({ branch: v });
+                  close();
+                }}
+              />
+            )}
+          </FilterDropdown>
 
-        {/* Author */}
-        <FilterDropdown
-          label={`Author: ${filters.author || 'All'}`}
-          active={!!filters.author}
-          disabled={options.authors.length === 0}
-          onClear={() => patch({ author: undefined })}
-          clearLabel="Clear author filter"
-        >
-          {(close) => (
-            <AuthorPanel
-              authors={options.authors}
-              value={filters.author}
-              onSelect={(v) => {
-                patch({ author: v });
-                close();
-              }}
-            />
-          )}
-        </FilterDropdown>
+          <FilterDropdown
+            label={`Author: ${filters.author || 'All'}`}
+            active={!!filters.author}
+            disabled={options.authors.length === 0}
+            onClear={() => patch({ author: undefined })}
+            clearLabel="Clear author filter"
+          >
+            {(close) => (
+              <AuthorPanel
+                authors={options.authors}
+                value={filters.author}
+                onSelect={(v) => {
+                  patch({ author: v });
+                  close();
+                }}
+              />
+            )}
+          </FilterDropdown>
 
-        {/* Date */}
-        <FilterDropdown
-          label={`Date: ${dateLabel(filters.dateAfter, filters.dateBefore)}`}
-          active={!!(filters.dateAfter || filters.dateBefore)}
-          onClear={() => patch({ dateAfter: undefined, dateBefore: undefined })}
-          clearLabel="Clear date filter"
-        >
-          {(close) => (
-            <DatePanel
-              after={filters.dateAfter ?? ''}
-              before={filters.dateBefore ?? ''}
-              onApply={(after, before) => {
-                patch({ dateAfter: after || undefined, dateBefore: before || undefined });
-                close();
-              }}
-            />
-          )}
-        </FilterDropdown>
+          <FilterDropdown
+            label={`Date: ${dateLabel(filters.dateAfter, filters.dateBefore)}`}
+            active={!!(filters.dateAfter || filters.dateBefore)}
+            onClear={() => patch({ dateAfter: undefined, dateBefore: undefined })}
+            clearLabel="Clear date filter"
+          >
+            {(close) => (
+              <DatePanel
+                after={filters.dateAfter ?? ''}
+                before={filters.dateBefore ?? ''}
+                onApply={(after, before) => {
+                  patch({ dateAfter: after || undefined, dateBefore: before || undefined });
+                  close();
+                }}
+              />
+            )}
+          </FilterDropdown>
+        </div>
 
-        {/* Spacer pushes the settings button to the right */}
-        <div className="filter-bar-spacer" />
-
-        <button
-          type="button"
-          className="toolbar-icon-button"
-          onClick={onRefresh}
-          title="Refresh commit list"
-          aria-label="Refresh commit list"
-        >
-          <span className="codicon codicon-refresh" aria-hidden="true" />
-        </button>
-
-        {actions}
+        <div className="filter-actions">
+          <button
+            type="button"
+            className="toolbar-icon-button"
+            onClick={onRefresh}
+            title="Refresh commit list"
+            aria-label="Refresh commit list"
+          >
+            <span className="codicon codicon-refresh" aria-hidden="true" />
+          </button>
+          {actions}
+        </div>
       </div>
     </div>
   );

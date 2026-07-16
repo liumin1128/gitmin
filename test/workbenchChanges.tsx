@@ -36,6 +36,11 @@ assert.match(html, />Changes</);
 assert.match(html, /<textarea[^>]*rows="1"/);
 assert.match(html, /title="Commit staged changes"/);
 assert.match(html, /title="Stash changes"/);
+assert.match(html, /class="toolbar-icon-button" title="Stash changes" aria-label="Stash changes"/);
+assert.doesNotMatch(html, />Stash<\/span>/);
+assert.equal((html.match(/class="change-group-toggle"/g) ?? []).length, 3);
+assert.match(html, /aria-label="Collapse Staged Changes"[^>]*aria-expanded="true"/);
+assert.match(html, /class="change-group-chevron"/);
 assert.match(html, /codicon-add/);
 assert.match(html, /codicon-remove/);
 assert.match(html, /codicon-discard/);
@@ -119,8 +124,18 @@ assert.ok(commitsSection >= 0 && filterBar > commitsSection && filterBar < commi
 const styles = readFileSync('webview-ui/src/styles.css', 'utf8');
 assert.match(styles, /\.workbench-toolbar\s*\{[^}]*height:\s*26px/s);
 assert.match(styles, /\.change-item\s*\{[^}]*min-height:\s*24px/s);
+assert.match(styles, /\.change-item\s*\{[^}]*padding:\s*0\s+6px\s+0\s+24px/s);
+assert.match(styles, /\.change-group-toggle\s*\{[^}]*padding:\s*0\s+4px\s+0\s+16px/s);
+assert.match(styles, /\.change-group\.is-collapsed\s+\.change-group-chevron\s*\{[^}]*transform:\s*none/s);
 assert.match(styles, /\.change-message-input\s*\{[^}]*resize:\s*none/s);
-assert.match(styles, /\.change-message-input\s*\{[^}]*flex:\s*1\s+1\s+220px[^}]*max-width:\s*360px/s);
+assert.match(
+  styles,
+  /\.filter-search,\s*\.change-message-input\s*\{[^}]*flex:\s*1\s+1\s+220px[^}]*max-width:\s*360px[^}]*height:\s*24px/s
+);
+assert.match(
+  styles,
+  /\.filter-search-input::placeholder,\s*\.change-message-input::placeholder\s*\{[^}]*--vscode-input-placeholderForeground[^}]*opacity:\s*1/s
+);
 assert.match(styles, /\.change-message-controls\s*\{[^}]*flex:\s*1\s+1\s+auto/s);
 assert.match(
   styles,

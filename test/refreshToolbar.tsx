@@ -32,22 +32,22 @@ assert.match(
 const styles = readFileSync('webview-ui/src/styles.css', 'utf8');
 assert.match(
   styles,
-  /\.filter-bar\s*\{[^}]*flex-wrap:\s*nowrap/s,
-  'wide toolbar must never partially wrap'
+  /\.filter-bar\s*\{[^}]*grid-template-columns:\s*minmax\(220px,\s*360px\)\s+minmax\(0,\s*1fr\)[^}]*column-gap:\s*6px/s,
+  'wide toolbar should use stable search and control columns'
 );
 assert.match(
   styles,
-  /@media\s*\(max-width:\s*640px\)[\s\S]*?\.filter-bar\s*\{[^}]*flex-direction:\s*column/s,
+  /@media\s*\(max-width:\s*640px\)[\s\S]*?\.filter-bar\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)[^}]*row-gap:\s*4px/s,
   'narrow toolbar should switch directly to two rows'
 );
 assert.match(
   styles,
-  /\.filter-bar-controls\s*>\s*\.toolbar-icon-button,[^}]*\.view-visibility-menu\s*\{[^}]*flex:\s*0\s+0\s+24px/s,
+  /\.filter-actions\s*>\s*\.toolbar-icon-button,[^}]*\.view-visibility-menu\s*\{[^}]*flex:\s*0\s+0\s+24px/s,
   'toolbar icon buttons should keep their 24px width'
 );
 assert.match(
   styles,
-  /\.filter-bar-controls[^}]*\.filter-dropdown-btn\s*\{[^}]*font-size:\s*12px/s,
+  /\.filter-options[^}]*\.filter-dropdown-btn\s*\{[^}]*font-size:\s*12px/s,
   'filter labels should use compact toolbar text'
 );
 assert.match(

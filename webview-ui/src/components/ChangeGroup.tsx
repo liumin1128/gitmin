@@ -1,4 +1,4 @@
-import type { MouseEvent } from 'react';
+import { useState, type MouseEvent } from 'react';
 import type {
   WorkingTreeChange,
   WorkingTreeGroup,
@@ -29,6 +29,8 @@ export function ChangeGroup({
   onOpenDiff,
   onAction,
 }: Props) {
+  const [collapsed, setCollapsed] = useState(false);
+
   if (changes.length === 0) return null;
   const primaryAction: WorkingTreeAction = group === 'staged' ? 'unstage' : 'stage';
   const primaryIcon = group === 'staged' ? 'remove' : 'add';
@@ -37,13 +39,28 @@ export function ChangeGroup({
   const selectedPaths = changes
     .filter((change) => selectedKeys.has(workingTreeChangeKey(group, change.path)))
     .map((change) => change.path);
+  const contentId = `${group}-change-group-content`;
+  const toggleLabel = `${collapsed ? 'Expand' : 'Collapse'} ${title}`;
 
   return (
-    <section className="change-group" data-change-group={group}>
+    <section
+      className={`change-group${collapsed ? ' is-collapsed' : ''}`}
+      data-change-group={group}
+    >
       <header className="change-group-header">
-        <span className="change-group-title">{title}</span>
-        <span className="change-group-count">{changes.length}</span>
-        <span className="change-group-spacer" />
+        <button
+          type="button"
+          className="change-group-toggle"
+          aria-label={toggleLabel}
+          title={toggleLabel}
+          aria-expanded={!collapsed}
+          aria-controls={contentId}
+          onClick={() => setCollapsed((value) => !value)}
+        >
+          <span className="change-group-chevron" aria-hidden="true">›</span>
+          <span className="change-group-title">{title}</span>
+          <span className="change-group-count">{changes.length}</span>
+        </button>
         <IconButton
           icon={primaryIcon}
           title={primaryTitle}
@@ -57,45 +74,47 @@ export function ChangeGroup({
           onClick={() => onAction('discard', group, allPaths)}
         />
       </header>
-      <div className="change-list">
-        {changes.map((change) => {
-          const key = workingTreeChangeKey(group, change.path);
-          const selected = selectedKeys.has(key);
-          const actionPaths = selected && selectedPaths.length > 0 ? selectedPaths : [change.path];
-          return (
-            <div
-              key={key}
-              className={`change-item status-${change.status}${selected ? ' is-selected' : ''}`}
-              aria-selected={selected}
-              title={change.oldPath ? `${change.oldPath} -> ${change.path}` : change.path}
-              onClick={(event) => {
-                onSelect(key, event);
-                onOpenDiff(group, change.path);
-              }}
-            >
-              <span className="file-status">{change.status}</span>
-              <span className="change-path">
-                {change.oldPath && <span className="change-old-path">{change.oldPath} -&gt; </span>}
-                {change.path}
-              </span>
-              <span className="change-item-actions" onClick={(event) => event.stopPropagation()}>
-                <IconButton
-                  icon={primaryIcon}
-                  title={group === 'staged' ? 'Unstage changes' : 'Stage changes'}
-                  disabled={busy}
-                  onClick={() => onAction(primaryAction, group, actionPaths)}
-                />
-                <IconButton
-                  icon="discard"
-                  title="Discard changes"
-                  disabled={busy}
-                  onClick={() => onAction('discard', group, actionPaths)}
-                />
-              </span>
-            </div>
-          );
-        })}
-      </div>
+      {!collapsed && (
+        <div id={contentId} className="change-list">
+          {changes.map((change) => {
+            const key = workingTreeChangeKey(group, change.path);
+            const selected = selectedKeys.has(key);
+            const actionPaths = selected && selectedPaths.length > 0 ? selectedPaths : [change.path];
+            return (
+              <div
+                key={key}
+                className={`change-item status-${change.status}${selected ? ' is-selected' : ''}`}
+                aria-selected={selected}
+                title={change.oldPath ? `${change.oldPath} -> ${change.path}` : change.path}
+                onClick={(event) => {
+                  onSelect(key, event);
+                  onOpenDiff(group, change.path);
+                }}
+              >
+                <span className="file-status">{change.status}</span>
+                <span className="change-path">
+                  {change.oldPath && <span className="change-old-path">{change.oldPath} -&gt; </span>}
+                  {change.path}
+                </span>
+                <span className="change-item-actions" onClick={(event) => event.stopPropagation()}>
+                  <IconButton
+                    icon={primaryIcon}
+                    title={group === 'staged' ? 'Unstage changes' : 'Stage changes'}
+                    disabled={busy}
+                    onClick={() => onAction(primaryAction, group, actionPaths)}
+                  />
+                  <IconButton
+                    icon="discard"
+                    title="Discard changes"
+                    disabled={busy}
+                    onClick={() => onAction('discard', group, actionPaths)}
+                  />
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }
