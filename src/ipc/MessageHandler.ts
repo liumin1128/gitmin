@@ -31,6 +31,7 @@ import {
   parsePersistedCommitFilters,
 } from "../../shared/persistedFilters";
 import { WorkspaceMessageController } from "./WorkspaceMessageController";
+import { CommitMessageGenerator } from "../services/CommitMessageGenerator";
 
 export type PostMessage = (msg: ExtensionMessage) => void;
 
@@ -68,6 +69,7 @@ export class MessageHandler implements vscode.Disposable {
     private readonly fileDiffNavigator: FileDiffNavigator,
     private readonly workspaceState: vscode.Memento,
     private readonly repositorySelection: RepositorySelectionService,
+    private readonly commitMessageGenerator: CommitMessageGenerator,
   ) {
     this.disposables.push(
       this.fileDiffNavigator.onDidChangeActiveFile(({ range, filePath }) => {
@@ -206,6 +208,7 @@ export class MessageHandler implements vscode.Disposable {
     this.workspaceController = new WorkspaceMessageController(
       repo.rootPath,
       this.git,
+      this.commitMessageGenerator,
       (message) => {
         if (this.repositoryGeneration === generation) this.post(message);
       },

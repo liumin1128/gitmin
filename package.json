@@ -35,7 +35,38 @@
             "使用中文生成 Commit Message。"
           ],
           "default": "en",
-          "description": "Language used when generating commit messages with Copilot."
+          "description": "Language used when generating commit messages with the configured provider."
+        },
+        "gitmin.commitMessageModel": {
+          "type": "string",
+          "default": "",
+          "scope": "window",
+          "markdownDescription": "Copilot model ID used to generate commit messages. Leave empty to choose on the next generation, or run `GitMin: Select Commit Message Model` to select from currently available models."
+        },
+        "gitmin.customModel.enabled": {
+          "type": "boolean",
+          "default": false,
+          "scope": "window",
+          "markdownDescription": "Use an OpenAI-compatible third-party model for commit message generation instead of Copilot. [Set or replace the API key](command:gitmin.setCustomModelApiKey); it is stored securely and never written to `settings.json`."
+        },
+        "gitmin.customModel.baseUrl": {
+          "type": "string",
+          "default": "",
+          "scope": "window",
+          "markdownDescription": "OpenAI-compatible Base URL or full Chat Completions endpoint. For example, enter `https://api.example.com/v1` or `https://api.example.com/v1/chat/completions`; GitMin only appends `/chat/completions` when needed."
+        },
+        "gitmin.customModel.model": {
+          "type": "string",
+          "default": "",
+          "scope": "window",
+          "description": "Model ID sent to the OpenAI-compatible API."
+        },
+        "gitmin.commitMessagePrompt": {
+          "type": "string",
+          "default": "",
+          "scope": "window",
+          "editPresentation": "multilineText",
+          "markdownDescription": "Additional instructions appended to the built-in commit message prompt. The staged diff and output language rules are supplied automatically."
         }
       }
     },
@@ -51,6 +82,16 @@
         "title": "GitMin: Open Settings",
         "category": "GitMin",
         "icon": "$(gear)"
+      },
+      {
+        "command": "gitmin.selectCommitMessageModel",
+        "title": "GitMin: Select Commit Message Model",
+        "category": "GitMin"
+      },
+      {
+        "command": "gitmin.setCustomModelApiKey",
+        "title": "GitMin: Set Custom Model API Key",
+        "category": "GitMin"
       },
       {
         "command": "gitmin.previousFileDiff",
@@ -72,9 +113,21 @@
         "category": "GitMin"
       },
       {
+        "command": "gitmin.toggleRepositoriesView.checked",
+        "title": "Repositories",
+        "category": "GitMin",
+        "icon": "$(check)"
+      },
+      {
         "command": "gitmin.toggleChangesView",
         "title": "Changes",
         "category": "GitMin"
+      },
+      {
+        "command": "gitmin.toggleChangesView.checked",
+        "title": "Changes",
+        "category": "GitMin",
+        "icon": "$(check)"
       },
       {
         "command": "gitmin.toggleCommitsView",
@@ -82,9 +135,21 @@
         "category": "GitMin"
       },
       {
+        "command": "gitmin.toggleCommitsView.checked",
+        "title": "Commits",
+        "category": "GitMin",
+        "icon": "$(check)"
+      },
+      {
         "command": "gitmin.toggleStashesView",
         "title": "Stashes",
         "category": "GitMin"
+      },
+      {
+        "command": "gitmin.toggleStashesView.checked",
+        "title": "Stashes",
+        "category": "GitMin",
+        "icon": "$(check)"
       },
       {
         "command": "gitmin.toggleChangedFilesView",
@@ -92,9 +157,21 @@
         "category": "GitMin"
       },
       {
+        "command": "gitmin.toggleChangedFilesView.checked",
+        "title": "Changed Files",
+        "category": "GitMin",
+        "icon": "$(check)"
+      },
+      {
         "command": "gitmin.toggleCommitDetailsView",
         "title": "Commit Details",
         "category": "GitMin"
+      },
+      {
+        "command": "gitmin.toggleCommitDetailsView.checked",
+        "title": "Commit Details",
+        "category": "GitMin",
+        "icon": "$(check)"
       }
     ],
     "viewsContainers": {
@@ -146,39 +223,89 @@
         },
         {
           "command": "gitmin.toggleRepositoriesView",
-          "when": "view == gitmin.panel",
-          "group": "1_views@1",
-          "toggled": "gitmin.workbenchView.repositories.visible"
+          "when": "view == gitmin.panel && !gitmin.workbenchView.repositories.visible",
+          "group": "1_views@1"
+        },
+        {
+          "command": "gitmin.toggleRepositoriesView.checked",
+          "when": "view == gitmin.panel && gitmin.workbenchView.repositories.visible",
+          "group": "1_views@1"
         },
         {
           "command": "gitmin.toggleChangesView",
-          "when": "view == gitmin.panel",
-          "group": "1_views@2",
-          "toggled": "gitmin.workbenchView.changes.visible"
+          "when": "view == gitmin.panel && !gitmin.workbenchView.changes.visible",
+          "group": "1_views@2"
+        },
+        {
+          "command": "gitmin.toggleChangesView.checked",
+          "when": "view == gitmin.panel && gitmin.workbenchView.changes.visible",
+          "group": "1_views@2"
         },
         {
           "command": "gitmin.toggleCommitsView",
-          "when": "view == gitmin.panel",
-          "group": "1_views@3",
-          "toggled": "gitmin.workbenchView.commits.visible"
+          "when": "view == gitmin.panel && !gitmin.workbenchView.commits.visible",
+          "group": "1_views@3"
+        },
+        {
+          "command": "gitmin.toggleCommitsView.checked",
+          "when": "view == gitmin.panel && gitmin.workbenchView.commits.visible",
+          "group": "1_views@3"
         },
         {
           "command": "gitmin.toggleStashesView",
-          "when": "view == gitmin.panel",
-          "group": "1_views@4",
-          "toggled": "gitmin.workbenchView.stashes.visible"
+          "when": "view == gitmin.panel && !gitmin.workbenchView.stashes.visible",
+          "group": "1_views@4"
+        },
+        {
+          "command": "gitmin.toggleStashesView.checked",
+          "when": "view == gitmin.panel && gitmin.workbenchView.stashes.visible",
+          "group": "1_views@4"
         },
         {
           "command": "gitmin.toggleChangedFilesView",
-          "when": "view == gitmin.panel",
-          "group": "1_views@5",
-          "toggled": "gitmin.workbenchView.files.visible"
+          "when": "view == gitmin.panel && !gitmin.workbenchView.files.visible",
+          "group": "1_views@5"
+        },
+        {
+          "command": "gitmin.toggleChangedFilesView.checked",
+          "when": "view == gitmin.panel && gitmin.workbenchView.files.visible",
+          "group": "1_views@5"
         },
         {
           "command": "gitmin.toggleCommitDetailsView",
-          "when": "view == gitmin.panel",
-          "group": "1_views@6",
-          "toggled": "gitmin.workbenchView.details.visible"
+          "when": "view == gitmin.panel && !gitmin.workbenchView.details.visible",
+          "group": "1_views@6"
+        },
+        {
+          "command": "gitmin.toggleCommitDetailsView.checked",
+          "when": "view == gitmin.panel && gitmin.workbenchView.details.visible",
+          "group": "1_views@6"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "gitmin.toggleRepositoriesView.checked",
+          "when": "false"
+        },
+        {
+          "command": "gitmin.toggleChangesView.checked",
+          "when": "false"
+        },
+        {
+          "command": "gitmin.toggleCommitsView.checked",
+          "when": "false"
+        },
+        {
+          "command": "gitmin.toggleStashesView.checked",
+          "when": "false"
+        },
+        {
+          "command": "gitmin.toggleChangedFilesView.checked",
+          "when": "false"
+        },
+        {
+          "command": "gitmin.toggleCommitDetailsView.checked",
+          "when": "false"
         }
       ]
     }
@@ -196,7 +323,7 @@
     "test:persisted-filters": "node --experimental-strip-types test/persistedFilters.mts",
     "test:working-tree": "node --experimental-strip-types test/workingTree.mts && node test/runTsxTest.mjs test/gitWorkspaceServices.mts",
     "test:stashes": "node --experimental-strip-types test/stashParser.mts",
-    "test:workbench-changes": "node --experimental-strip-types test/detailSelection.mts && node --experimental-strip-types test/workingTreeDiff.mts && node --experimental-strip-types test/workingTree.mts && node --experimental-strip-types test/commitMessage.mts && node test/runTsxTest.mjs test/workbenchChanges.tsx",
+    "test:workbench-changes": "node --experimental-strip-types test/detailSelection.mts && node --experimental-strip-types test/workingTreeDiff.mts && node --experimental-strip-types test/workingTree.mts && node --experimental-strip-types test/commitMessage.mts && node test/runTsxTest.mjs test/customModelClient.ts && node test/runTsxTest.mjs test/workbenchChanges.tsx",
     "test:repositories": "node test/runTsxTest.mjs test/repositories.mts && node test/runTsxTest.mjs test/repositoryList.tsx",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.webview.json --noEmit",
     "vscode:prepublish": "npm run build"

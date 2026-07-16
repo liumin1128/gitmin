@@ -1,13 +1,15 @@
 import * as vscode from 'vscode';
 import type { CommitMessageLanguage } from '../../shared/workingTree';
 import {
+  getCommitMessagePrompt,
+  getCustomModelSettings,
+} from '../configuration';
+import {
   buildCommitMessagePrompt,
   normalizeGeneratedCommitMessage,
 } from '../utils/commitMessage';
-
-interface ModelQuickPickItem extends vscode.QuickPickItem {
-  model: vscode.LanguageModelChat;
-}
+import { CopilotModelSelector } from './CopilotModelSelector';
+import { OpenAICompatibleClient } from './OpenAICompatibleClient';
 
 export interface GeneratedCommitMessage {
   message: string;
@@ -15,23 +17,38 @@ export interface GeneratedCommitMessage {
 }
 
 export class CommitMessageGenerator {
+  constructor(
+    private readonly modelSelector: CopilotModelSelector,
+    private readonly customModelClient: OpenAICompatibleClient
+  ) {}
+
   async generate(
     diff: string,
     language: CommitMessageLanguage
   ): Promise<GeneratedCommitMessage | null> {
-    const models = await vscode.lm.selectChatModels({ vendor: 'copilot' });
-    if (models.length === 0) {
-      throw new Error(
-        'No Copilot model is available. Sign in to GitHub Copilot and enable a chat model.'
-      );
+    const customPrompt = getCommitMessagePrompt();
+    const customModel = getCustomModelSettings();
+    if (customModel.enabled) {
+      const prompt = buildCommitMessagePrompt(diff, language, 120_000, customPrompt);
+      const output = await this.customModelClient.generate(prompt, customModel);
+      return {
+        message: normalizeGeneratedCommitMessage(output),
+        model: customModel.model,
+      };
     }
 
-    const model = await this.selectModel(models);
+    const model = await this.modelSelector.selectForGeneration();
     if (!model) return null;
 
     const cancellation = new vscode.CancellationTokenSource();
     try {
-      const prompt = await this.fitPrompt(diff, language, model, cancellation.token);
+      const prompt = await this.fitPrompt(
+        diff,
+        language,
+        customPrompt,
+        model,
+        cancellation.token
+      );
       const response = await model.sendRequest(
         [vscode.LanguageModelChatMessage.User(prompt)],
         { justification: 'Generate a Git commit message from the staged diff.' },
@@ -53,27 +70,10 @@ export class CommitMessageGenerator {
     }
   }
 
-  private async selectModel(
-    models: readonly vscode.LanguageModelChat[]
-  ): Promise<vscode.LanguageModelChat | undefined> {
-    if (models.length === 1) return models[0];
-
-    const items: ModelQuickPickItem[] = models.map((model) => ({
-      label: model.name,
-      description: model.family,
-      detail: `Copilot - ${model.id}`,
-      model,
-    }));
-    const selected = await vscode.window.showQuickPick(items, {
-      title: 'Generate Commit Message',
-      placeHolder: 'Select a Copilot model',
-    });
-    return selected?.model;
-  }
-
   private async fitPrompt(
     diff: string,
     language: CommitMessageLanguage,
+    customPrompt: string,
     model: vscode.LanguageModelChat,
     token: vscode.CancellationToken
   ): Promise<string> {
@@ -81,7 +81,7 @@ export class CommitMessageGenerator {
     const tokenBudget = Math.max(128, Math.floor(model.maxInputTokens * 0.85));
 
     for (let attempt = 0; attempt < 6; attempt += 1) {
-      const prompt = buildCommitMessagePrompt(diff, language, diffLimit);
+      const prompt = buildCommitMessagePrompt(diff, language, diffLimit, customPrompt);
       const tokenCount = await model.countTokens(
         vscode.LanguageModelChatMessage.User(prompt),
         token
@@ -92,7 +92,7 @@ export class CommitMessageGenerator {
       diffLimit = Math.max(256, Math.min(diffLimit - 1, nextLimit));
     }
 
-    const prompt = buildCommitMessagePrompt(diff, language, diffLimit);
+    const prompt = buildCommitMessagePrompt(diff, language, diffLimit, customPrompt);
     const tokenCount = await model.countTokens(
       vscode.LanguageModelChatMessage.User(prompt),
       token

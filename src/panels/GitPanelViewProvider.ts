@@ -6,6 +6,7 @@ import * as vscode from "vscode";
 import { MessageHandler } from "../ipc/MessageHandler";
 import { FileDiffNavigator } from "../services/FileDiffNavigator";
 import { RepositorySelectionService } from "../services/RepositorySelectionService";
+import { CommitMessageGenerator } from "../services/CommitMessageGenerator";
 import { buildWebviewHtml } from "../utils/webviewHtml";
 import type { WebviewMessage } from "../../shared/messages";
 import {
@@ -24,6 +25,7 @@ export class GitPanelViewProvider implements vscode.WebviewViewProvider {
     private readonly fileDiffNavigator: FileDiffNavigator,
     private readonly workspaceState: vscode.Memento,
     private readonly repositorySelection: RepositorySelectionService,
+    private readonly commitMessageGenerator: CommitMessageGenerator,
   ) {}
 
   toggleWorkbenchView(id: WorkbenchViewId): void {
@@ -46,6 +48,7 @@ export class GitPanelViewProvider implements vscode.WebviewViewProvider {
       this.fileDiffNavigator,
       this.workspaceState,
       this.repositorySelection,
+      this.commitMessageGenerator,
     );
     const sub = view.webview.onDidReceiveMessage((raw: WebviewMessage) => {
       if (raw.type === "workbenchViews/visibility") {

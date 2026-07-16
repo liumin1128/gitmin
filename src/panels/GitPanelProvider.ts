@@ -6,6 +6,7 @@ import * as vscode from "vscode";
 import { MessageHandler } from "../ipc/MessageHandler";
 import { FileDiffNavigator } from "../services/FileDiffNavigator";
 import { RepositorySelectionService } from "../services/RepositorySelectionService";
+import { CommitMessageGenerator } from "../services/CommitMessageGenerator";
 import { buildWebviewHtml } from "../utils/webviewHtml";
 import type { WebviewMessage } from "../../shared/messages";
 
@@ -16,6 +17,7 @@ export class GitPanelProvider {
     context: vscode.ExtensionContext,
     fileDiffNavigator: FileDiffNavigator,
     repositorySelection: RepositorySelectionService,
+    commitMessageGenerator: CommitMessageGenerator,
   ): void {
     if (GitPanelProvider.current) {
       GitPanelProvider.current.panel.reveal(vscode.ViewColumn.Active);
@@ -37,6 +39,7 @@ export class GitPanelProvider {
       fileDiffNavigator,
       context.workspaceState,
       repositorySelection,
+      commitMessageGenerator,
     );
   }
 
@@ -46,6 +49,7 @@ export class GitPanelProvider {
     fileDiffNavigator: FileDiffNavigator,
     workspaceState: vscode.Memento,
     repositorySelection: RepositorySelectionService,
+    commitMessageGenerator: CommitMessageGenerator,
   ) {
     this.panel.webview.html = buildWebviewHtml(
       this.panel.webview,
@@ -60,6 +64,7 @@ export class GitPanelProvider {
       fileDiffNavigator,
       workspaceState,
       repositorySelection,
+      commitMessageGenerator,
     );
     const messageSubscription = this.panel.webview.onDidReceiveMessage(
       (raw: WebviewMessage) => {

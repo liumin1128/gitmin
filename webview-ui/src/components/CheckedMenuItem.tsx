@@ -15,9 +15,10 @@ export function CheckedMenuItem({ checked, onChange, children }: Props) {
       aria-checked={checked}
       onClick={() => onChange(!checked)}
     >
-      <span className="checked-menu-indicator" aria-hidden="true">
-        {checked ? '✓' : ''}
-      </span>
+      <span
+        className={`checked-menu-indicator${checked ? ' codicon codicon-check' : ''}`}
+        aria-hidden="true"
+      />
       <span className="checked-menu-label">{children}</span>
     </button>
   );

@@ -83,7 +83,14 @@ const checkedItemHtml = renderToStaticMarkup(
 );
 assert.match(checkedItemHtml, /role="menuitemcheckbox"/);
 assert.match(checkedItemHtml, /aria-checked="true"/);
+assert.match(checkedItemHtml, /codicon-check/);
 assert.doesNotMatch(checkedItemHtml, /<input/);
+
+const uncheckedItemHtml = renderToStaticMarkup(
+  <CheckedMenuItem checked={false} onChange={() => undefined}>Time</CheckedMenuItem>
+);
+assert.match(uncheckedItemHtml, /aria-checked="false"/);
+assert.doesNotMatch(uncheckedItemHtml, /codicon-check/);
 
 const columnsMenuHtml = renderToStaticMarkup(
   <ColumnsMenu columns={DEFAULT_COLUMNS} onChange={() => undefined} />

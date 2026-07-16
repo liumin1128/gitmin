@@ -30,7 +30,6 @@ type SetDiffCache = (range: DiffRange, files: FileChange[]) => void;
 
 export class WorkspaceMessageController implements vscode.Disposable {
   private readonly workingTree: WorkingTreeService;
-  private readonly commitMessageGenerator: CommitMessageGenerator;
   private readonly stashes: StashService;
   private readonly workingTreeDiffNavigator: WorkingTreeDiffNavigator;
   private workingTreeCache: WorkingTreeSnapshot = {
@@ -48,12 +47,12 @@ export class WorkspaceMessageController implements vscode.Disposable {
   constructor(
     private readonly rootPath: string,
     private readonly git: GitService,
+    private readonly commitMessageGenerator: CommitMessageGenerator,
     private readonly post: PostMessage,
     private readonly fileDiffNavigator: FileDiffNavigator,
     private readonly setDiffCache: SetDiffCache
   ) {
     this.workingTree = new WorkingTreeService(rootPath);
-    this.commitMessageGenerator = new CommitMessageGenerator();
     this.stashes = new StashService(rootPath, git);
     this.workingTreeDiffNavigator = new WorkingTreeDiffNavigator(rootPath);
   }

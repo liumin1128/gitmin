@@ -19,7 +19,11 @@ const editorTitle = manifest.contributes.menus["editor/title"] as Array<{
 const viewTitle = manifest.contributes.menus["view/title"] as Array<{
   command: string;
   group: string;
-  toggled?: string;
+  when: string;
+}>;
+const commandPalette = manifest.contributes.menus.commandPalette as Array<{
+  command: string;
+  when: string;
 }>;
 const gitminView = manifest.contributes.views.gitmin[0] as {
   id: string;
@@ -34,32 +38,48 @@ assert.equal(
   commands.find((item) => item.command === "gitmin.nextFileDiff")?.icon,
   "$(arrow-right)",
 );
-assert.deepEqual(
-  editorTitle.map((item) => item.command),
-  ["gitmin.previousFileDiff", "gitmin.nextFileDiff"],
+const editorNavigation = editorTitle.filter((item) =>
+  ["gitmin.previousFileDiff", "gitmin.nextFileDiff"].includes(item.command),
 );
-assert.deepEqual(
-  editorTitle.map((item) => item.group),
-  ["navigation@12", "navigation@13"],
-);
+assert.deepEqual(editorNavigation.map((item) => item.command), [
+  "gitmin.previousFileDiff",
+  "gitmin.nextFileDiff",
+]);
+assert.deepEqual(editorNavigation.map((item) => item.group), [
+  "navigation@12",
+  "navigation@13",
+]);
 
 assert.equal(gitminView.name, "GitMin", "the merged sidebar title should only show GitMin");
-assert.deepEqual(
-  viewTitle.slice(1).map((item) => item.command),
-  WORKBENCH_VIEW_IDS.map((id) => WORKBENCH_VIEW_METADATA[id].toggleCommand),
-);
-assert.ok(
-  viewTitle.slice(1).every((item) => !item.group.startsWith("navigation")),
-  "view visibility actions should render in the native title overflow menu",
-);
-assert.ok(
-  viewTitle
-    .slice(1)
-    .every((item, index) =>
-      item.toggled === WORKBENCH_VIEW_METADATA[WORKBENCH_VIEW_IDS[index]!].visibilityContext
+for (const [index, id] of WORKBENCH_VIEW_IDS.entries()) {
+  const metadata = WORKBENCH_VIEW_METADATA[id];
+  const uncheckedItem = viewTitle.find((item) => item.command === metadata.toggleCommand);
+  const checkedItem = viewTitle.find(
+    (item) => item.command === metadata.checkedToggleCommand,
+  );
+
+  assert.equal(
+    commands.find((item) => item.command === metadata.checkedToggleCommand)?.icon,
+    "$(check)",
+    `${metadata.label} should use the native check icon when visible`,
+  );
+  assert.equal(uncheckedItem?.group, `1_views@${index + 1}`);
+  assert.equal(checkedItem?.group, uncheckedItem?.group);
+  assert.equal(
+    uncheckedItem?.when,
+    `view == gitmin.panel && !${metadata.visibilityContext}`,
+  );
+  assert.equal(
+    checkedItem?.when,
+    `view == gitmin.panel && ${metadata.visibilityContext}`,
+  );
+  assert.ok(
+    commandPalette.some(
+      (item) => item.command === metadata.checkedToggleCommand && item.when === "false",
     ),
-  "native visibility actions should expose their checked state",
-);
+    "internal checked variants should stay out of the Command Palette",
+  );
+}
 
 const selectionHook = readFileSync(
   new URL('../webview-ui/src/hooks/useSelectionDetails.ts', import.meta.url),

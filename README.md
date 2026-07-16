@@ -11,6 +11,7 @@ WebStorm-like Git commit management panel for VSCode. Browse commit history, ins
 - Working tree panel with staged, unstaged, and merge changes
 - Stage, unstage, discard, commit, and stash workflows
 - Copilot-powered commit message generation from staged changes
+- OpenAI-compatible custom model support with secure API key storage and custom prompts
 - Recent stash inspection with apply and delete actions
 - Commit graph with branch lanes
 - Filter by search (text / regex / case-sensitive), branch, author, and date range
