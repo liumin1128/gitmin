@@ -1,6 +1,7 @@
 import type { RepositorySnapshot, RepositorySummary } from '../../shared/repositories';
 import {
   getRepositoryName,
+  isRepositoryInWorkspace,
   resolveSelectedRepository,
 } from '../../shared/repositories';
 import type { GitApi, GitRepository } from './RepoLocator';
@@ -21,6 +22,7 @@ export interface RepositorySelectionChange extends RepositorySnapshot {
 }
 
 export type GitApiLoader = () => Promise<GitApi | null>;
+export type WorkspaceRootPathsProvider = () => readonly string[] | undefined;
 type RepositoryListener = (change: RepositorySelectionChange) => void;
 
 export class RepositorySelectionService implements Disposable {
@@ -37,7 +39,8 @@ export class RepositorySelectionService implements Disposable {
 
   constructor(
     workspaceState: WorkspaceState,
-    loadGitApi: GitApiLoader
+    loadGitApi: GitApiLoader,
+    private readonly getWorkspaceRootPaths: WorkspaceRootPathsProvider = () => undefined,
   ) {
     this.workspaceState = workspaceState;
     this.loadGitApi = loadGitApi;
@@ -46,6 +49,11 @@ export class RepositorySelectionService implements Disposable {
   initialize(): Promise<void> {
     if (!this.initializePromise) this.initializePromise = this.doInitialize();
     return this.initializePromise;
+  }
+
+  async refresh(): Promise<void> {
+    await this.initialize();
+    await this.reconcileRepositories(false);
   }
 
   getSnapshot(): RepositorySnapshot {
@@ -126,13 +134,13 @@ export class RepositorySelectionService implements Disposable {
 
   private syncRepositoryListeners(): void {
     if (!this.api) return;
-    const current = new Set(this.api.repositories);
+    const current = new Set(this.getWorkspaceRepositories());
     this.repositoryDisposables.forEach((disposable, repository) => {
       if (current.has(repository)) return;
       disposable.dispose();
       this.repositoryDisposables.delete(repository);
     });
-    this.api.repositories.forEach((repository) => {
+    current.forEach((repository) => {
       if (this.repositoryDisposables.has(repository)) return;
       this.repositoryDisposables.set(
         repository,
@@ -142,11 +150,19 @@ export class RepositorySelectionService implements Disposable {
   }
 
   private getRepositories(): RepositorySummary[] {
-    return (this.api?.repositories ?? []).map((repository) => ({
+    return this.getWorkspaceRepositories().map((repository) => ({
       rootPath: repository.rootUri.fsPath,
       name: getRepositoryName(repository.rootUri.fsPath),
       currentBranch: repository.state.HEAD?.name ?? '(detached)',
     }));
+  }
+
+  private getWorkspaceRepositories(): GitRepository[] {
+    const workspaceRootPaths = this.getWorkspaceRootPaths();
+    if (!workspaceRootPaths) return this.api?.repositories ?? [];
+    return (this.api?.repositories ?? []).filter((repository) =>
+      isRepositoryInWorkspace(repository.rootUri.fsPath, workspaceRootPaths),
+    );
   }
 
   private async persistSelection(): Promise<void> {

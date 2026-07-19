@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {
   getRepositoryName,
+  isRepositoryInWorkspace,
   resolveSelectedRepository,
   type RepositorySummary,
 } from '../shared/repositories.ts';
@@ -42,6 +43,10 @@ async function main() {
 
   assert.equal(getRepositoryName('/workspace/api'), 'api');
   assert.equal(getRepositoryName('C:\\workspace\\web'), 'web');
+  assert.equal(isRepositoryInWorkspace('/workspace/api', ['/workspace']), true);
+  assert.equal(isRepositoryInWorkspace('/workspace', ['/workspace/api']), true);
+  assert.equal(isRepositoryInWorkspace('/workspace-other/api', ['/workspace']), false);
+  assert.equal(isRepositoryInWorkspace('C:\\Workspace\\api', ['c:/workspace']), true);
   assert.equal(resolveSelectedRepository(summaries, '/workspace/api', '/workspace/web'), '/workspace/api');
   assert.equal(resolveSelectedRepository(summaries, '/missing', '/workspace/web'), '/workspace/web');
   assert.equal(resolveSelectedRepository(summaries, '/missing', '/also-missing'), '/workspace/api');
@@ -55,6 +60,7 @@ async function main() {
 
   const apiRepo = repository('/workspace/api', 'main');
   const webRepo = repository('/workspace/web', 'feature/repos');
+  const externalRepo = repository('/unrelated/other', 'main');
   const opened = eventSource<unknown>();
   const closed = eventSource<unknown>();
   const values = new Map<string, unknown>([['gitmin.selectedRepository', '/workspace/web']]);
@@ -69,16 +75,22 @@ async function main() {
     },
   };
   const api = {
-    repositories: [apiRepo, webRepo],
+    repositories: [apiRepo, webRepo, externalRepo],
     onDidOpenRepository: opened.event,
     onDidCloseRepository: closed.event,
   };
-  const service = new RepositorySelectionService(workspaceState, async () => api as never);
+  let workspaceRoots = ['/workspace'];
+  const service = new RepositorySelectionService(
+    workspaceState,
+    async () => api as never,
+    () => workspaceRoots,
+  );
   const events: Array<{ selectedRootPath: string | null; selectionChanged: boolean }> = [];
   service.onDidChange((event) => events.push(event));
 
   await service.initialize();
   assert.equal(service.getSnapshot().selectedRootPath, '/workspace/web');
+  assert.equal(service.getSnapshot().repositories.length, 2);
   assert.equal(service.getSnapshot().repositories[1]?.currentBranch, 'feature/repos');
 
   await service.select('/workspace/api');
@@ -92,8 +104,16 @@ async function main() {
   assert.equal(service.getSnapshot().selectedRootPath, '/workspace/web');
   assert.deepEqual(updates.at(-1), ['gitmin.selectedRepository', '/workspace/web']);
 
-  webRepo.state.HEAD.name = 'release';
-  webRepo.changes.fire(undefined);
+  workspaceRoots = ['/unrelated'];
+  await service.refresh();
+  assert.deepEqual(
+    service.getSnapshot().repositories.map((repository) => repository.rootPath),
+    ['/unrelated/other'],
+  );
+  assert.equal(service.getSnapshot().selectedRootPath, '/unrelated/other');
+
+  externalRepo.state.HEAD.name = 'release';
+  externalRepo.changes.fire(undefined);
   assert.equal(service.getSnapshot().repositories[0]?.currentBranch, 'release');
   assert.equal(events.at(-1)?.selectionChanged, false);
 

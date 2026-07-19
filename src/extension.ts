@@ -25,6 +25,7 @@ export function activate(context: vscode.ExtensionContext) {
   const repositorySelection = new RepositorySelectionService(
     context.workspaceState,
     getGitApi,
+    () => vscode.workspace.workspaceFolders?.map((folder) => folder.uri.fsPath) ?? [],
   );
   const viewProvider = new GitPanelViewProvider(
     context.extensionUri,
@@ -36,6 +37,9 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     fileDiffNavigator,
     repositorySelection,
+    vscode.workspace.onDidChangeWorkspaceFolders(() =>
+      void repositorySelection.refresh(),
+    ),
     vscode.window.registerWebviewViewProvider(
       GitPanelViewProvider.VIEW_ID,
       viewProvider,
