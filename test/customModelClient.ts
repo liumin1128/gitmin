@@ -28,7 +28,7 @@ async function main() {
   assert.equal((requestInit?.headers as Record<string, string>).Authorization, 'Bearer secret-key');
   const requestBody = JSON.parse(String(requestInit?.body));
   assert.equal(requestBody.model, 'custom-model');
-  assert.equal(requestBody.max_tokens, 1_024);
+  assert.equal(requestBody.max_tokens, 4_096);
 
   await assert.rejects(
     () => client.generate('prompt', { enabled: true, baseUrl: '', model: 'custom-model' }),

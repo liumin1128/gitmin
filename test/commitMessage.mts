@@ -4,6 +4,7 @@ import {
   buildCommitMessagePrompt,
   normalizeGeneratedCommitMessage,
 } from '../src/utils/commitMessage.ts';
+import { compactUnifiedDiff } from '../src/utils/diffCompaction.ts';
 import { findModelById } from '../src/utils/copilotModel.ts';
 import {
   buildChatCompletionsUrl,
@@ -57,6 +58,40 @@ const truncatedPrompt = buildCommitMessagePrompt('0123456789abcdefghij', 'en', 1
 assert.match(truncatedPrompt, /0123456789/);
 assert.doesNotMatch(truncatedPrompt, /abcdefghij/);
 assert.match(truncatedPrompt, /staged diff was truncated/);
+
+const largeMultiFileDiff = ['alpha', 'beta', 'gamma']
+  .map((name) =>
+    [
+      `diff --git a/src/${name}.ts b/src/${name}.ts`,
+      `--- a/src/${name}.ts`,
+      `+++ b/src/${name}.ts`,
+      '@@ -1,20 +1,20 @@',
+      ...Array.from({ length: 20 }, (_, index) => `-const old${index} = '${name}';`),
+      ...Array.from({ length: 20 }, (_, index) => `+const next${index} = '${name}';`),
+    ].join('\n')
+  )
+  .join('\n');
+const compactedDiff = compactUnifiedDiff(largeMultiFileDiff, 900);
+assert.equal(compactedDiff.truncated, true);
+assert.equal(compactedDiff.hasCompleteFileSummary, true);
+assert.ok(compactedDiff.content.length <= 900);
+assert.match(compactedDiff.content, /diff --git a\/src\/alpha\.ts b\/src\/alpha\.ts \(\+20 -20\)/);
+assert.match(compactedDiff.content, /diff --git a\/src\/beta\.ts b\/src\/beta\.ts \(\+20 -20\)/);
+assert.match(compactedDiff.content, /diff --git a\/src\/gamma\.ts b\/src\/gamma\.ts \(\+20 -20\)/);
+assert.equal(
+  [...compactedDiff.content.matchAll(/diff --git a\/src\/alpha\.ts/g)].length,
+  2
+);
+assert.equal(
+  [...compactedDiff.content.matchAll(/diff --git a\/src\/beta\.ts/g)].length,
+  2
+);
+assert.equal(
+  [...compactedDiff.content.matchAll(/diff --git a\/src\/gamma\.ts/g)].length,
+  2
+);
+const compactedPrompt = buildCommitMessagePrompt(largeMultiFileDiff, 'en', 900);
+assert.match(compactedPrompt, /changed-files summary to account for every file/);
 
 assert.equal(
   normalizeGeneratedCommitMessage('```text\nfeat: add commit generation\n```'),

@@ -5,7 +5,7 @@ export interface ChatCompletionPayload {
 }
 
 // Reasoning-capable models may use part of the completion budget before emitting text.
-export const COMMIT_MESSAGE_MAX_TOKENS = 1_024;
+export const COMMIT_MESSAGE_MAX_TOKENS = 4_096;
 
 export function buildChatCompletionsUrl(baseUrl: string): string {
   let url: URL;

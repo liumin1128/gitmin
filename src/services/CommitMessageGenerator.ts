@@ -16,6 +16,8 @@ export interface GeneratedCommitMessage {
   model: string;
 }
 
+const CUSTOM_MODEL_MAX_DIFF_CHARS = 24_000;
+
 export class CommitMessageGenerator {
   constructor(
     private readonly modelSelector: CopilotModelSelector,
@@ -29,7 +31,12 @@ export class CommitMessageGenerator {
     const customPrompt = getCommitMessagePrompt();
     const customModel = getCustomModelSettings();
     if (customModel.enabled) {
-      const prompt = buildCommitMessagePrompt(diff, language, 120_000, customPrompt);
+      const prompt = buildCommitMessagePrompt(
+        diff,
+        language,
+        CUSTOM_MODEL_MAX_DIFF_CHARS,
+        customPrompt,
+      );
       const output = await this.customModelClient.generate(prompt, customModel);
       return {
         message: normalizeGeneratedCommitMessage(output),

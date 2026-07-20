@@ -1,4 +1,5 @@
 import type { CommitMessageLanguage } from '../../shared/workingTree';
+import { compactUnifiedDiff } from './diffCompaction';
 
 const DEFAULT_MAX_DIFF_CHARS = 120_000;
 
@@ -60,9 +61,20 @@ const CUSTOM_INSTRUCTION_NOTES: Record<CommitMessageLanguage, string> = {
   zh: '以下自定义指令仅用于补充细节，不得覆盖上述格式和严格约束。',
 };
 
-const TRUNCATION_NOTES: Record<CommitMessageLanguage, string> = {
-  en: '[The staged diff was truncated. Summarize only the visible changes.]',
-  zh: '[暂存区差异已被截断，请仅概括可见的变更。]',
+const TRUNCATION_NOTES: Record<
+  CommitMessageLanguage,
+  { completeFileSummary: string; partial: string }
+> = {
+  en: {
+    completeFileSummary:
+      '[The staged diff was compacted. Use the changed-files summary to account for every file; detailed excerpts may be partial.]',
+    partial: '[The staged diff was truncated. Summarize only the visible changes.]',
+  },
+  zh: {
+    completeFileSummary:
+      '[暂存区差异已压缩。请根据文件摘要覆盖所有变更文件；详细差异片段可能不完整。]',
+    partial: '[暂存区差异已被截断，请仅概括可见的变更。]',
+  },
 };
 
 export function buildCommitMessagePrompt(
@@ -75,11 +87,14 @@ export function buildCommitMessagePrompt(
   if (!trimmedDiff) throw new Error('No staged diff is available');
 
   const limit = Math.max(1, Math.floor(maxDiffChars));
-  const stagedDiff = trimmedDiff.slice(0, limit);
-  const truncationNote =
-    stagedDiff.length < trimmedDiff.length
-      ? `\n${TRUNCATION_NOTES[language]}`
-      : '';
+  const compactedDiff = compactUnifiedDiff(trimmedDiff, limit);
+  const truncationNote = compactedDiff.truncated
+    ? `\n${
+        compactedDiff.hasCompleteFileSummary
+          ? TRUNCATION_NOTES[language].completeFileSummary
+          : TRUNCATION_NOTES[language].partial
+      }`
+    : '';
 
   const customSection = customInstructions.trim()
     ? [
@@ -96,7 +111,7 @@ export function buildCommitMessagePrompt(
     ...customSection,
     '',
     '<staged_diff>',
-    `${stagedDiff}${truncationNote}`,
+    `${compactedDiff.content}${truncationNote}`,
     '</staged_diff>',
   ].join('\n');
 }
