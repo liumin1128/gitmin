@@ -12,10 +12,12 @@ import type { Commit } from "../../shared/domain";
 export type ResetMode = "soft" | "mixed" | "hard";
 
 export class GitOpsService {
+  private readonly rootPath: string;
   private readonly git: SimpleGit;
   private readonly editorScript: string;
 
   constructor(rootPath: string, extensionUri: vscode.Uri) {
+    this.rootPath = rootPath;
     this.git = simpleGit(rootPath);
     this.editorScript = path.join(
       extensionUri.fsPath,
@@ -111,15 +113,26 @@ export class GitOpsService {
     action: "fixup" | "drop",
     targetHashes: string[],
   ): Promise<void> {
+    // Run the interactive rebase through a dedicated instance with a minimal
+    // environment. simple-git treats inherited pager/editor variables as
+    // unsafe and rejects them, and env changes made via `git.env()` stick to
+    // the instance, which would break every later operation.
     const env: NodeJS.ProcessEnv = {
-      ...process.env,
+      PATH: process.env.PATH ?? "",
+      HOME: process.env.HOME ?? "",
       GIT_SEQUENCE_EDITOR: `node "${this.editorScript}"`,
       GITMIN_REBASE_ACTION: action,
       GITMIN_TARGET_HASHES: targetHashes.join(","),
       GIT_PAGER: "cat",
     };
+    const rebaseGit = simpleGit(this.rootPath, {
+      unsafe: {
+        allowUnsafeEditor: true,
+        allowUnsafePager: true,
+      },
+    });
     try {
-      await this.git.env(env).raw(["rebase", "-i", base]);
+      await rebaseGit.env(env).raw(["rebase", "-i", base]);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       try {
