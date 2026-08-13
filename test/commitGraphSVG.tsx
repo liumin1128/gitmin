@@ -2,6 +2,7 @@ import React from 'react';
 import assert from 'node:assert/strict';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { CommitGraph } from '../webview-ui/src/components/CommitGraph.tsx';
+import { CommitItem } from '../webview-ui/src/components/CommitItem.tsx';
 import type { GraphRow } from '../webview-ui/src/utils/commitGraph.ts';
 
 function row(props: Partial<GraphRow> & { commitLane: number; commitColor: number }): GraphRow {
@@ -120,6 +121,56 @@ function row(props: Partial<GraphRow> & { commitLane: number; commitColor: numbe
   const r = row({ commitLane: 0, commitColor: 7 });
   const html = renderToStaticMarkup(<CommitGraph row={r} maxLanes={1} />);
   assert.match(html, /fill:#f14c4c/, 'palette color 7 should wrap to red');
+}
+
+{
+  const r = row({
+    commitLane: 0,
+    commitColor: 0,
+    bottomEdges: [{ fromLane: 0, toLane: 0, color: 0, type: 'normal' }],
+  });
+  const html = renderToStaticMarkup(
+    <CommitGraph row={r} maxLanes={1} isUnpushed />
+  );
+  assert.match(
+    html,
+    /fill:var\(--vscode-editorWarning-foreground, #cca700\)/,
+    'unpushed commit dots should use the warning color'
+  );
+  assert.match(
+    html,
+    /stroke:var\(--vscode-editorWarning-foreground, #cca700\)/,
+    'unpushed commit edges should use the warning color'
+  );
+}
+
+{
+  const html = renderToStaticMarkup(
+    <CommitItem
+      commit={{
+        hash: 'local',
+        shortHash: 'local',
+        message: 'local commit',
+        author: 'Alice',
+        email: 'alice@example.test',
+        date: '2026-07-22T00:00:00Z',
+        parents: ['remote'],
+        refs: ['HEAD -> main'],
+        isUnpushed: true,
+      }}
+      columns={{ graph: false, hash: false, author: false, time: false, tags: true }}
+      graphRow={row({ commitLane: 0, commitColor: 0 })}
+      maxLanes={1}
+      selected={false}
+      onClick={() => undefined}
+      onContextMenu={() => undefined}
+    />
+  );
+  assert.match(
+    html,
+    /class="commit-tag is-unpushed">HEAD -&gt; main<\/span>/,
+    'refs on an unpushed commit should receive the unpushed tag style'
+  );
 }
 
 console.log('✅ CommitGraph SVG tests passed');

@@ -10,7 +10,17 @@ import {
 import type { Commit } from '../shared/domain.ts';
 
 function mk(hash: string, parents: string[]): Commit {
-  return { hash, shortHash: hash, message: '', author: '', email: '', date: '', parents, refs: [] };
+  return {
+    hash,
+    shortHash: hash,
+    message: '',
+    author: '',
+    email: '',
+    date: '',
+    parents,
+    refs: [],
+    isUnpushed: false,
+  };
 }
 
 function laneOf(rows: { commitLane: number }[]): number[] {

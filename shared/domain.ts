@@ -13,6 +13,8 @@ export interface Commit {
   parents: string[];
   /** Ref names attached to this commit (tags, branches like origin/main, etc.) */
   refs: string[];
+  /** True when this commit is ahead of the selected branch's upstream. */
+  isUnpushed: boolean;
 }
 
 export interface CommitIdentity {

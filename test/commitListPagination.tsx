@@ -48,11 +48,11 @@ assert.equal(
 const graphCommits = [
   {
     hash: 'merge', shortHash: 'merge', message: 'merge', author: '', email: '', date: '',
-    parents: ['main-next', 'side'], refs: [],
+    parents: ['main-next', 'side'], refs: ['HEAD -> main'], isUnpushed: true,
   },
   {
     hash: 'side', shortHash: 'side', message: 'side', author: '', email: '', date: '',
-    parents: [], refs: [],
+    parents: [], refs: [], isUnpushed: false,
   },
 ] satisfies Commit[];
 const paginatedGraphHtml = renderToStaticMarkup(
@@ -67,6 +67,11 @@ assert.match(
   paginatedGraphHtml,
   /class="commit-graph" width="32"/,
   'the list must pass pagination context into the graph layout'
+);
+assert.match(
+  paginatedGraphHtml,
+  /fill:var\(--vscode-editorWarning-foreground, #cca700\)/,
+  'unpushed commits must use the warning color in the graph'
 );
 
 assert.equal(shouldLoadMore(true, false, 70, 100, 200), true);

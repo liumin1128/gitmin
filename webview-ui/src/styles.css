@@ -971,6 +971,10 @@ body.vscode-high-contrast-light .filter-form-row > input {
   white-space: nowrap;
   flex-shrink: 0;
 }
+.commit-tag.is-unpushed {
+  background: var(--vscode-editorWarning-foreground, #cca700);
+  color: var(--vscode-editor-background, #1e1e1e);
+}
 
 /* ===== Files panel ===== */
 .files-panel { display: flex; flex-direction: column; height: auto; }

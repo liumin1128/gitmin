@@ -38,7 +38,13 @@ export function CommitItem({
       }}
       title={commit.message}
     >
-      {columns.graph && <CommitGraph row={graphRow} maxLanes={maxLanes} />}
+      {columns.graph && (
+        <CommitGraph
+          row={graphRow}
+          maxLanes={maxLanes}
+          isUnpushed={commit.isUnpushed}
+        />
+      )}
       <span className="commit-message">{firstLine(commit.message)}</span>
       {columns.author && <span className="commit-author">{commit.author}</span>}
       {columns.hash && <span className="commit-hash">{shortHash(commit.hash)}</span>}
@@ -46,7 +52,12 @@ export function CommitItem({
       {columns.tags && commit.refs.length > 0 && (
         <span className="commit-tags">
           {commit.refs.map((ref) => (
-            <span key={ref} className="commit-tag">{ref}</span>
+            <span
+              key={ref}
+              className={`commit-tag${commit.isUnpushed ? ' is-unpushed' : ''}`}
+            >
+              {ref}
+            </span>
           ))}
         </span>
       )}

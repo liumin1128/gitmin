@@ -11,13 +11,15 @@ const ROW_H = 22;
 const DOT_R = 3;
 const STROKE_W = 1;
 const END_CAP_H = 8;
+const UNPUSHED_COLOR = 'var(--vscode-editorWarning-foreground, #cca700)';
 
 interface Props {
   row: GraphRow;
   maxLanes: number;
+  isUnpushed?: boolean;
 }
 
-export function CommitGraph({ row, maxLanes }: Props) {
+export function CommitGraph({ row, maxLanes, isUnpushed = false }: Props) {
   const width = maxLanes * LANE_W;
   const height = ROW_H;
   const midY = height / 2;
@@ -29,10 +31,22 @@ export function CommitGraph({ row, maxLanes }: Props) {
   return (
     <svg className="commit-graph" width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
       {row.topEdges.map((e, i) => (
-        <EdgePath key={`t${i}`} edge={e} yStart={0} yEnd={midY} />
+        <EdgePath
+          key={`t${i}`}
+          edge={e}
+          yStart={0}
+          yEnd={midY}
+          colorOverride={isUnpushed && e.toLane === row.commitLane ? UNPUSHED_COLOR : undefined}
+        />
       ))}
       {row.bottomEdges.map((e, i) => (
-        <EdgePath key={`b${i}`} edge={e} yStart={midY} yEnd={height} />
+        <EdgePath
+          key={`b${i}`}
+          edge={e}
+          yStart={midY}
+          yEnd={height}
+          colorOverride={isUnpushed && e.fromLane === row.commitLane ? UNPUSHED_COLOR : undefined}
+        />
       ))}
       {!hasTopConnection && (
         <line
@@ -40,7 +54,7 @@ export function CommitGraph({ row, maxLanes }: Props) {
           y1={midY - END_CAP_H}
           x2={commitX}
           y2={midY}
-          style={edgeStyle(commitColor)}
+          style={edgeStyle(isUnpushed ? UNPUSHED_COLOR : commitColor)}
         />
       )}
       {!hasBottomConnection && (
@@ -49,23 +63,33 @@ export function CommitGraph({ row, maxLanes }: Props) {
           y1={midY}
           x2={commitX}
           y2={midY + END_CAP_H}
-          style={edgeStyle(commitColor)}
+          style={edgeStyle(isUnpushed ? UNPUSHED_COLOR : commitColor)}
         />
       )}
       <circle
         cx={commitX}
         cy={midY}
         r={DOT_R}
-        style={{ fill: commitColor }}
+        style={{ fill: isUnpushed ? UNPUSHED_COLOR : commitColor }}
       />
     </svg>
   );
 }
 
-function EdgePath({ edge, yStart, yEnd }: { edge: GraphEdge; yStart: number; yEnd: number }) {
+function EdgePath({
+  edge,
+  yStart,
+  yEnd,
+  colorOverride,
+}: {
+  edge: GraphEdge;
+  yStart: number;
+  yEnd: number;
+  colorOverride?: string;
+}) {
   const x1 = laneX(edge.fromLane);
   const x2 = laneX(edge.toLane);
-  const color = laneColor(edge.color);
+  const color = colorOverride ?? laneColor(edge.color);
   const sameLane = edge.fromLane === edge.toLane;
 
   if (sameLane) {

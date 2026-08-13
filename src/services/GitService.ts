@@ -30,8 +30,30 @@ export class GitService {
   ): Promise<Commit[]> {
     const { offset, limit } = normalizeLogPagination(opts.limit ?? 100, opts.offset ?? 0);
     const args = buildLogArgs(limit, offset, opts.filters);
-    const output = await this.git.raw(args);
-    return parseLogOutput(output);
+    const [output, unpushedHashes] = await Promise.all([
+      this.git.raw(args),
+      this.getUnpushedCommitHashes(opts.filters?.branch),
+    ]);
+    return parseLogOutput(output).map((commit) => ({
+      ...commit,
+      isUnpushed: unpushedHashes.has(commit.hash),
+    }));
+  }
+
+  private async getUnpushedCommitHashes(branch?: string): Promise<Set<string>> {
+    const selectedBranch = branch?.trim();
+    const head = selectedBranch && selectedBranch !== '__all__' ? selectedBranch : 'HEAD';
+
+    try {
+      const output = await this.git.raw([
+        'rev-list',
+        `${head}@{upstream}..${head}`,
+      ]);
+      return new Set(output.split('\n').map((hash) => hash.trim()).filter(Boolean));
+    } catch {
+      // Detached HEADs and unpublished branches have no upstream to compare against.
+      return new Set();
+    }
   }
 
   async getCommitDetails(hashes: string[]): Promise<CommitDetails[]> {

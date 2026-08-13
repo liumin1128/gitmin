@@ -9,6 +9,7 @@ import { WorkingTreeService } from '../src/services/WorkingTreeService.ts';
 
 async function main() {
   const root = await mkdtemp(join(tmpdir(), 'gitmin-services-'));
+  const remoteRoot = await mkdtemp(join(tmpdir(), 'gitmin-services-remote-'));
   const git = simpleGit(root);
 
   try {
@@ -18,6 +19,10 @@ async function main() {
     await writeFile(join(root, 'tracked.txt'), 'initial\n');
     await git.add(['tracked.txt']);
     await git.commit('initial');
+    await simpleGit(remoteRoot).init(true);
+    await git.addRemote('origin', remoteRoot);
+    const branch = (await git.branchLocal()).current;
+    await git.push(['-u', 'origin', branch]);
 
     const workingTree = new WorkingTreeService(root);
     const stashes = new StashService(root, new GitService(root));
@@ -40,6 +45,13 @@ async function main() {
     await workingTree.stage(['tracked.txt']);
     await workingTree.commit('service commit');
     assert.equal((await git.log({ maxCount: 1 })).latest?.message, 'service commit');
+    let commits = await new GitService(root).getLog();
+    assert.equal(commits[0]?.isUnpushed, true);
+    assert.equal(commits[1]?.isUnpushed, false);
+
+    await git.push();
+    commits = await new GitService(root).getLog();
+    assert.equal(commits[0]?.isUnpushed, false);
 
     await writeFile(join(root, 'tracked.txt'), 'stash me\n');
     await workingTree.createStash('checkpoint');
@@ -71,7 +83,10 @@ async function main() {
 
     console.log('git workspace service checks passed');
   } finally {
-    await rm(root, { recursive: true, force: true });
+    await Promise.all([
+      rm(root, { recursive: true, force: true }),
+      rm(remoteRoot, { recursive: true, force: true }),
+    ]);
   }
 }
 

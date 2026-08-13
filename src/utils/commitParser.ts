@@ -19,6 +19,7 @@ export function parseLogLine(line: string): Commit {
     date: date ?? "",
     parents: parentsRaw ? parentsRaw.split(" ").filter(Boolean) : [],
     refs: parseCommitRefs(refsRaw ?? ""),
+    isUnpushed: false,
   };
 }
 
