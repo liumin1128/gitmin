@@ -1,7 +1,8 @@
 import * as vscode from "vscode";
 import type { DiffRange, FileChange } from "../../shared/domain";
-import { getGitApi } from "./RepoLocator";
+import { getGitApi, type GitApi } from "./RepoLocator";
 import { getAdjacentFileChange } from "../utils/diffNavigation";
+import { diffSideRef, type DiffSide } from "../utils/diffRange";
 
 interface NavigationSession {
   repoRoot: string;
@@ -100,10 +101,20 @@ export class FileDiffNavigator implements vscode.Disposable {
     const file = session.files.find((item) => item.path === filePath);
     if (!file) return;
     const rootUri = vscode.Uri.file(session.repoRoot);
-    const rightUri = vscode.Uri.joinPath(rootUri, file.path);
-    const leftUri = vscode.Uri.joinPath(rootUri, file.oldPath ?? file.path);
-    const originalUri = api.toGitUri(leftUri, session.range.base);
-    const modifiedUri = api.toGitUri(rightUri, session.range.head);
+    const originalUri = this.toUri(
+      api,
+      rootUri,
+      file,
+      "left",
+      session.range.base,
+    );
+    const modifiedUri = this.toUri(
+      api,
+      rootUri,
+      file,
+      "right",
+      session.range.head,
+    );
     const title = `${file.path} (${session.range.base.slice(0, 7)}..${session.range.head.slice(0, 7)})`;
 
     this.activeResources = new Set([
@@ -122,5 +133,17 @@ export class FileDiffNavigator implements vscode.Disposable {
       modifiedUri,
       title,
     );
+  }
+
+  private toUri(
+    api: GitApi,
+    rootUri: vscode.Uri,
+    file: FileChange,
+    side: DiffSide,
+    ref: string,
+  ): vscode.Uri {
+    const path = side === "left" ? (file.oldPath ?? file.path) : file.path;
+    const fileUri = vscode.Uri.joinPath(rootUri, path);
+    return api.toGitUri(fileUri, diffSideRef(file.status, side, ref));
   }
 }

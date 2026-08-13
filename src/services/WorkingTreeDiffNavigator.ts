@@ -4,11 +4,11 @@ import type {
   WorkingTreeGroup,
   WorkingTreeSnapshot,
 } from '../../shared/domain';
-import { EMPTY_TREE_HASH } from '../utils/diffRange';
 import {
   workingTreeDiffSpec,
   type DiffEndpoint,
 } from '../utils/workingTreeDiff';
+import { diffSideRef, type DiffSide } from '../utils/diffRange';
 import { getGitApi, type GitApi } from './RepoLocator';
 
 export class WorkingTreeDiffNavigator implements vscode.Disposable {
@@ -50,13 +50,10 @@ export class WorkingTreeDiffNavigator implements vscode.Disposable {
     rootUri: vscode.Uri,
     endpoint: DiffEndpoint,
     status: FileStatus,
-    side: 'left' | 'right'
+    side: DiffSide
   ): vscode.Uri {
     const fileUri = vscode.Uri.joinPath(rootUri, endpoint.path);
-    const empty =
-      (side === 'left' && (status === 'A' || status === '?')) ||
-      (side === 'right' && status === 'D');
-    if (empty) return api.toGitUri(fileUri, EMPTY_TREE_HASH);
-    return endpoint.kind === 'file' ? fileUri : api.toGitUri(fileUri, endpoint.ref);
+    if (endpoint.kind === 'file') return fileUri;
+    return api.toGitUri(fileUri, diffSideRef(status, side, endpoint.ref));
   }
 }
