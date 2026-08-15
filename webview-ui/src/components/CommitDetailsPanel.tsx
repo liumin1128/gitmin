@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { CommitDetails } from '../../../shared/domain';
 import { t } from '../../../shared/i18n';
 import {
@@ -30,13 +30,38 @@ export function CommitDetailsPanel({ details, loading, error }: Props) {
 }
 
 function CommitDetailItem({ detail }: { detail: CommitDetails }) {
+  const [messageExpanded, setMessageExpanded] = useState(false);
+  const hasBody = detail.body.trim().length > 0;
+  const messageId = `commit-message-${detail.hash}`;
+  const toggleLabel = t(
+    messageExpanded ? 'details.collapseMessage' : 'details.expandMessage'
+  );
+
   return (
     <article className="commit-detail-item">
       <header className="commit-detail-header">
         <h3>{detail.subject || t('details.noSubject')}</h3>
+        {hasBody && (
+          <button
+            type="button"
+            className="toolbar-icon-button commit-detail-message-toggle"
+            title={toggleLabel}
+            aria-label={toggleLabel}
+            aria-expanded={messageExpanded}
+            aria-controls={messageId}
+            onClick={() => setMessageExpanded((expanded) => !expanded)}
+          >
+            <span
+              className={`codicon codicon-chevron-${messageExpanded ? 'down' : 'right'}`}
+              aria-hidden="true"
+            />
+          </button>
+        )}
       </header>
 
-      {detail.body.trim() && <pre className="commit-detail-body">{detail.body}</pre>}
+      {hasBody && messageExpanded && (
+        <pre id={messageId} className="commit-detail-body">{detail.body}</pre>
+      )}
 
       <dl className="commit-detail-grid">
         <DetailRow label={t('details.hash')}><code>{detail.hash}</code></DetailRow>

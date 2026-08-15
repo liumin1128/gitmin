@@ -1071,7 +1071,7 @@ body.vscode-high-contrast-light .filter-form-row > input {
 }
 .commit-detail-header {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   gap: 10px;
   min-width: 0;
   margin-bottom: 8px;
@@ -1083,6 +1083,10 @@ body.vscode-high-contrast-light .filter-form-row > input {
   overflow-wrap: anywhere;
   font-size: 13px;
   font-weight: 600;
+}
+.commit-detail-message-toggle {
+  flex: 0 0 24px;
+  margin: -4px -4px -4px 0;
 }
 .commit-detail-grid code {
   font-family: var(--vscode-editor-font-family, monospace);

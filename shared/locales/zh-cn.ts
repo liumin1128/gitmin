@@ -102,6 +102,8 @@ export const ZH_CN_TRANSLATIONS = {
   'details.loading': '正在加载提交详细信息...',
   'details.select': '选择提交或贮藏以查看详细信息',
   'details.noSubject': '（无主题）',
+  'details.expandMessage': '展开完整提交消息',
+  'details.collapseMessage': '收起提交消息',
   'details.hash': '哈希',
   'details.refs': '引用',
   'details.author': '作者',

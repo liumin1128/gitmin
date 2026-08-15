@@ -35,7 +35,11 @@ const html = renderToStaticMarkup(
 );
 assert.equal((html.match(/class="commit-detail-item"/g) || []).length, 2);
 assert.match(html, /feat: add detailed view/);
-assert.match(html, /First body line\nSecond body line/);
+assert.doesNotMatch(html, /First body line\nSecond body line/);
+assert.equal((html.match(/aria-label="Expand full commit message"/g) || []).length, 2);
+assert.equal((html.match(/aria-expanded="false"/g) || []).length, 2);
+assert.match(html, /aria-controls="commit-message-abcdef1234567890"/);
+assert.match(html, /codicon-chevron-right/);
 assert.match(html, /abcdef1234567890/);
 assert.match(html, /HEAD -&gt; main/);
 assert.match(html, /Alice &lt;alice@example.com&gt;/);

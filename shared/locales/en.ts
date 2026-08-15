@@ -101,6 +101,8 @@ export const EN_TRANSLATIONS = {
   'details.loading': 'Loading commit details...',
   'details.select': 'Select commits or a stash to view details',
   'details.noSubject': '(no subject)',
+  'details.expandMessage': 'Expand full commit message',
+  'details.collapseMessage': 'Collapse commit message',
   'details.hash': 'Hash',
   'details.refs': 'Refs',
   'details.author': 'Author',
