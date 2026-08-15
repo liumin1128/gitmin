@@ -1,7 +1,8 @@
 import type { WorkingTreeGroup } from '../../shared/domain';
 
+// vscode.git uses "~" as the virtual ref for index contents.
 export type DiffEndpoint =
-  | { kind: 'git'; ref: 'HEAD' | 'index'; path: string }
+  | { kind: 'git'; ref: 'HEAD' | '~'; path: string }
   | { kind: 'file'; path: string };
 
 export type WorkingTreeDiffSpec =
@@ -18,11 +19,11 @@ export function workingTreeDiffSpec(
   if (group === 'staged') {
     return {
       left: { kind: 'git', ref: 'HEAD', path: sourcePath },
-      right: { kind: 'git', ref: 'index', path },
+      right: { kind: 'git', ref: '~', path },
     };
   }
   return {
-    left: { kind: 'git', ref: 'index', path: sourcePath },
+    left: { kind: 'git', ref: '~', path: sourcePath },
     right: { kind: 'file', path },
   };
 }

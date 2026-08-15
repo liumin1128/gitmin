@@ -53,7 +53,7 @@ export class WorkingTreeDiffNavigator implements vscode.Disposable {
     side: DiffSide
   ): vscode.Uri {
     const fileUri = vscode.Uri.joinPath(rootUri, endpoint.path);
-    if (endpoint.kind === 'file') return fileUri;
-    return api.toGitUri(fileUri, diffSideRef(status, side, endpoint.ref));
+    const ref = diffSideRef(status, side, endpoint.kind === 'git' ? endpoint.ref : '');
+    return ref ? api.toGitUri(fileUri, ref) : fileUri;
   }
 }
