@@ -196,6 +196,7 @@ export function App() {
     authors: [],
   });
   const [columns, setColumns] = useState<ColumnFlags>(DEFAULT_COLUMNS);
+  const [viewMenuOpen, setViewMenuOpen] = useState(false);
   const {
     layout,
     setPanelHeight,
@@ -260,6 +261,9 @@ export function App() {
     setFilters(m.filters);
   });
   useIpcListener('filters/options', (m) => setFilterOptions(m.options));
+  useIpcListener('workbenchViews/menuToggle', () => {
+    setViewMenuOpen((open) => !open);
+  });
   // === Lifecycle: notify on mount ===
   useEffect(() => {
     const requestId = startCommitPageSession(pagination);
@@ -477,6 +481,8 @@ export function App() {
       <WorkbenchToolbar
         views={layout.views}
         onVisibleChange={(id, visible) => setVisible(id, visible)}
+        menuOpen={viewMenuOpen}
+        onMenuOpenChange={setViewMenuOpen}
       />
       {repoError && (
         <div className="error-bar">{repoError}</div>

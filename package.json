@@ -84,6 +84,12 @@
         "icon": "$(gear)"
       },
       {
+        "command": "gitmin.manageViews",
+        "title": "%command.manageViews.title%",
+        "category": "GitMin",
+        "icon": "$(ellipsis)"
+      },
+      {
         "command": "gitmin.selectCommitMessageModel",
         "title": "%command.selectCommitMessageModel.title%",
         "category": "GitMin"
@@ -154,6 +160,11 @@
           "command": "gitmin.openSettings",
           "when": "view == gitmin.panel",
           "group": "navigation@100"
+        },
+        {
+          "command": "gitmin.manageViews",
+          "when": "view == gitmin.panel",
+          "group": "navigation@101"
         }
       ]
     }

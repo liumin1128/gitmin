@@ -84,6 +84,7 @@ const html = renderToStaticMarkup(
         panels.map((panel) => [panel.id, { visible: panel.visible, collapsed: panel.collapsed }])
       ) as never}
       onVisibleChange={() => undefined}
+      open
     />
   </>
 );
@@ -104,6 +105,10 @@ assert.doesNotMatch(html, /hidden changes/);
 assert.equal((html.match(/role="separator"/g) ?? []).length, 4);
 assert.match(html, /aria-orientation="horizontal"/);
 assert.match(html, /title="Manage views"/);
+assert.match(html, /aria-expanded="true"/);
+assert.match(html, /role="menu"/);
+assert.equal((html.match(/aria-checked="true"/g) ?? []).length, 6);
+assert.equal((html.match(/codicon-check/g) ?? []).length, 6);
 
 const natural = calculatePanelHeights(
   [

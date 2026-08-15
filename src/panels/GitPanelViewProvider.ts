@@ -14,6 +14,7 @@ import { t } from "../../shared/i18n";
 
 export class GitPanelViewProvider implements vscode.WebviewViewProvider {
   public static readonly VIEW_ID = "gitmin.panel";
+  private view: vscode.WebviewView | undefined;
 
   constructor(
     private readonly extensionUri: vscode.Uri,
@@ -23,7 +24,12 @@ export class GitPanelViewProvider implements vscode.WebviewViewProvider {
     private readonly commitMessageGenerator: CommitMessageGenerator,
   ) {}
 
+  toggleWorkbenchViewMenu(): void {
+    void this.view?.webview.postMessage({ type: "workbenchViews/menuToggle" });
+  }
+
   resolveWebviewView(view: vscode.WebviewView): void {
+    this.view = view;
     view.webview.options = {
       enableScripts: true,
       localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, "out")],
@@ -45,6 +51,7 @@ export class GitPanelViewProvider implements vscode.WebviewViewProvider {
     );
     view.webview.html = buildWebviewHtml(view.webview, this.extensionUri, "view");
     view.onDidDispose(() => {
+      if (this.view === view) this.view = undefined;
       sub.dispose();
       handler.dispose();
     });

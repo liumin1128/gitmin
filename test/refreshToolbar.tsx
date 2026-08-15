@@ -125,6 +125,8 @@ const columnsMenuHtml = renderToStaticMarkup(
   <ColumnsMenu columns={DEFAULT_COLUMNS} onChange={() => undefined} />
 );
 assert.match(columnsMenuHtml, /codicon-more/, 'column settings should use the VS Code overflow icon');
+assert.match(columnsMenuHtml, /aria-haspopup="menu"/);
+assert.match(columnsMenuHtml, /aria-expanded="false"/);
 
 const filterWithColumnsHtml = renderToStaticMarkup(
   <FilterBar
@@ -151,6 +153,11 @@ assert.match(columnsMenuSource, /import \{ CheckedMenu \}/);
 assert.match(columnsMenuSource, /<CheckedMenu/);
 assert.match(viewVisibilityMenuSource, /import \{ CheckedMenu \}/);
 assert.match(viewVisibilityMenuSource, /<CheckedMenu/);
+assert.match(
+  styles,
+  /body\[data-gitmin-host='view'\]\s+\.workbench-toolbar\s*\{[^}]*position:\s*absolute[^}]*width:\s*0[^}]*height:\s*0/s,
+  'the sidebar menu anchor should not create a second toolbar row'
+);
 
 const filterBarStart = appSource.indexOf('<FilterBar');
 const commitListStart = appSource.indexOf('<CommitList', filterBarStart);

@@ -73,6 +73,7 @@ export type ExtensionMessage =
   | { type: 'repositories/loaded'; snapshot: RepositorySnapshot }
   | { type: 'repositories/selectionChanged'; rootPath: string | null }
   | { type: 'repositories/error'; error: string }
+  | { type: 'workbenchViews/menuToggle' }
   | { type: 'repo/none'; reason: string }
   | { type: 'commits/loaded'; page: CommitPage }
   | { type: 'commits/error'; requestId: number; error: string }

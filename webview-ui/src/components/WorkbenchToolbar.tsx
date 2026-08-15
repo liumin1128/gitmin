@@ -7,13 +7,25 @@ import { ViewVisibilityMenu } from './ViewVisibilityMenu';
 interface Props {
   views: Record<WorkbenchViewId, WorkbenchViewState>;
   onVisibleChange: (id: WorkbenchViewId, visible: boolean) => void;
+  menuOpen?: boolean;
+  onMenuOpenChange?: (open: boolean) => void;
 }
 
-export function WorkbenchToolbar({ views, onVisibleChange }: Props) {
+export function WorkbenchToolbar({
+  views,
+  onVisibleChange,
+  menuOpen,
+  onMenuOpenChange,
+}: Props) {
   return (
     <div className="workbench-toolbar">
       <span className="workbench-toolbar-spacer" />
-      <ViewVisibilityMenu views={views} onVisibleChange={onVisibleChange} />
+      <ViewVisibilityMenu
+        views={views}
+        onVisibleChange={onVisibleChange}
+        open={menuOpen}
+        onOpenChange={onMenuOpenChange}
+      />
     </div>
   );
 }

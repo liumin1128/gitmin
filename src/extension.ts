@@ -52,6 +52,9 @@ export function activate(context: vscode.ExtensionContext) {
       );
     }),
     vscode.commands.registerCommand("gitmin.openSettings", openGitMinSettings),
+    vscode.commands.registerCommand("gitmin.manageViews", () =>
+      viewProvider.toggleWorkbenchViewMenu(),
+    ),
     vscode.commands.registerCommand("gitmin.selectCommitMessageModel", () =>
       copilotModelSelector.configure(),
     ),

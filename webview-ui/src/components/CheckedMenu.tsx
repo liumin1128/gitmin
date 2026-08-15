@@ -13,6 +13,8 @@ interface Props<TKey extends string> {
   options: readonly CheckedMenuOption<TKey>[];
   onChange: (key: TKey, checked: boolean) => void;
   className?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function CheckedMenu<TKey extends string>({
@@ -20,6 +22,8 @@ export function CheckedMenu<TKey extends string>({
   options,
   onChange,
   className,
+  open,
+  onOpenChange,
 }: Props<TKey>) {
   return (
     <FilterDropdown
@@ -27,6 +31,8 @@ export function CheckedMenu<TKey extends string>({
       title={title}
       hideCaret
       className={`checked-menu${className ? ` ${className}` : ''}`}
+      open={open}
+      onOpenChange={onOpenChange}
     >
       {() => (
         <div className="filter-list" role="menu">

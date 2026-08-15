@@ -31,6 +31,10 @@ assert.equal(
   commands.find((item) => item.command === "gitmin.nextFileDiff")?.icon,
   "$(arrow-right)",
 );
+assert.equal(
+  commands.find((item) => item.command === "gitmin.manageViews")?.icon,
+  "$(ellipsis)",
+);
 const editorNavigation = editorTitle.filter((item) =>
   ["gitmin.previousFileDiff", "gitmin.nextFileDiff"].includes(item.command),
 );
@@ -50,8 +54,8 @@ assert.ok(
 );
 assert.deepEqual(
   viewTitle.map((item) => item.command),
-  ["gitmin.openPanel", "gitmin.openSettings"],
-  "the native title menu should only contain non-checkbox commands",
+  ["gitmin.openPanel", "gitmin.openSettings", "gitmin.manageViews"],
+  "the native title menu should expose the shared view menu at the far right",
 );
 
 const selectionHook = readFileSync(
@@ -88,6 +92,7 @@ assert.ok(
   viewProvider.indexOf('onDidReceiveMessage') < viewProvider.indexOf('view.webview.html ='),
   'the extension must listen before the webview posts its initial ready message',
 );
-assert.doesNotMatch(viewProvider, /workbenchViews\//);
+assert.match(viewProvider, /type:\s*"workbenchViews\/menuToggle"/);
+assert.doesNotMatch(viewProvider, /workbenchViews\/(?:toggle|visibility)/);
 
 console.log("editor navigation manifest checks passed");

@@ -14,6 +14,8 @@ interface Props {
   title?: string;
   hideCaret?: boolean;
   className?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onClear?: () => void;
   clearLabel?: string;
   children: (close: () => void) => ReactNode;
@@ -26,15 +28,22 @@ export function FilterDropdown({
   title,
   hideCaret,
   className,
+  open: controlledOpen,
+  onOpenChange,
   onClear,
   clearLabel,
   children,
 }: Props) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [alignRight, setAlignRight] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const close = useCallback(() => setOpen(false), []);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = useCallback((next: boolean) => {
+    if (controlledOpen === undefined) setInternalOpen(next);
+    onOpenChange?.(next);
+  }, [controlledOpen, onOpenChange]);
+  const close = useCallback(() => setOpen(false), [setOpen]);
   const buttonTitle = title ?? (typeof label === 'string' ? label : undefined);
   const resolvedClearLabel = clearLabel ?? t('filter.clear');
 
@@ -73,9 +82,11 @@ export function FilterDropdown({
       <button
         type="button"
         className={`filter-dropdown-btn${active ? ' is-active' : ''}${open ? ' is-open' : ''}`}
-        onClick={() => !disabled && setOpen((v) => !v)}
+        onClick={() => !disabled && setOpen(!open)}
         disabled={disabled}
         title={buttonTitle}
+        aria-haspopup="menu"
+        aria-expanded={open}
       >
         <span>{label}</span>
         {!hideCaret && <span className="filter-dropdown-caret">▾</span>}

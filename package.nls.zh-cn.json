@@ -12,6 +12,7 @@
   "configuration.commitMessagePrompt.description": "追加到内置提交消息提示词中的额外指令。暂存区差异和输出语言规则会自动提供。",
   "command.openPanel.title": "GitMin: 在编辑器中打开面板",
   "command.openSettings.title": "GitMin: 打开设置",
+  "command.manageViews.title": "GitMin: 管理视图",
   "command.selectCommitMessageModel.title": "GitMin: 选择提交消息模型",
   "command.setCustomModelApiKey.title": "GitMin: 设置自定义模型 API 密钥",
   "command.previousFileDiff.title": "GitMin: 上一个文件差异",

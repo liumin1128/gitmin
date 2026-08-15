@@ -12,6 +12,7 @@
   "configuration.commitMessagePrompt.description": "Additional instructions appended to the built-in commit message prompt. The staged diff and output language rules are supplied automatically.",
   "command.openPanel.title": "GitMin: Open Panel in Editor",
   "command.openSettings.title": "GitMin: Open Settings",
+  "command.manageViews.title": "GitMin: Manage Views",
   "command.selectCommitMessageModel.title": "GitMin: Select Commit Message Model",
   "command.setCustomModelApiKey.title": "GitMin: Set Custom Model API Key",
   "command.previousFileDiff.title": "GitMin: Previous File Diff",

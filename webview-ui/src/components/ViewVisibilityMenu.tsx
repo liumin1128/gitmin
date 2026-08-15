@@ -10,9 +10,16 @@ import { CheckedMenu } from './CheckedMenu';
 interface Props {
   views: Record<WorkbenchViewId, WorkbenchViewState>;
   onVisibleChange: (id: WorkbenchViewId, visible: boolean) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function ViewVisibilityMenu({ views, onVisibleChange }: Props) {
+export function ViewVisibilityMenu({
+  views,
+  onVisibleChange,
+  open,
+  onOpenChange,
+}: Props) {
   const options = WORKBENCH_VIEW_IDS.map((id) => ({
     key: id,
     label: t(WORKBENCH_VIEW_METADATA[id].labelKey),
@@ -25,6 +32,8 @@ export function ViewVisibilityMenu({ views, onVisibleChange }: Props) {
       className="view-visibility-menu"
       options={options}
       onChange={onVisibleChange}
+      open={open}
+      onOpenChange={onOpenChange}
     />
   );
 }
