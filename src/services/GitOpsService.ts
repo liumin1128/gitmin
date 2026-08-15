@@ -8,6 +8,7 @@ import * as path from "node:path";
 import * as vscode from "vscode";
 import { simpleGit, type SimpleGit } from "simple-git";
 import type { Commit } from "../../shared/domain";
+import { t } from "../../shared/i18n";
 
 export type ResetMode = "soft" | "mixed" | "hard";
 
@@ -38,9 +39,7 @@ export class GitOpsService {
         await this.git.raw(["revert", "--no-edit", h]);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        throw new Error(
-          `revert ${h.slice(0, 7)} failed: ${msg}\nPlease manually resolve conflicts, then git revert --continue or --abort`,
-        );
+        throw new Error(t("error.revertFailed", { hash: h.slice(0, 7), message: msg }));
       }
     }
   }
@@ -51,11 +50,11 @@ export class GitOpsService {
     message: string,
   ): Promise<void> {
     if (hashes.length < 2)
-      throw new Error("At least 2 commits required to squash");
+      throw new Error(t("error.squashMinimum"));
     await this.assertClean();
     const { oldest } = this.findOldestNewest(hashes, allCommits);
     const base = oldest.parents[0];
-    if (!base) throw new Error("Cannot squash root commit");
+    if (!base) throw new Error(t("error.squashRoot"));
     await this.git.raw(["reset", "--soft", base]);
     await this.git.raw(["commit", "-m", message]);
   }
@@ -64,7 +63,7 @@ export class GitOpsService {
     await this.assertClean();
     const { oldest } = this.findOldestNewest(hashes, allCommits);
     const base = oldest.parents[0];
-    if (!base) throw new Error("Cannot drop root commit");
+    if (!base) throw new Error(t("error.dropRoot"));
     await this.runInteractiveRebase(base, "drop", hashes);
   }
 
@@ -77,9 +76,7 @@ export class GitOpsService {
   private async assertClean(): Promise<void> {
     const status = await this.git.status();
     if (!status.isClean()) {
-      throw new Error(
-        "Working tree has uncommitted changes. Please commit or stash before proceeding",
-      );
+      throw new Error(t("error.workingTreeDirty"));
     }
   }
 
@@ -88,7 +85,7 @@ export class GitOpsService {
     const indices = hashes
       .map((h) => indexMap.get(h))
       .filter((v): v is number => v !== undefined);
-    if (indices.length === 0) throw new Error("Specified commits not found");
+    if (indices.length === 0) throw new Error(t("error.commitsNotFound"));
     const minIdx = Math.min(...indices);
     const maxIdx = Math.max(...indices);
     return { newest: allCommits[minIdx]!, oldest: allCommits[maxIdx]! };
@@ -140,9 +137,7 @@ export class GitOpsService {
       } catch {
         // Ignore abort errors
       }
-      throw new Error(
-        `rebase failed: ${msg}\nAbort was attempted, please check repo status`,
-      );
+      throw new Error(t("error.rebaseFailed", { message: msg }));
     }
   }
 }

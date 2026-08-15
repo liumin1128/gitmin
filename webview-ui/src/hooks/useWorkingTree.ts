@@ -9,6 +9,7 @@ import {
 } from '../../../shared/workingTree';
 import { postMessage, useIpcListener } from './useIpc';
 import { useMultiSelect } from './useMultiSelect';
+import { t } from '../../../shared/i18n';
 
 const EMPTY_SNAPSHOT: WorkingTreeSnapshot = {
   conflicts: [],
@@ -82,11 +83,15 @@ export function useWorkingTree({ onRefreshCommits, onRefreshStashes }: Options) 
     setBusy(false);
     if (!response.ok) {
       setNotice(null);
-      if (response.message !== 'Cancelled') setError(response.message ?? 'Operation failed');
+      if (response.message !== 'Cancelled') {
+        setError(response.message ?? t('common.operationFailed'));
+      }
     } else {
       setError(null);
       if (response.operation === 'commit' || response.operation === 'stash') setMessage('');
-      setNotice(response.operation === 'stash' ? response.message ?? 'Changes stashed' : null);
+      setNotice(
+        response.operation === 'stash' ? response.message ?? t('changes.stashed') : null
+      );
     }
     if (response.refresh.includes('changes')) refresh();
     if (response.refresh.includes('commits')) onRefreshCommits();
@@ -96,7 +101,9 @@ export function useWorkingTree({ onRefreshCommits, onRefreshStashes }: Options) 
     if (response.requestId !== generationRequestIdRef.current) return;
     setGenerating(false);
     if (!response.ok) {
-      if (!response.cancelled) setError(response.error ?? 'Commit message generation failed');
+      if (!response.cancelled) {
+        setError(response.error ?? t('error.commitMessageGeneration'));
+      }
       return;
     }
     setMessage(response.message ?? '');

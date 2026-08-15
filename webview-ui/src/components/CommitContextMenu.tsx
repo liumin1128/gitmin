@@ -4,7 +4,8 @@
  */
 import { Fragment } from 'react';
 import type { GitAction } from '../../../shared/actions';
-import { ACTION_LABEL, canPerform } from '../../../shared/actions';
+import { canPerform } from '../../../shared/actions';
+import { t, type TranslationKey } from '../../../shared/i18n';
 
 interface Props {
   x: number;
@@ -25,6 +26,15 @@ const ORDER: GitAction[] = [
   'reset-hard',
 ];
 const SEPARATOR_BEFORE = new Set<GitAction>(['reset-soft']);
+const ACTION_LABEL_KEYS: Record<GitAction, TranslationKey> = {
+  'copy-hash': 'action.copyHash',
+  revert: 'action.revert',
+  squash: 'action.squash',
+  drop: 'action.drop',
+  'reset-soft': 'action.resetSoft',
+  'reset-mixed': 'action.resetMixed',
+  'reset-hard': 'action.resetHard',
+};
 
 export function CommitContextMenu({ x, y, selectedCount, contiguous, onSelect }: Props) {
   return (
@@ -49,7 +59,7 @@ export function CommitContextMenu({ x, y, selectedCount, contiguous, onSelect }:
               disabled={!enabled}
               onClick={() => enabled && onSelect(action)}
             >
-              {ACTION_LABEL[action]}
+              {t(ACTION_LABEL_KEYS[action])}
               {suffix}
             </button>
           </Fragment>

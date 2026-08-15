@@ -5,6 +5,7 @@
  * - Panel content determined by children (option list / date form / path input)
  */
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { t } from '../../../shared/i18n';
 
 interface Props {
   label: ReactNode;
@@ -26,7 +27,7 @@ export function FilterDropdown({
   hideCaret,
   className,
   onClear,
-  clearLabel = 'Clear filter',
+  clearLabel,
   children,
 }: Props) {
   const [open, setOpen] = useState(false);
@@ -35,6 +36,7 @@ export function FilterDropdown({
   const panelRef = useRef<HTMLDivElement>(null);
   const close = useCallback(() => setOpen(false), []);
   const buttonTitle = title ?? (typeof label === 'string' ? label : undefined);
+  const resolvedClearLabel = clearLabel ?? t('filter.clear');
 
   useEffect(() => {
     if (!open) return;
@@ -82,8 +84,8 @@ export function FilterDropdown({
         <button
           type="button"
           className="filter-dropdown-clear"
-          aria-label={clearLabel}
-          title={clearLabel}
+          aria-label={resolvedClearLabel}
+          title={resolvedClearLabel}
           onClick={() => {
             close();
             onClear();

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { CommitDetails } from '../../../shared/domain';
+import { t } from '../../../shared/i18n';
 import {
   formatCommitDate,
   formatCommitIdentity,
@@ -13,10 +14,10 @@ interface Props {
 }
 
 export function CommitDetailsPanel({ details, loading, error }: Props) {
-  if (loading) return <div className="empty-hint">Loading commit details...</div>;
+  if (loading) return <div className="empty-hint">{t('details.loading')}</div>;
   if (error) return <div className="commit-details-error">{error}</div>;
   if (details.length === 0) {
-    return <div className="empty-hint">Select commits or a stash to view details</div>;
+    return <div className="empty-hint">{t('details.select')}</div>;
   }
 
   return (
@@ -32,28 +33,28 @@ function CommitDetailItem({ detail }: { detail: CommitDetails }) {
   return (
     <article className="commit-detail-item">
       <header className="commit-detail-header">
-        <h3>{detail.subject || '(no subject)'}</h3>
+        <h3>{detail.subject || t('details.noSubject')}</h3>
       </header>
 
       {detail.body.trim() && <pre className="commit-detail-body">{detail.body}</pre>}
 
       <dl className="commit-detail-grid">
-        <DetailRow label="Hash"><code>{detail.hash}</code></DetailRow>
-        <DetailRow label="Refs">
+        <DetailRow label={t('details.hash')}><code>{detail.hash}</code></DetailRow>
+        <DetailRow label={t('details.refs')}>
           {detail.refs.length > 0 ? (
             <span className="commit-detail-refs">
               {detail.refs.map((ref) => <span className="commit-tag" key={ref}>{ref}</span>)}
             </span>
-          ) : 'None'}
+          ) : t('common.none')}
         </DetailRow>
-        <DetailRow label="Author">{formatCommitIdentity(detail.author)}</DetailRow>
-        <DetailRow label="Committer">{formatCommitIdentity(detail.committer)}</DetailRow>
-        <DetailRow label="Commit Date">
+        <DetailRow label={t('details.author')}>{formatCommitIdentity(detail.author)}</DetailRow>
+        <DetailRow label={t('details.committer')}>{formatCommitIdentity(detail.committer)}</DetailRow>
+        <DetailRow label={t('details.commitDate')}>
           <time dateTime={detail.committer.date} title={detail.committer.date}>
             {formatCommitDate(detail.committer.date)}
           </time>
         </DetailRow>
-        <DetailRow label="Signature">
+        <DetailRow label={t('details.signature')}>
           <span>{signatureStatusLabel(detail.signature.status)}</span>
           {detail.signature.signer && <span> · {detail.signature.signer}</span>}
           {detail.signature.key && <span> · <code>{detail.signature.key}</code></span>}

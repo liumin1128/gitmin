@@ -61,7 +61,7 @@ for (const [index, id] of WORKBENCH_VIEW_IDS.entries()) {
   assert.equal(
     commands.find((item) => item.command === metadata.checkedToggleCommand)?.icon,
     "$(check)",
-    `${metadata.label} should use the native check icon when visible`,
+    `${metadata.labelKey} should use the native check icon when visible`,
   );
   assert.equal(uncheckedItem?.group, `1_views@${index + 1}`);
   assert.equal(checkedItem?.group, uncheckedItem?.group);

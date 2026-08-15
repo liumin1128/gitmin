@@ -4,6 +4,7 @@ import type {
   WorkingTreeSnapshot,
 } from '../../../shared/domain';
 import type { WorkingTreeAction } from '../../../shared/workingTree';
+import { t } from '../../../shared/i18n';
 import { ChangeGroup } from './ChangeGroup';
 
 interface Props {
@@ -67,8 +68,8 @@ export function ChangesPanel({
           className="change-message-input"
           rows={1}
           value={message}
-          placeholder="Message"
-          aria-label="Commit or stash message"
+          placeholder={t('changes.messagePlaceholder')}
+          aria-label={t('changes.messageLabel')}
           disabled={locked}
           onChange={handleMessageChange}
         />
@@ -78,13 +79,13 @@ export function ChangesPanel({
             className="toolbar-icon-button"
             title={
               generating
-                ? 'Generating commit message with Copilot'
-                : 'Generate commit message with Copilot'
+                ? t('changes.generatingMessage')
+                : t('changes.generateMessage')
             }
             aria-label={
               generating
-                ? 'Generating commit message with Copilot'
-                : 'Generate commit message with Copilot'
+                ? t('changes.generatingMessage')
+                : t('changes.generateMessage')
             }
             disabled={locked || !generateEnabled}
             onClick={onGenerateCommitMessage}
@@ -101,8 +102,8 @@ export function ChangesPanel({
           <button
             type="button"
             className="toolbar-icon-button"
-            title="Stash changes"
-            aria-label="Stash changes"
+            title={t('changes.stash')}
+            aria-label={t('changes.stash')}
             disabled={locked || !stashEnabled}
             onClick={onStash}
           >
@@ -111,8 +112,8 @@ export function ChangesPanel({
           <button
             type="button"
             className="toolbar-icon-button"
-            title="Refresh changes"
-            aria-label="Refresh changes"
+            title={t('changes.refresh')}
+            aria-label={t('changes.refresh')}
             disabled={locked}
             onClick={onRefresh}
           >
@@ -122,12 +123,12 @@ export function ChangesPanel({
           <button
             type="button"
             className="btn change-command-button"
-            title="Commit staged changes"
+            title={t('changes.commitStaged')}
             disabled={locked || !commitEnabled}
             onClick={onCommit}
           >
             <span className="codicon codicon-check" aria-hidden="true" />
-            <span>Commit</span>
+            <span>{t('changes.commit')}</span>
           </button>
         </div>
       </div>
@@ -135,11 +136,11 @@ export function ChangesPanel({
       {!error && notice && <div className="section-notice">{notice}</div>}
       <div className="change-groups">
         {changeCount === 0 ? (
-          <div className="empty-hint">No changes</div>
+          <div className="empty-hint">{t('changes.none')}</div>
         ) : (
           <>
             <ChangeGroup
-              title="Merge Changes"
+              title={t('view.mergeChanges')}
               group="conflicts"
               changes={snapshot.conflicts}
               selectedKeys={selectedKeys}
@@ -149,7 +150,7 @@ export function ChangesPanel({
               onAction={onAction}
             />
             <ChangeGroup
-              title="Staged Changes"
+              title={t('view.stagedChanges')}
               group="staged"
               changes={snapshot.staged}
               selectedKeys={selectedKeys}
@@ -159,7 +160,7 @@ export function ChangesPanel({
               onAction={onAction}
             />
             <ChangeGroup
-              title="Changes"
+              title={t('view.changes')}
               group="changes"
               changes={snapshot.changes}
               selectedKeys={selectedKeys}

@@ -1,6 +1,7 @@
 /**
  * Display formatting pure functions: time, hash, etc.
  */
+import { t } from '../../../shared/i18n';
 
 /** Short hash: take first 7 chars */
 export function shortHash(hash: string): string {
@@ -30,12 +31,12 @@ export function relativeTime(iso: string, now: Date = new Date(), maxDays = 7): 
     return `${d.getFullYear()}-${M}-${dd} ${hh}:${mm}`;
   }
 
-  if (diffSec < 60) return `${diffSec}s ago (${hh}:${mm})`;
+  if (diffSec < 60) return t('time.secondsAgo', { value: diffSec, time: `${hh}:${mm}` });
   const min = Math.floor(diffSec / 60);
-  if (min < 60) return `${min}m ago (${hh}:${mm})`;
+  if (min < 60) return t('time.minutesAgo', { value: min, time: `${hh}:${mm}` });
   const hour = Math.floor(min / 60);
-  if (hour < 24) return `${hour}h ago (${hh}:${mm})`;
-  return `${day}d ago (${hh}:${mm})`;
+  if (hour < 24) return t('time.hoursAgo', { value: hour, time: `${hh}:${mm}` });
+  return t('time.daysAgo', { value: day, time: `${hh}:${mm}` });
 }
 
 /** Commit message: take first line only */

@@ -5,6 +5,7 @@ import {
   resolveSelectedRepository,
 } from '../../shared/repositories';
 import type { GitApi, GitRepository } from './RepoLocator';
+import { t } from '../../shared/i18n';
 
 const SELECTED_REPOSITORY_STATE_KEY = 'gitmin.selectedRepository';
 
@@ -80,7 +81,7 @@ export class RepositorySelectionService implements Disposable {
   private async selectNow(rootPath: string): Promise<boolean> {
     await this.initialize();
     if (!this.getRepositories().some((repository) => repository.rootPath === rootPath)) {
-      throw new Error('The selected repository is not available');
+      throw new Error(t('repository.unavailable'));
     }
     if (this.selectedRootPath === rootPath) return false;
 
@@ -153,7 +154,7 @@ export class RepositorySelectionService implements Disposable {
     return this.getWorkspaceRepositories().map((repository) => ({
       rootPath: repository.rootUri.fsPath,
       name: getRepositoryName(repository.rootUri.fsPath),
-      currentBranch: repository.state.HEAD?.name ?? '(detached)',
+      currentBranch: repository.state.HEAD?.name ?? t('repository.detached'),
     }));
   }
 

@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { WorkbenchPanelHeights, WorkbenchViewId } from '../utils/workbenchLayout';
+import { t } from '../../../shared/i18n';
 import {
   DEFAULT_AUTO_PANEL_HEIGHT,
   MIN_EXPANDED_PANEL_HEIGHT,
@@ -136,7 +137,9 @@ function WorkbenchPanel({
   const contentRef = useRef<HTMLDivElement>(null);
   const dragCleanupRef = useRef<(() => void) | null>(null);
   const contentId = `${panel.id}-panel-content`;
-  const actionLabel = `${panel.collapsed ? 'Expand' : 'Collapse'}${panel.title}`;
+  const actionLabel = t(panel.collapsed ? 'panel.expand' : 'panel.collapse', {
+    title: panel.title,
+  });
   const stopPropagation = (event: MouseEvent) => event.stopPropagation();
   const style = {
     '--panel-height': `${panel.collapsed ? PANEL_HEADER_HEIGHT : height}px`,
@@ -265,12 +268,12 @@ function WorkbenchPanel({
             <div
               className="workbench-panel-sash"
               role="separator"
-              aria-label={`Resize ${panel.title} panel`}
+              aria-label={t('panel.resize', { title: panel.title })}
               aria-orientation="horizontal"
               aria-valuemin={Math.round(minimumHeight)}
               aria-valuemax={Math.round(maximumHeight)}
               aria-valuenow={Math.round(height)}
-              title={`Resize ${panel.title} panel; double-click to fit content`}
+              title={t('panel.resizeHint', { title: panel.title })}
               tabIndex={0}
               onPointerDown={startDragging}
               onDoubleClick={() => onHeightChange(panel.id, null)}

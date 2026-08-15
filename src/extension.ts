@@ -13,8 +13,10 @@ import {
   WORKBENCH_VIEW_METADATA,
 } from "../shared/workbenchViews";
 import { openGitMinSettings } from "./configuration";
+import { configureLocale } from "../shared/i18n";
 
 export function activate(context: vscode.ExtensionContext) {
+  configureLocale(vscode.env.language);
   const fileDiffNavigator = new FileDiffNavigator();
   const copilotModelSelector = new CopilotModelSelector();
   const customModelCredentials = new CustomModelCredentials(context.secrets);

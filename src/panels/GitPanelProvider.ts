@@ -9,6 +9,7 @@ import { RepositorySelectionService } from "../services/RepositorySelectionServi
 import { CommitMessageGenerator } from "../services/CommitMessageGenerator";
 import { buildWebviewHtml } from "../utils/webviewHtml";
 import type { WebviewMessage } from "../../shared/messages";
+import { t } from "../../shared/i18n";
 
 export class GitPanelProvider {
   private static current: GitPanelProvider | undefined;
@@ -25,7 +26,7 @@ export class GitPanelProvider {
     }
     const panel = vscode.window.createWebviewPanel(
       "gitmin.panel",
-      "Git Commit Panel",
+      t("webview.title"),
       vscode.ViewColumn.Active,
       {
         enableScripts: true,

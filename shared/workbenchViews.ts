@@ -1,3 +1,5 @@
+import type { TranslationKey } from './i18n';
+
 export const WORKBENCH_VIEW_IDS = [
   'repositories',
   'changes',
@@ -14,44 +16,44 @@ export type WorkbenchViewVisibility = Record<WorkbenchViewId, boolean>;
 export const WORKBENCH_VIEW_METADATA: Record<
   WorkbenchViewId,
   {
-    label: string;
+    labelKey: TranslationKey;
     toggleCommand: string;
     checkedToggleCommand: string;
     visibilityContext: string;
   }
 > = {
   repositories: {
-    label: 'Repositories',
+    labelKey: 'view.repositories',
     toggleCommand: 'gitmin.toggleRepositoriesView',
     checkedToggleCommand: 'gitmin.toggleRepositoriesView.checked',
     visibilityContext: 'gitmin.workbenchView.repositories.visible',
   },
   changes: {
-    label: 'Changes',
+    labelKey: 'view.changes',
     toggleCommand: 'gitmin.toggleChangesView',
     checkedToggleCommand: 'gitmin.toggleChangesView.checked',
     visibilityContext: 'gitmin.workbenchView.changes.visible',
   },
   commits: {
-    label: 'Commits',
+    labelKey: 'view.commits',
     toggleCommand: 'gitmin.toggleCommitsView',
     checkedToggleCommand: 'gitmin.toggleCommitsView.checked',
     visibilityContext: 'gitmin.workbenchView.commits.visible',
   },
   stashes: {
-    label: 'Stashes',
+    labelKey: 'view.stashes',
     toggleCommand: 'gitmin.toggleStashesView',
     checkedToggleCommand: 'gitmin.toggleStashesView.checked',
     visibilityContext: 'gitmin.workbenchView.stashes.visible',
   },
   files: {
-    label: 'Changed Files',
+    labelKey: 'view.changedFiles',
     toggleCommand: 'gitmin.toggleChangedFilesView',
     checkedToggleCommand: 'gitmin.toggleChangedFilesView.checked',
     visibilityContext: 'gitmin.workbenchView.files.visible',
   },
   details: {
-    label: 'Commit Details',
+    labelKey: 'view.commitDetails',
     toggleCommand: 'gitmin.toggleCommitDetailsView',
     checkedToggleCommand: 'gitmin.toggleCommitDetailsView.checked',
     visibilityContext: 'gitmin.workbenchView.details.visible',

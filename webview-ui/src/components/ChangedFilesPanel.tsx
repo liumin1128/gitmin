@@ -3,6 +3,7 @@
  */
 import { useEffect, useRef } from 'react';
 import type { DiffRange, FileChange, FileStatus } from '../../../shared/domain';
+import { t } from '../../../shared/i18n';
 
 interface Props {
   range: DiffRange | null;
@@ -25,13 +26,13 @@ const STATUS_LABEL: Record<FileStatus, string> = {
 
 export function ChangedFilesPanel({ range, files, activeFilePath, loading, onOpenDiff }: Props) {
   if (loading) {
-    return <div className="empty-hint">Loading diff...</div>;
+    return <div className="empty-hint">{t('files.loading')}</div>;
   }
   if (!range) {
-    return <div className="empty-hint">Select commits or a stash to view changed files</div>;
+    return <div className="empty-hint">{t('files.select')}</div>;
   }
   if (files.length === 0) {
-    return <div className="empty-hint">No file changes</div>;
+    return <div className="empty-hint">{t('files.none')}</div>;
   }
   return (
     <div className="files-panel">
@@ -78,7 +79,7 @@ function ChangedFileItem({ file, active, onOpenDiff }: ItemProps) {
           <span className="stat-del">-{file.deletions}</span>
         </span>
       )}
-      {file.binary && <span className="file-stat binary">binary</span>}
+      {file.binary && <span className="file-stat binary">{t('files.binary')}</span>}
     </div>
   );
 }

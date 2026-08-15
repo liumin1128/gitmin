@@ -12,16 +12,6 @@ export type GitAction =
   | 'reset-mixed'
   | 'reset-hard';
 
-export const ACTION_LABEL: Record<GitAction, string> = {
-  'copy-hash': 'Copy Hash',
-  revert: 'Revert',
-  squash: 'Squash',
-  drop: 'Drop',
-  'reset-soft': 'Reset --soft to here',
-  'reset-mixed': 'Reset --mixed to here',
-  'reset-hard': 'Reset --hard to here',
-};
-
 /** Check if an action is available given the current selection */
 export function canPerform(
   action: GitAction,

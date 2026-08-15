@@ -42,6 +42,7 @@ import type {
 } from '../../shared/domain';
 import type { WebviewMessage } from '../../shared/messages';
 import type { GitAction } from '../../shared/actions';
+import { t } from '../../shared/i18n';
 
 type CommitPageRequest = Extract<WebviewMessage, { type: 'commits/refresh' }>;
 
@@ -384,7 +385,7 @@ export function App() {
   useIpcListener('action/result', (m) => {
     setBusy(false);
     if (!m.ok) {
-      setError(m.message ?? 'Operation failed');
+      setError(m.message ?? t('common.operationFailed'));
       return;
     }
 
@@ -473,7 +474,7 @@ export function App() {
     failedCommitOffsetRef.current = null;
     initialCommitLoadSettledRef.current = false;
     queuedCommitResetFiltersRef.current = null;
-    setRepoError(rootPath ? null : 'No git repository detected in the current workspace');
+    setRepoError(rootPath ? null : t('repository.none'));
     if (rootPath) {
       postMessage({ type: 'repositories/load', requestId, limit: COMMIT_PAGE_SIZE });
     } else {
@@ -501,7 +502,7 @@ export function App() {
       {!repoError && (commitPageError ?? error) && (
         <div className="error-bar">{commitPageError ?? error}</div>
       )}
-      {!repoError && busy && <div className="busy-bar">Executing...</div>}
+      {!repoError && busy && <div className="busy-bar">{t('common.executing')}</div>}
       <WorkbenchPanelStack
         heights={layout.heights}
         onCollapsedChange={setCollapsed}
@@ -509,7 +510,7 @@ export function App() {
         panels={[
           {
             id: 'repositories',
-            title: 'Repositories',
+            title: t('view.repositories'),
             count: repositories.repositories.length,
             visible: layout.views.repositories.visible,
             collapsed: layout.views.repositories.collapsed,
@@ -525,7 +526,7 @@ export function App() {
           },
           {
             id: 'changes',
-            title: 'Changes',
+            title: t('view.changes'),
             count:
               workingTree.snapshot.conflicts.length +
               workingTree.snapshot.staged.length +
@@ -557,7 +558,7 @@ export function App() {
           },
           {
             id: 'commits',
-            title: 'Commits',
+            title: t('view.commits'),
             count: commits.length,
             visible: layout.views.commits.visible,
             collapsed: layout.views.commits.collapsed,
@@ -565,8 +566,8 @@ export function App() {
               <button
                 type="button"
                 className="toolbar-icon-button"
-                title="Retry loading commits"
-                aria-label="Retry loading commits"
+                title={t('panel.retryCommits')}
+                aria-label={t('panel.retryCommits')}
                 onClick={retryFailedCommitPageRequest}
               >
                 <span className="codicon codicon-refresh" aria-hidden="true" />
@@ -598,7 +599,7 @@ export function App() {
           },
           {
             id: 'stashes',
-            title: 'Stashes',
+            title: t('view.stashes'),
             count: stashes.entries.length,
             visible: layout.views.stashes.visible,
             collapsed: layout.views.stashes.collapsed,
@@ -617,7 +618,7 @@ export function App() {
           },
           {
             id: 'files',
-            title: 'Changed Files',
+            title: t('view.changedFiles'),
             count: selectionDetails.range ? selectionDetails.files.length : undefined,
             visible: layout.views.files.visible,
             collapsed: layout.views.files.collapsed,
@@ -625,7 +626,7 @@ export function App() {
               selectionDetails.range && !selectionDetails.range.contiguous ? (
                 <span
                   className="warn-tag"
-                  title="Selected commits are not contiguous; the diff range includes changes from unselected commits"
+                  title={t('panel.nonContiguous')}
                 >
                   ⚠
                 </span>
@@ -642,7 +643,7 @@ export function App() {
           },
           {
             id: 'details',
-            title: 'Commit Details',
+            title: t('view.commitDetails'),
             count: selectionDetails.details.length,
             visible: layout.views.details.visible,
             collapsed: layout.views.details.collapsed,

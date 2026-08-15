@@ -5,6 +5,7 @@ import type {
   FileChange,
   StashEntry,
 } from '../../shared/domain';
+import { t } from '../../shared/i18n';
 import { STASH_LIST_FORMAT, parseStashList } from '../utils/stashParser';
 import { GitService } from './GitService';
 
@@ -53,7 +54,7 @@ export class StashService {
   }
 
   async apply(hash: string): Promise<void> {
-    if (!hash) throw new Error('A stash is required');
+    if (!hash) throw new Error(t('error.stashRequired'));
     await this.git.raw(['stash', 'apply', hash]);
   }
 
@@ -67,10 +68,10 @@ export class StashService {
     try {
       currentHash = (await this.git.raw(['rev-parse', entry.selector])).trim();
     } catch {
-      throw new Error('The selected stash no longer exists');
+      throw new Error(t('error.stashMissing'));
     }
     if (currentHash !== entry.hash) {
-      throw new Error('The selected stash changed since it was loaded');
+      throw new Error(t('error.stashChanged'));
     }
   }
 }

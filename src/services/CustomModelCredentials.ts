@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { t } from '../../shared/i18n';
 
 const CUSTOM_MODEL_API_KEY = 'gitmin.customModel.apiKey';
 
@@ -10,25 +11,25 @@ export class CustomModelCredentials {
     if (stored) return stored;
 
     const entered = await this.promptAndStore();
-    if (!entered) throw new Error('Custom model API key is required');
+    if (!entered) throw new Error(t('credentials.required'));
     return entered;
   }
 
   async configure(): Promise<void> {
     const apiKey = await this.promptAndStore();
     if (apiKey) {
-      void vscode.window.showInformationMessage('GitMin custom model API key saved securely.');
+      void vscode.window.showInformationMessage(t('credentials.saved'));
     }
   }
 
   private async promptAndStore(): Promise<string | undefined> {
     const value = await vscode.window.showInputBox({
-      title: 'Custom Model API Key',
-      prompt: 'Enter the API key for the configured OpenAI-compatible endpoint.',
-      placeHolder: 'API key',
+      title: t('credentials.title'),
+      prompt: t('credentials.prompt'),
+      placeHolder: t('credentials.placeholder'),
       password: true,
       ignoreFocusOut: true,
-      validateInput: (input) => (input.trim() ? undefined : 'API key is required'),
+      validateInput: (input) => (input.trim() ? undefined : t('credentials.validation')),
     });
     if (value === undefined) return undefined;
 

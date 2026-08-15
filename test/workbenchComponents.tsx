@@ -93,8 +93,8 @@ assert.ok(
   html.indexOf('data-workbench-panel="repositories"') <
     html.indexOf('data-workbench-panel="changes"')
 );
-assert.match(html, /aria-label="CollapseRepositories"/);
-assert.match(html, /aria-label="ExpandChanges"/);
+assert.match(html, /aria-label="Collapse Repositories"/);
+assert.match(html, /aria-label="Expand Changes"/);
 assert.match(html, />Repositories</);
 assert.match(html, />Commit Details</);
 assert.match(html, /repository list/);

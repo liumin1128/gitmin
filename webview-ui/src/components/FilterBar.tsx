@@ -8,6 +8,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { CommitFilters, FilterOptions } from '../../../shared/domain';
 import { isValidSearch } from '../../../shared/commitFilter';
+import { t } from '../../../shared/i18n';
 import { useDebounce } from '../hooks/useDebounce';
 import { FilterDropdown } from './FilterDropdown';
 
@@ -58,13 +59,13 @@ export function FilterBar({
           className="filter-search-input"
           type="text"
           value={searchDraft}
-          placeholder="Text or hash"
+          placeholder={t('filter.searchPlaceholder')}
           onChange={(e) => setSearchDraft(e.target.value)}
         />
         <button
           type="button"
           className={`filter-toggle${filters.searchRegex ? ' is-active' : ''}`}
-          title="Regex"
+          title={t('filter.regex')}
           onClick={() => patch({ searchRegex: !filters.searchRegex })}
         >
           .*
@@ -72,7 +73,7 @@ export function FilterBar({
         <button
           type="button"
           className={`filter-toggle${filters.searchCaseSensitive ? ' is-active' : ''}`}
-          title="Case sensitive"
+          title={t('filter.caseSensitive')}
           onClick={() => patch({ searchCaseSensitive: !filters.searchCaseSensitive })}
         >
           Cc
@@ -82,11 +83,11 @@ export function FilterBar({
       <div className="filter-bar-controls">
         <div className="filter-options">
           <FilterDropdown
-            label={`Branch: ${branchLabel(filters.branch)}`}
+            label={t('filter.branch', { value: branchLabel(filters.branch) })}
             active={!!filters.branch}
             disabled={options.branches.length === 0}
             onClear={() => patch({ branch: undefined })}
-            clearLabel="Clear branch filter"
+            clearLabel={t('filter.clearBranch')}
           >
             {(close) => (
               <BranchPanel
@@ -101,11 +102,11 @@ export function FilterBar({
           </FilterDropdown>
 
           <FilterDropdown
-            label={`Author: ${filters.author || 'All'}`}
+            label={t('filter.author', { value: filters.author || t('common.all') })}
             active={!!filters.author}
             disabled={options.authors.length === 0}
             onClear={() => patch({ author: undefined })}
-            clearLabel="Clear author filter"
+            clearLabel={t('filter.clearAuthor')}
           >
             {(close) => (
               <AuthorPanel
@@ -120,10 +121,12 @@ export function FilterBar({
           </FilterDropdown>
 
           <FilterDropdown
-            label={`Date: ${dateLabel(filters.dateAfter, filters.dateBefore)}`}
+            label={t('filter.date', {
+              value: dateLabel(filters.dateAfter, filters.dateBefore),
+            })}
             active={!!(filters.dateAfter || filters.dateBefore)}
             onClear={() => patch({ dateAfter: undefined, dateBefore: undefined })}
-            clearLabel="Clear date filter"
+            clearLabel={t('filter.clearDate')}
           >
             {(close) => (
               <DatePanel
@@ -143,8 +146,8 @@ export function FilterBar({
             type="button"
             className="toolbar-icon-button"
             onClick={onRefresh}
-            title="Refresh commit list"
-            aria-label="Refresh commit list"
+            title={t('filter.refreshCommits')}
+            aria-label={t('filter.refreshCommits')}
           >
             <span className="codicon codicon-refresh" aria-hidden="true" />
           </button>
@@ -170,14 +173,14 @@ function BranchPanel({ branches, value, onSelect }: BranchPanelProps) {
         className={`filter-list-item${!value ? ' is-selected' : ''}`}
         onClick={() => onSelect(undefined)}
       >
-        HEAD (current branch)
+        {t('filter.currentBranch')}
       </button>
       <button
         type="button"
         className={`filter-list-item${value === BRANCH_ALL ? ' is-selected' : ''}`}
         onClick={() => onSelect(BRANCH_ALL)}
       >
-        All branches
+        {t('filter.allBranches')}
       </button>
       <div className="filter-list-sep" />
       {branches.map((b) => (
@@ -207,7 +210,7 @@ function AuthorPanel({ authors, value, onSelect }: AuthorPanelProps) {
         className={`filter-list-item${!value ? ' is-selected' : ''}`}
         onClick={() => onSelect(undefined)}
       >
-        All
+        {t('common.all')}
       </button>
       <div className="filter-list-sep" />
       {authors.map((a) => (
@@ -235,19 +238,19 @@ function DatePanel({ after, before, onApply }: DatePanelProps) {
   return (
     <div className="filter-form">
       <label className="filter-form-row">
-        <span>From</span>
+        <span>{t('filter.from')}</span>
         <input type="date" value={a} onChange={(e) => setA(e.target.value)} />
       </label>
       <label className="filter-form-row">
-        <span>To</span>
+        <span>{t('filter.to')}</span>
         <input type="date" value={b} onChange={(e) => setB(e.target.value)} />
       </label>
       <div className="filter-form-actions">
         <button type="button" className="btn-secondary" onClick={() => onApply('', '')}>
-            Clear
+            {t('common.clear')}
           </button>
           <button type="button" className="btn" onClick={() => onApply(a, b)}>
-            Apply
+            {t('common.apply')}
         </button>
       </div>
     </div>
@@ -258,12 +261,12 @@ function DatePanel({ after, before, onApply }: DatePanelProps) {
 
 function branchLabel(v?: string): string {
   if (!v) return 'HEAD';
-  if (v === BRANCH_ALL) return 'All';
+  if (v === BRANCH_ALL) return t('common.all');
   return v;
 }
 
 function dateLabel(after?: string, before?: string): string {
-  if (!after && !before) return 'All';
+  if (!after && !before) return t('common.all');
   if (after && before) return `${after} ~ ${before}`;
   if (after) return `≥ ${after}`;
   return `≤ ${before}`;

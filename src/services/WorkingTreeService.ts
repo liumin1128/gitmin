@@ -1,5 +1,6 @@
 import { simpleGit, type SimpleGit } from 'simple-git';
 import type { WorkingTreeGroup, WorkingTreeSnapshot } from '../../shared/domain';
+import { t } from '../../shared/i18n';
 import { toWorkingTreeSnapshot } from '../utils/workingTreeStatus';
 
 export class WorkingTreeService {
@@ -58,9 +59,9 @@ export class WorkingTreeService {
   }
 
   async commit(message: string): Promise<void> {
-    if (!message.trim()) throw new Error('Commit message is required');
+    if (!message.trim()) throw new Error(t('error.commitMessageRequired'));
     const snapshot = await this.getSnapshot();
-    if (snapshot.staged.length === 0) throw new Error('No staged changes to commit');
+    if (snapshot.staged.length === 0) throw new Error(t('error.noStagedChanges'));
     await this.git.raw(['commit', '-m', message]);
   }
 
@@ -72,7 +73,7 @@ export class WorkingTreeService {
       '--unified=3',
       '--',
     ]);
-    if (!diff.trim()) throw new Error('No staged changes to generate a commit message from');
+    if (!diff.trim()) throw new Error(t('error.noStagedChangesForMessage'));
     return diff;
   }
 

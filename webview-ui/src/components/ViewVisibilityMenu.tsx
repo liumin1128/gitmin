@@ -3,6 +3,7 @@ import {
   WORKBENCH_VIEW_METADATA,
   type WorkbenchViewId,
 } from '../../../shared/workbenchViews';
+import { t } from '../../../shared/i18n';
 import type { WorkbenchViewState } from '../utils/workbenchLayout';
 import { CheckedMenuItem } from './CheckedMenuItem';
 import { FilterDropdown } from './FilterDropdown';
@@ -16,7 +17,7 @@ export function ViewVisibilityMenu({ views, onVisibleChange }: Props) {
   return (
     <FilterDropdown
       label={<span className="codicon codicon-more" aria-hidden="true" />}
-      title="Manage views"
+      title={t('panel.manageViews')}
       hideCaret
       className="view-visibility-menu"
     >
@@ -28,7 +29,7 @@ export function ViewVisibilityMenu({ views, onVisibleChange }: Props) {
               checked={views[id].visible}
               onChange={(visible) => onVisibleChange(id, visible)}
             >
-              {WORKBENCH_VIEW_METADATA[id].label}
+              {t(WORKBENCH_VIEW_METADATA[id].labelKey)}
             </CheckedMenuItem>
           ))}
         </div>

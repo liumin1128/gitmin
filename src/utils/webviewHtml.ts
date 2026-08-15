@@ -3,6 +3,7 @@
  * Reusable for both WebviewPanel and WebviewView
  */
 import * as vscode from 'vscode';
+import { resolveLocale, translate } from '../../shared/i18n';
 import { getNonce } from './nonce';
 
 export function buildWebviewHtml(
@@ -18,16 +19,19 @@ export function buildWebviewHtml(
   );
   const nonce = getNonce();
   const csp = webview.cspSource;
+  const locale = resolveLocale(vscode.env.language);
+  const title = translate(locale, 'webview.title');
+  const loading = JSON.stringify(translate(locale, 'webview.loading'));
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${locale}">
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${csp} 'unsafe-inline'; script-src 'nonce-${nonce}'; img-src ${csp} data: https:; font-src ${csp};" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="${styleUri}" />
-  <title>Git Commit Panel</title>
+  <title>${title}</title>
   <style>
-    #root:empty::before { content: "Loading Git Commit Panel..."; display: block; padding: 20px; color: #888; font-family: sans-serif; }
+    #root:empty::before { content: ${loading}; display: block; padding: 20px; color: #888; font-family: sans-serif; }
     #__err { display: none; padding: 12px; color: #ff6b6b; font-family: monospace; white-space: pre-wrap; background: #2a1414; border-bottom: 1px solid #ff6b6b; font-size: 12px; }
   </style>
 </head>

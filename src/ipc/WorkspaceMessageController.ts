@@ -24,6 +24,7 @@ import { StashService } from '../services/StashService';
 import { WorkingTreeDiffNavigator } from '../services/WorkingTreeDiffNavigator';
 import { WorkingTreeService } from '../services/WorkingTreeService';
 import { computeDiffRange } from '../utils/diffRange';
+import { t } from '../../shared/i18n';
 
 type PostMessage = (message: ExtensionMessage) => void;
 type SetDiffCache = (range: DiffRange, files: FileChange[]) => void;
@@ -108,12 +109,13 @@ export class WorkspaceMessageController implements vscode.Disposable {
     try {
       const paths = this.validateWorkingTreePaths(message.group, message.paths);
       if (message.action === 'discard') {
+        const discardLabel = t('common.discard');
         const answer = await vscode.window.showWarningMessage(
-          `Discard changes in ${paths.length} selected file(s)? This cannot be undone.`,
+          t('confirm.discardChanges', { count: paths.length }),
           { modal: true },
-          'Discard'
+          discardLabel
         );
-        if (answer !== 'Discard') {
+        if (answer !== discardLabel) {
           this.postResult(message.requestId, message.action, false, [], 'Cancelled');
           return;
         }
@@ -205,12 +207,13 @@ export class WorkspaceMessageController implements vscode.Disposable {
     try {
       const entry = this.findCachedStash(message.selector, message.hash);
       if (message.action === 'delete') {
+        const deleteLabel = t('common.delete');
         const answer = await vscode.window.showWarningMessage(
-          `Delete ${entry.selector}? This cannot be undone.`,
+          t('confirm.deleteStash', { selector: entry.selector }),
           { modal: true },
-          'Delete'
+          deleteLabel
         );
-        if (answer !== 'Delete') {
+        if (answer !== deleteLabel) {
           this.postResult(message.requestId, operation, false, [], 'Cancelled');
           return;
         }
@@ -245,7 +248,7 @@ export class WorkspaceMessageController implements vscode.Disposable {
 
       if (selection.kind === 'commits') {
         const commitRange = computeDiffRange(selection.hashes, commits);
-        if (!commitRange) throw new Error('Selected commits are unavailable');
+        if (!commitRange) throw new Error(t('error.selectedCommitsUnavailable'));
         range = commitRange;
         [files, details] = await Promise.all([
           this.git.getDiffSummary(range.base, range.head),
@@ -294,7 +297,7 @@ export class WorkspaceMessageController implements vscode.Disposable {
     const available = new Set(this.workingTreeCache[group].map((item) => item.path));
     const unique = [...new Set(paths)];
     if (unique.length === 0 || unique.some((path) => !available.has(path))) {
-      throw new Error('The selected changes are stale; refresh and try again');
+      throw new Error(t('error.selectedChangesStale'));
     }
     return unique;
   }
@@ -303,7 +306,7 @@ export class WorkspaceMessageController implements vscode.Disposable {
     const entry = this.stashCache.find(
       (candidate) => candidate.selector === selector && candidate.hash === hash
     );
-    if (!entry) throw new Error('The selected stash is stale; refresh and try again');
+    if (!entry) throw new Error(t('error.selectedStashStale'));
     return entry;
   }
 

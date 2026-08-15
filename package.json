@@ -1,7 +1,7 @@
 {
   "name": "gitmin",
   "displayName": "GitMin",
-  "description": "WebStorm-like Git commit management panel for VSCode",
+  "description": "%extension.description%",
   "version": "0.1.2",
   "publisher": "liumin",
   "repository": {
@@ -27,149 +27,149 @@
             "zh"
           ],
           "enumItemLabels": [
-            "English",
-            "中文"
+            "%configuration.commitMessageLanguage.en.label%",
+            "%configuration.commitMessageLanguage.zh.label%"
           ],
           "enumDescriptions": [
-            "Generate commit messages in English.",
-            "使用中文生成 Commit Message。"
+            "%configuration.commitMessageLanguage.en.description%",
+            "%configuration.commitMessageLanguage.zh.description%"
           ],
           "default": "en",
-          "description": "Language used when generating commit messages with the configured provider."
+          "description": "%configuration.commitMessageLanguage.description%"
         },
         "gitmin.commitMessageModel": {
           "type": "string",
           "default": "",
           "scope": "window",
-          "markdownDescription": "Copilot model ID used to generate commit messages. Leave empty to choose on the next generation, or run `GitMin: Select Commit Message Model` to select from currently available models."
+          "markdownDescription": "%configuration.commitMessageModel.description%"
         },
         "gitmin.customModel.enabled": {
           "type": "boolean",
           "default": false,
           "scope": "window",
-          "markdownDescription": "Use an OpenAI-compatible third-party model for commit message generation instead of Copilot. [Set or replace the API key](command:gitmin.setCustomModelApiKey); it is stored securely and never written to `settings.json`."
+          "markdownDescription": "%configuration.customModel.enabled.description%"
         },
         "gitmin.customModel.baseUrl": {
           "type": "string",
           "default": "",
           "scope": "window",
-          "markdownDescription": "OpenAI-compatible Base URL or full Chat Completions endpoint. For example, enter `https://api.example.com/v1` or `https://api.example.com/v1/chat/completions`; GitMin only appends `/chat/completions` when needed."
+          "markdownDescription": "%configuration.customModel.baseUrl.description%"
         },
         "gitmin.customModel.model": {
           "type": "string",
           "default": "",
           "scope": "window",
-          "description": "Model ID sent to the OpenAI-compatible API."
+          "description": "%configuration.customModel.model.description%"
         },
         "gitmin.commitMessagePrompt": {
           "type": "string",
           "default": "",
           "scope": "window",
           "editPresentation": "multilineText",
-          "markdownDescription": "Additional instructions appended to the built-in commit message prompt. The staged diff and output language rules are supplied automatically."
+          "markdownDescription": "%configuration.commitMessagePrompt.description%"
         }
       }
     },
     "commands": [
       {
         "command": "gitmin.openPanel",
-        "title": "GitMin: Open Panel in Editor",
+        "title": "%command.openPanel.title%",
         "category": "GitMin",
         "icon": "$(link-external)"
       },
       {
         "command": "gitmin.openSettings",
-        "title": "GitMin: Open Settings",
+        "title": "%command.openSettings.title%",
         "category": "GitMin",
         "icon": "$(gear)"
       },
       {
         "command": "gitmin.selectCommitMessageModel",
-        "title": "GitMin: Select Commit Message Model",
+        "title": "%command.selectCommitMessageModel.title%",
         "category": "GitMin"
       },
       {
         "command": "gitmin.setCustomModelApiKey",
-        "title": "GitMin: Set Custom Model API Key",
+        "title": "%command.setCustomModelApiKey.title%",
         "category": "GitMin"
       },
       {
         "command": "gitmin.previousFileDiff",
-        "title": "GitMin: Previous File Diff",
+        "title": "%command.previousFileDiff.title%",
         "category": "GitMin",
         "icon": "$(arrow-left)",
         "enablement": "gitmin.fileDiffActive"
       },
       {
         "command": "gitmin.nextFileDiff",
-        "title": "GitMin: Next File Diff",
+        "title": "%command.nextFileDiff.title%",
         "category": "GitMin",
         "icon": "$(arrow-right)",
         "enablement": "gitmin.fileDiffActive"
       },
       {
         "command": "gitmin.toggleRepositoriesView",
-        "title": "Repositories",
+        "title": "%view.repositories%",
         "category": "GitMin"
       },
       {
         "command": "gitmin.toggleRepositoriesView.checked",
-        "title": "Repositories",
+        "title": "%view.repositories%",
         "category": "GitMin",
         "icon": "$(check)"
       },
       {
         "command": "gitmin.toggleChangesView",
-        "title": "Changes",
+        "title": "%view.changes%",
         "category": "GitMin"
       },
       {
         "command": "gitmin.toggleChangesView.checked",
-        "title": "Changes",
+        "title": "%view.changes%",
         "category": "GitMin",
         "icon": "$(check)"
       },
       {
         "command": "gitmin.toggleCommitsView",
-        "title": "Commits",
+        "title": "%view.commits%",
         "category": "GitMin"
       },
       {
         "command": "gitmin.toggleCommitsView.checked",
-        "title": "Commits",
+        "title": "%view.commits%",
         "category": "GitMin",
         "icon": "$(check)"
       },
       {
         "command": "gitmin.toggleStashesView",
-        "title": "Stashes",
+        "title": "%view.stashes%",
         "category": "GitMin"
       },
       {
         "command": "gitmin.toggleStashesView.checked",
-        "title": "Stashes",
+        "title": "%view.stashes%",
         "category": "GitMin",
         "icon": "$(check)"
       },
       {
         "command": "gitmin.toggleChangedFilesView",
-        "title": "Changed Files",
+        "title": "%view.changedFiles%",
         "category": "GitMin"
       },
       {
         "command": "gitmin.toggleChangedFilesView.checked",
-        "title": "Changed Files",
+        "title": "%view.changedFiles%",
         "category": "GitMin",
         "icon": "$(check)"
       },
       {
         "command": "gitmin.toggleCommitDetailsView",
-        "title": "Commit Details",
+        "title": "%view.commitDetails%",
         "category": "GitMin"
       },
       {
         "command": "gitmin.toggleCommitDetailsView.checked",
-        "title": "Commit Details",
+        "title": "%view.commitDetails%",
         "category": "GitMin",
         "icon": "$(check)"
       }
@@ -325,6 +325,7 @@
     "test:stashes": "node --experimental-strip-types test/stashParser.mts",
     "test:workbench-changes": "node --experimental-strip-types test/detailSelection.mts && node --experimental-strip-types test/workingTreeDiff.mts && node --experimental-strip-types test/workingTree.mts && node test/runTsxTest.mjs test/commitMessage.mts && node test/runTsxTest.mjs test/customModelClient.ts && node test/runTsxTest.mjs test/workbenchChanges.tsx",
     "test:repositories": "node test/runTsxTest.mjs test/repositories.mts && node test/runTsxTest.mjs test/repositoryList.tsx",
+    "test:i18n": "node test/runTsxTest.mjs test/i18n.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.webview.json --noEmit",
     "vscode:prepublish": "npm run build"
   },

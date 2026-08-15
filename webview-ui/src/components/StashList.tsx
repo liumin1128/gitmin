@@ -1,4 +1,5 @@
 import type { StashEntry } from '../../../shared/domain';
+import { t } from '../../../shared/i18n';
 import { firstLine, relativeTime } from '../utils/formatters';
 
 interface Props {
@@ -29,26 +30,26 @@ export function StashList({
         <span className="stash-toolbar-spacer" />
         <StashActionButton
           icon="refresh"
-          title="Refresh stashes"
+          title={t('stash.refresh')}
           disabled={busy}
           onClick={onRefresh}
         />
         <StashActionButton
           icon="run"
-          title="Apply selected stash"
+          title={t('stash.applySelected')}
           disabled={busy || !hasSelection}
           onClick={onApply}
         />
         <StashActionButton
           icon="trash"
-          title="Delete selected stash"
+          title={t('stash.deleteSelected')}
           disabled={busy || !hasSelection}
           onClick={onDelete}
         />
       </div>
       {error && <div className="section-error">{error}</div>}
       {entries.length === 0 ? (
-        <div className="empty-hint">No stashes</div>
+        <div className="empty-hint">{t('stash.none')}</div>
       ) : (
         <div className="stash-list">
           {entries.map((entry) => {

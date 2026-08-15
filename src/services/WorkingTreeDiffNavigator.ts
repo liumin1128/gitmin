@@ -10,6 +10,7 @@ import {
 } from '../utils/workingTreeDiff';
 import { diffSideRef, type DiffSide } from '../utils/diffRange';
 import { getGitApi, type GitApi } from './RepoLocator';
+import { t } from '../../shared/i18n';
 
 export class WorkingTreeDiffNavigator implements vscode.Disposable {
   constructor(private readonly rootPath: string) {}
@@ -20,7 +21,7 @@ export class WorkingTreeDiffNavigator implements vscode.Disposable {
     path: string
   ): Promise<void> {
     const change = snapshot[group].find((item) => item.path === path);
-    if (!change) throw new Error('The selected change is stale; refresh and try again');
+    if (!change) throw new Error(t('error.changeStale'));
 
     const spec = workingTreeDiffSpec(group, path, change.oldPath);
     const rootUri = vscode.Uri.file(this.rootPath);
@@ -36,10 +37,10 @@ export class WorkingTreeDiffNavigator implements vscode.Disposable {
     }
 
     const api = await getGitApi();
-    if (!api) throw new Error('VS Code Git API is unavailable');
+    if (!api) throw new Error(t('error.gitApiUnavailable'));
     const left = this.toUri(api, rootUri, spec.left, change.status, 'left');
     const right = this.toUri(api, rootUri, spec.right, change.status, 'right');
-    const label = group === 'staged' ? 'Staged Changes' : 'Working Tree Changes';
+    const label = t(group === 'staged' ? 'view.stagedChanges' : 'view.workingTreeChanges');
     await vscode.commands.executeCommand('vscode.diff', left, right, `${path} (${label})`);
   }
 

@@ -4,6 +4,7 @@ import {
   setCommitMessageModelId,
 } from '../configuration';
 import { findModelById } from '../utils/copilotModel';
+import { t } from '../../shared/i18n';
 
 interface ModelQuickPickItem extends vscode.QuickPickItem {
   model: vscode.LanguageModelChat;
@@ -25,8 +26,8 @@ export class CopilotModelSelector {
     return this.pickAndRemember(
       models,
       configuredId
-        ? 'The saved model is unavailable. Select another Copilot model.'
-        : 'Select a Copilot model'
+        ? t('model.savedUnavailable')
+        : t('model.select')
     );
   }
 
@@ -35,11 +36,11 @@ export class CopilotModelSelector {
       const models = await this.getAvailableModels();
       const selected = await this.pickAndRemember(
         models,
-        'Select the Copilot model used for commit messages'
+        t('model.selectForMessages')
       );
       if (selected) {
         void vscode.window.showInformationMessage(
-          `GitMin will use ${selected.name} for commit messages.`
+          t('model.selected', { name: selected.name })
         );
       }
     } catch (error) {
@@ -50,9 +51,7 @@ export class CopilotModelSelector {
   private async getAvailableModels(): Promise<vscode.LanguageModelChat[]> {
     const models = await vscode.lm.selectChatModels({ vendor: 'copilot' });
     if (models.length === 0) {
-      throw new Error(
-        'No Copilot model is available. Sign in to GitHub Copilot and enable a chat model.'
-      );
+      throw new Error(t('model.noneAvailable'));
     }
     return models;
   }
@@ -65,12 +64,12 @@ export class CopilotModelSelector {
     const items: ModelQuickPickItem[] = models.map((model) => ({
       label: model.name,
       description:
-        model.id === configuredId ? `${model.family} - Current` : model.family,
+        model.id === configuredId ? t('model.current', { family: model.family }) : model.family,
       detail: `Copilot - ${model.id}`,
       model,
     }));
     const selected = await vscode.window.showQuickPick(items, {
-      title: 'Select Commit Message Model',
+      title: t('model.title'),
       placeHolder,
     });
     if (!selected) return undefined;

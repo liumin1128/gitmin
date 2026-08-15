@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import type { CommitMessageLanguage } from '../../shared/workingTree';
+import { t } from '../../shared/i18n';
 import {
   getCommitMessagePrompt,
   getCustomModelSettings,
@@ -58,7 +59,7 @@ export class CommitMessageGenerator {
       );
       const response = await model.sendRequest(
         [vscode.LanguageModelChatMessage.User(prompt)],
-        { justification: 'Generate a Git commit message from the staged diff.' },
+        { justification: t('model.justification') },
         cancellation.token
       );
       let output = '';
@@ -105,7 +106,7 @@ export class CommitMessageGenerator {
       token
     );
     if (tokenCount > tokenBudget) {
-      throw new Error('The staged diff is too large for the selected Copilot model');
+      throw new Error(t('error.diffTooLarge'));
     }
     return prompt;
   }
@@ -117,13 +118,13 @@ function readableLanguageModelError(error: unknown): Error {
   }
 
   if (error.code === 'NoPermissions') {
-    return new Error('Copilot model access was not granted');
+    return new Error(t('error.copilotPermission'));
   }
   if (error.code === 'Blocked') {
-    return new Error('The Copilot request was blocked or its quota was exceeded');
+    return new Error(t('error.copilotBlocked'));
   }
   if (error.code === 'NotFound') {
-    return new Error('The selected Copilot model is no longer available');
+    return new Error(t('error.copilotNotFound'));
   }
-  return new Error(error.message || 'Copilot could not generate a commit message');
+  return new Error(error.message || t('error.copilotGenerate'));
 }

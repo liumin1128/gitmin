@@ -32,6 +32,7 @@ import {
 } from "../../shared/persistedFilters";
 import { WorkspaceMessageController } from "./WorkspaceMessageController";
 import { CommitMessageGenerator } from "../services/CommitMessageGenerator";
+import { t } from "../../shared/i18n";
 
 export type PostMessage = (msg: ExtensionMessage) => void;
 
@@ -195,7 +196,7 @@ export class MessageHandler implements vscode.Disposable {
     if (!repo) {
       this.post({
         type: "repo/none",
-        reason: "No git repository detected in the current workspace",
+        reason: t("repository.none"),
       });
       this.commitRequestGuard.release(ready.requestId, ready.offset);
       return;
@@ -273,7 +274,7 @@ export class MessageHandler implements vscode.Disposable {
     if (!change.selectedRootPath) {
       this.post({
         type: "repo/none",
-        reason: "No git repository detected in the current workspace",
+        reason: t("repository.none"),
       });
     }
   }
@@ -541,12 +542,13 @@ export class MessageHandler implements vscode.Disposable {
     // reset --hard second confirmation (may lose working tree changes)
     if (action === "reset-hard") {
       const short = hashes[0]?.slice(0, 7) ?? "?";
+      const continueLabel = t("common.continue");
       const answer = await vscode.window.showWarningMessage(
-        `About to git reset --hard to ${short}, which will discard all uncommitted changes in the working tree. Continue?`,
+        t("confirm.resetHard", { hash: short }),
         { modal: true },
-        "Continue",
+        continueLabel,
       );
-      if (answer !== "Continue") {
+      if (answer !== continueLabel) {
         if (generation !== this.repositoryGeneration) return;
         this.post({
           type: "action/result",
@@ -581,7 +583,7 @@ export class MessageHandler implements vscode.Disposable {
         case "reset-mixed":
         case "reset-hard": {
           if (hashes.length !== 1)
-            throw new Error("reset requires single selection");
+            throw new Error(t("error.resetSingleSelection"));
           const mode = action.slice("reset-".length) as ResetMode;
           await ops.reset(mode, hashes[0]!);
           break;
@@ -590,15 +592,13 @@ export class MessageHandler implements vscode.Disposable {
       if (generation !== this.repositoryGeneration) return;
       this.post({ type: "action/result", action, ok: true });
       if (action === "copy-hash") {
-        vscode.window.showInformationMessage(
-          `Copied ${hashes.length} hash(es) to clipboard`,
-        );
+        vscode.window.showInformationMessage(t("notice.hashesCopied", { count: hashes.length }));
       }
     } catch (e) {
       if (generation !== this.repositoryGeneration) return;
       const err = e instanceof Error ? e.message : String(e);
       this.post({ type: "action/result", action, ok: false, message: err });
-      vscode.window.showErrorMessage(`Git operation failed: ${err}`);
+      vscode.window.showErrorMessage(t("error.gitOperation", { message: err }));
     }
   }
 }

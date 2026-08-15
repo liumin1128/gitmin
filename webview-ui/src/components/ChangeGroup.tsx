@@ -7,6 +7,7 @@ import {
   workingTreeChangeKey,
   type WorkingTreeAction,
 } from '../../../shared/workingTree';
+import { t } from '../../../shared/i18n';
 
 interface Props {
   title: string;
@@ -34,13 +35,15 @@ export function ChangeGroup({
   if (changes.length === 0) return null;
   const primaryAction: WorkingTreeAction = group === 'staged' ? 'unstage' : 'stage';
   const primaryIcon = group === 'staged' ? 'remove' : 'add';
-  const primaryTitle = group === 'staged' ? 'Unstage all changes' : 'Stage all changes';
+  const primaryTitle = group === 'staged'
+    ? t('changes.unstageAll')
+    : t('changes.stageAll');
   const allPaths = changes.map((change) => change.path);
   const selectedPaths = changes
     .filter((change) => selectedKeys.has(workingTreeChangeKey(group, change.path)))
     .map((change) => change.path);
   const contentId = `${group}-change-group-content`;
-  const toggleLabel = `${collapsed ? 'Expand' : 'Collapse'} ${title}`;
+  const toggleLabel = t(collapsed ? 'panel.expand' : 'panel.collapse', { title });
 
   return (
     <section
@@ -69,7 +72,7 @@ export function ChangeGroup({
         />
         <IconButton
           icon="discard"
-          title="Discard all changes"
+          title={t('changes.discardAll')}
           disabled={busy}
           onClick={() => onAction('discard', group, allPaths)}
         />
@@ -99,13 +102,15 @@ export function ChangeGroup({
                 <span className="change-item-actions" onClick={(event) => event.stopPropagation()}>
                   <IconButton
                     icon={primaryIcon}
-                    title={group === 'staged' ? 'Unstage changes' : 'Stage changes'}
+                    title={group === 'staged'
+                      ? t('changes.unstageSelected')
+                      : t('changes.stageSelected')}
                     disabled={busy}
                     onClick={() => onAction(primaryAction, group, actionPaths)}
                   />
                   <IconButton
                     icon="discard"
-                    title="Discard changes"
+                    title={t('changes.discardSelected')}
                     disabled={busy}
                     onClick={() => onAction('discard', group, actionPaths)}
                   />

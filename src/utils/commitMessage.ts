@@ -1,4 +1,5 @@
 import type { CommitMessageLanguage } from '../../shared/workingTree';
+import { t } from '../../shared/i18n';
 import { compactUnifiedDiff } from './diffCompaction';
 
 const DEFAULT_MAX_DIFF_CHARS = 120_000;
@@ -84,7 +85,7 @@ export function buildCommitMessagePrompt(
   customInstructions: string = ''
 ): string {
   const trimmedDiff = diff.trim();
-  if (!trimmedDiff) throw new Error('No staged diff is available');
+  if (!trimmedDiff) throw new Error(t('error.noStagedDiff'));
 
   const limit = Math.max(1, Math.floor(maxDiffChars));
   const compactedDiff = compactUnifiedDiff(trimmedDiff, limit);
@@ -132,7 +133,7 @@ export function normalizeGeneratedCommitMessage(raw: string): string {
     .replace(/^["'`“”‘’]+|["'`“”‘’]+$/g, '')
     .trim();
 
-  if (!subject) throw new Error('Copilot returned an empty commit message');
+  if (!subject) throw new Error(t('error.emptyGeneratedMessage'));
 
   const body = lines.join('\n').trim();
   return body ? `${subject}\n\n${body}` : subject;

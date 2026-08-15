@@ -1,3 +1,5 @@
+import { t } from '../../shared/i18n';
+
 export interface ChatCompletionPayload {
   model: string;
   messages: Array<{ role: 'user'; content: string }>;
@@ -12,10 +14,10 @@ export function buildChatCompletionsUrl(baseUrl: string): string {
   try {
     url = new URL(baseUrl.trim());
   } catch {
-    throw new Error('Custom model Base URL must be a valid HTTP URL');
+    throw new Error(t('error.customBaseUrlInvalid'));
   }
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    throw new Error('Custom model Base URL must be a valid HTTP URL');
+    throw new Error(t('error.customBaseUrlInvalid'));
   }
 
   const path = url.pathname.replace(/\/+$/, '');
@@ -49,11 +51,9 @@ export function readChatCompletionMessage(response: unknown): string {
   const content = choice?.message?.content;
   if (typeof content !== 'string' || !content.trim()) {
     if (choice?.finish_reason === 'length') {
-      throw new Error(
-        'Custom model exhausted its completion token budget before returning a message'
-      );
+      throw new Error(t('error.customTokenBudget'));
     }
-    throw new Error('Custom model returned an empty response');
+    throw new Error(t('error.customEmptyResponse'));
   }
   return content.trim();
 }

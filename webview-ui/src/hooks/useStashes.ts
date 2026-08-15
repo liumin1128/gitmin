@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import type { StashEntry } from '../../../shared/domain';
 import { postMessage, useIpcListener } from './useIpc';
+import { t } from '../../../shared/i18n';
 
 interface Options {
   onSelectionChange: (entry: StashEntry | null) => void;
@@ -74,7 +75,9 @@ export function useStashes({ onSelectionChange, onRefreshChanges }: Options) {
     if (response.requestId !== actionRequestIdRef.current) return;
     setBusy(false);
     if (!response.ok) {
-      if (response.message !== 'Cancelled') setError(response.message ?? 'Operation failed');
+      if (response.message !== 'Cancelled') {
+        setError(response.message ?? t('common.operationFailed'));
+      }
     } else {
       setError(null);
       if (response.operation === 'delete-stash') clearSelection();

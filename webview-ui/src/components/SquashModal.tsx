@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { t } from '../../../shared/i18n';
 import { shortHash, firstLine } from '../utils/formatters';
 
 interface SquashCommit {
@@ -43,9 +44,9 @@ export function SquashModal({ commits, onConfirm, onCancel }: Props) {
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
-        <div className="modal-title">Squash Commits</div>
+        <div className="modal-title">{t('squash.title')}</div>
         <div className="modal-subtitle">
-          The following {commits.length} commit(s) will be squashed:
+          {t('squash.summary', { count: commits.length })}
         </div>
         <div className="squash-source-list">
           {commits.map((c) => (
@@ -55,7 +56,7 @@ export function SquashModal({ commits, onConfirm, onCancel }: Props) {
             </div>
           ))}
         </div>
-        <div className="modal-subtitle">New commit message:</div>
+        <div className="modal-subtitle">{t('squash.newMessage')}</div>
         <textarea
           ref={textareaRef}
           className="squash-textarea"
@@ -65,7 +66,7 @@ export function SquashModal({ commits, onConfirm, onCancel }: Props) {
         />
         <div className="modal-actions">
           <button type="button" className="btn" onClick={onCancel}>
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             type="button"
@@ -73,7 +74,7 @@ export function SquashModal({ commits, onConfirm, onCancel }: Props) {
             onClick={handleConfirm}
             disabled={!message.trim()}
           >
-            Squash
+            {t('common.squash')}
           </button>
         </div>
       </div>

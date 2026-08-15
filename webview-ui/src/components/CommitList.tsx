@@ -5,6 +5,7 @@
  */
 import { useEffect, useMemo, useRef, type CSSProperties, type MouseEvent } from 'react';
 import type { Commit } from '../../../shared/domain';
+import { t } from '../../../shared/i18n';
 import { isNearCommitListBottom } from '../../../shared/commitPagination';
 import { layoutCommits } from '../utils/commitGraph';
 import { measurePx, shortHash, relativeTime, tagListText } from '../utils/formatters';
@@ -177,7 +178,7 @@ export function CommitList({
   }, [automaticLoadEnabled, columns, commits, hasMore, loadingMore, onLoadMore]);
 
   if (commits.length === 0) {
-    return <div className="empty-hint">No commits</div>;
+    return <div className="empty-hint">{t('commits.none')}</div>;
   }
 
   const gridTemplate = [
