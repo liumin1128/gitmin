@@ -574,7 +574,7 @@ export function App() {
               </button>
             ) : undefined,
             content: (
-              <div className="commits-panel-content">
+              <div className="commits-panel-content" data-panel-natural-height="children">
                 <FilterBar
                   filters={filters}
                   options={filterOptions}
@@ -582,18 +582,20 @@ export function App() {
                   onRefresh={handleRefresh}
                   actions={<ColumnsMenu columns={columns} onChange={setColumns} />}
                 />
-                <CommitList
-                  commits={commits}
-                  columns={columns}
-                  isSelected={isSelected}
-                  onItemClick={handleCommitClick}
-                  onItemContextMenu={handleContextMenu}
-                  hasMore={hasMore}
-                  preserveUnresolvedParents={shouldPreserveUnresolvedParents(hasMore, filters)}
-                  loadingMore={loadingMore}
-                  automaticLoadEnabled={!commitPageError}
-                  onLoadMore={loadMoreCommits}
-                />
+                <div className="commit-list-scroll">
+                  <CommitList
+                    commits={commits}
+                    columns={columns}
+                    isSelected={isSelected}
+                    onItemClick={handleCommitClick}
+                    onItemContextMenu={handleContextMenu}
+                    hasMore={hasMore}
+                    preserveUnresolvedParents={shouldPreserveUnresolvedParents(hasMore, filters)}
+                    loadingMore={loadingMore}
+                    automaticLoadEnabled={!commitPageError}
+                    onLoadMore={loadMoreCommits}
+                  />
+                </div>
               </div>
             ),
           },

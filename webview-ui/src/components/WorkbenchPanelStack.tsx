@@ -152,6 +152,15 @@ function WorkbenchPanel({
     if (!content || panel.collapsed) return;
     const childrenHeight = Array.from(content.children).reduce((total, child) => {
       const element = child as HTMLElement;
+      if (element.dataset.panelNaturalHeight === 'children') {
+        return total + Array.from(element.children).reduce((childTotal, nestedChild) => {
+          const nestedElement = nestedChild as HTMLElement;
+          return childTotal + Math.max(
+            nestedElement.scrollHeight,
+            nestedElement.getBoundingClientRect().height
+          );
+        }, 0);
+      }
       return total + Math.max(element.scrollHeight, element.getBoundingClientRect().height);
     }, 0);
     onNaturalHeightChange(

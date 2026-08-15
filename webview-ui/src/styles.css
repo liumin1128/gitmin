@@ -64,9 +64,8 @@ html, body, #root {
 
 /* ===== Filter bar ===== */
 .filter-bar {
-  position: sticky;
+  position: relative;
   z-index: 2;
-  top: 0;
   display: grid;
   grid-template-columns: minmax(220px, 360px) minmax(0, 1fr);
   align-items: center;
@@ -74,7 +73,7 @@ html, body, #root {
   padding: 6px 8px;
   border-bottom: 1px solid var(--vscode-panel-border);
   background-color: var(--vscode-sideBar-background);
-  flex-shrink: 0;
+  flex: 0 0 auto;
 }
 
 /* Shared input shell for Changes and Commits */
@@ -560,6 +559,9 @@ body.vscode-high-contrast-light .filter-form-row > input {
   min-width: 0;
   overflow: auto;
 }
+.workbench-panel[data-workbench-panel='commits'] > .workbench-panel-content {
+  overflow: hidden;
+}
 .workbench-panel-sash {
   position: absolute;
   z-index: 3;
@@ -647,13 +649,20 @@ body.vscode-high-contrast-light .filter-form-row > input {
 }
 /* ===== Changes ===== */
 .changes-panel,
-.stashes-panel,
-.commits-panel-content {
+.stashes-panel {
   display: flex;
   flex-direction: column;
   height: auto;
   min-height: 0;
   min-width: 0;
+}
+.commits-panel-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
 }
 .change-message-row {
   display: flex;
@@ -898,6 +907,12 @@ body.vscode-high-contrast-light .filter-form-row > input {
 }
 
 /* ===== Commit list ===== */
+.commit-list-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+}
 .commit-list {
   display: flex;
   flex-direction: column;

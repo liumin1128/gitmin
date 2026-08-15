@@ -37,8 +37,18 @@ assert.match(
 );
 assert.match(
   styles,
-  /\.filter-bar\s*\{[^}]*position:\s*sticky[^}]*top:\s*0/s,
-  'commit filters should stay fixed while the commit list scrolls'
+  /\.filter-bar\s*\{[^}]*position:\s*relative[^}]*flex:\s*0\s+0\s+auto/s,
+  'commit filters should occupy a fixed row outside the scrolling list'
+);
+assert.match(
+  styles,
+  /\.workbench-panel\[data-workbench-panel='commits'\]\s*>\s*\.workbench-panel-content\s*\{[^}]*overflow:\s*hidden/s,
+  'the commit panel content must not own the scrollbar'
+);
+assert.match(
+  styles,
+  /\.commit-list-scroll\s*\{[^}]*overflow:\s*auto/s,
+  'only the commit list region should scroll'
 );
 assert.match(
   styles,
@@ -121,8 +131,8 @@ assert.notEqual(filterBarStart, -1);
 assert.notEqual(commitListStart, -1);
 assert.match(
   appSource.slice(filterBarStart, commitListStart),
-  /actions=\{<ColumnsMenu/,
-  'column settings should render in the commit filter toolbar'
+  /actions=\{<ColumnsMenu[\s\S]*className="commit-list-scroll"/,
+  'the fixed toolbar should render before the commit list scroll region'
 );
 
 console.log('refresh toolbar checks passed');

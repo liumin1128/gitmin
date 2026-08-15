@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { Commit } from '../shared/domain';
 import {
@@ -105,5 +106,11 @@ assert.equal(
   'a new scroll event must allow a manual retry after a commit-page error'
 );
 assert.equal(loadMoreCalls, 2);
+
+assert.match(
+  readFileSync('webview-ui/src/components/CommitList.tsx', 'utf8'),
+  /closest<HTMLElement>\('\.commit-list-scroll'\)/,
+  'pagination should observe the commit-list-only scroll container'
+);
 
 console.log('commit list pagination component checks passed');
