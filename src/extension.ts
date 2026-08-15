@@ -68,14 +68,10 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("gitmin.nextFileDiff", () =>
       fileDiffNavigator.navigate(1),
     ),
-    ...WORKBENCH_VIEW_IDS.flatMap((id) =>
-      [
+    ...WORKBENCH_VIEW_IDS.map((id) =>
+      vscode.commands.registerCommand(
         WORKBENCH_VIEW_METADATA[id].toggleCommand,
-        WORKBENCH_VIEW_METADATA[id].checkedToggleCommand,
-      ].map((command) =>
-        vscode.commands.registerCommand(command, () =>
-          viewProvider.toggleWorkbenchView(id),
-        ),
+        () => viewProvider.toggleWorkbenchView(id),
       ),
     ),
   );

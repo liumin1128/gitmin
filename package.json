@@ -113,21 +113,9 @@
         "category": "GitMin"
       },
       {
-        "command": "gitmin.toggleRepositoriesView.checked",
-        "title": "%view.repositories%",
-        "category": "GitMin",
-        "icon": "$(check)"
-      },
-      {
         "command": "gitmin.toggleChangesView",
         "title": "%view.changes%",
         "category": "GitMin"
-      },
-      {
-        "command": "gitmin.toggleChangesView.checked",
-        "title": "%view.changes%",
-        "category": "GitMin",
-        "icon": "$(check)"
       },
       {
         "command": "gitmin.toggleCommitsView",
@@ -135,21 +123,9 @@
         "category": "GitMin"
       },
       {
-        "command": "gitmin.toggleCommitsView.checked",
-        "title": "%view.commits%",
-        "category": "GitMin",
-        "icon": "$(check)"
-      },
-      {
         "command": "gitmin.toggleStashesView",
         "title": "%view.stashes%",
         "category": "GitMin"
-      },
-      {
-        "command": "gitmin.toggleStashesView.checked",
-        "title": "%view.stashes%",
-        "category": "GitMin",
-        "icon": "$(check)"
       },
       {
         "command": "gitmin.toggleChangedFilesView",
@@ -157,21 +133,9 @@
         "category": "GitMin"
       },
       {
-        "command": "gitmin.toggleChangedFilesView.checked",
-        "title": "%view.changedFiles%",
-        "category": "GitMin",
-        "icon": "$(check)"
-      },
-      {
         "command": "gitmin.toggleCommitDetailsView",
         "title": "%view.commitDetails%",
         "category": "GitMin"
-      },
-      {
-        "command": "gitmin.toggleCommitDetailsView.checked",
-        "title": "%view.commitDetails%",
-        "category": "GitMin",
-        "icon": "$(check)"
       }
     ],
     "viewsContainers": {
@@ -223,89 +187,39 @@
         },
         {
           "command": "gitmin.toggleRepositoriesView",
-          "when": "view == gitmin.panel && !gitmin.workbenchView.repositories.visible",
-          "group": "1_views@1"
-        },
-        {
-          "command": "gitmin.toggleRepositoriesView.checked",
-          "when": "view == gitmin.panel && gitmin.workbenchView.repositories.visible",
-          "group": "1_views@1"
+          "when": "view == gitmin.panel",
+          "group": "1_views@1",
+          "toggled": "gitmin.workbenchView.repositories.visible"
         },
         {
           "command": "gitmin.toggleChangesView",
-          "when": "view == gitmin.panel && !gitmin.workbenchView.changes.visible",
-          "group": "1_views@2"
-        },
-        {
-          "command": "gitmin.toggleChangesView.checked",
-          "when": "view == gitmin.panel && gitmin.workbenchView.changes.visible",
-          "group": "1_views@2"
+          "when": "view == gitmin.panel",
+          "group": "1_views@2",
+          "toggled": "gitmin.workbenchView.changes.visible"
         },
         {
           "command": "gitmin.toggleCommitsView",
-          "when": "view == gitmin.panel && !gitmin.workbenchView.commits.visible",
-          "group": "1_views@3"
-        },
-        {
-          "command": "gitmin.toggleCommitsView.checked",
-          "when": "view == gitmin.panel && gitmin.workbenchView.commits.visible",
-          "group": "1_views@3"
+          "when": "view == gitmin.panel",
+          "group": "1_views@3",
+          "toggled": "gitmin.workbenchView.commits.visible"
         },
         {
           "command": "gitmin.toggleStashesView",
-          "when": "view == gitmin.panel && !gitmin.workbenchView.stashes.visible",
-          "group": "1_views@4"
-        },
-        {
-          "command": "gitmin.toggleStashesView.checked",
-          "when": "view == gitmin.panel && gitmin.workbenchView.stashes.visible",
-          "group": "1_views@4"
+          "when": "view == gitmin.panel",
+          "group": "1_views@4",
+          "toggled": "gitmin.workbenchView.stashes.visible"
         },
         {
           "command": "gitmin.toggleChangedFilesView",
-          "when": "view == gitmin.panel && !gitmin.workbenchView.files.visible",
-          "group": "1_views@5"
-        },
-        {
-          "command": "gitmin.toggleChangedFilesView.checked",
-          "when": "view == gitmin.panel && gitmin.workbenchView.files.visible",
-          "group": "1_views@5"
+          "when": "view == gitmin.panel",
+          "group": "1_views@5",
+          "toggled": "gitmin.workbenchView.files.visible"
         },
         {
           "command": "gitmin.toggleCommitDetailsView",
-          "when": "view == gitmin.panel && !gitmin.workbenchView.details.visible",
-          "group": "1_views@6"
-        },
-        {
-          "command": "gitmin.toggleCommitDetailsView.checked",
-          "when": "view == gitmin.panel && gitmin.workbenchView.details.visible",
-          "group": "1_views@6"
-        }
-      ],
-      "commandPalette": [
-        {
-          "command": "gitmin.toggleRepositoriesView.checked",
-          "when": "false"
-        },
-        {
-          "command": "gitmin.toggleChangesView.checked",
-          "when": "false"
-        },
-        {
-          "command": "gitmin.toggleCommitsView.checked",
-          "when": "false"
-        },
-        {
-          "command": "gitmin.toggleStashesView.checked",
-          "when": "false"
-        },
-        {
-          "command": "gitmin.toggleChangedFilesView.checked",
-          "when": "false"
-        },
-        {
-          "command": "gitmin.toggleCommitDetailsView.checked",
-          "when": "false"
+          "when": "view == gitmin.panel",
+          "group": "1_views@6",
+          "toggled": "gitmin.workbenchView.details.visible"
         }
       ]
     }

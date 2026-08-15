@@ -20,10 +20,7 @@ const viewTitle = manifest.contributes.menus["view/title"] as Array<{
   command: string;
   group: string;
   when: string;
-}>;
-const commandPalette = manifest.contributes.menus.commandPalette as Array<{
-  command: string;
-  when: string;
+  toggled?: string;
 }>;
 const gitminView = manifest.contributes.views.gitmin[0] as {
   id: string;
@@ -53,33 +50,24 @@ assert.deepEqual(editorNavigation.map((item) => item.group), [
 assert.equal(gitminView.name, "GitMin", "the merged sidebar title should only show GitMin");
 for (const [index, id] of WORKBENCH_VIEW_IDS.entries()) {
   const metadata = WORKBENCH_VIEW_METADATA[id];
-  const uncheckedItem = viewTitle.find((item) => item.command === metadata.toggleCommand);
-  const checkedItem = viewTitle.find(
-    (item) => item.command === metadata.checkedToggleCommand,
+  const items = viewTitle.filter(
+    (item) => item.command === metadata.toggleCommand,
   );
 
+  assert.equal(items.length, 1, `${metadata.labelKey} should have one native toggle item`);
+  const [item] = items;
   assert.equal(
-    commands.find((item) => item.command === metadata.checkedToggleCommand)?.icon,
-    "$(check)",
-    `${metadata.labelKey} should use the native check icon when visible`,
+    commands.filter((command) => command.command === metadata.toggleCommand).length,
+    1,
   );
-  assert.equal(uncheckedItem?.group, `1_views@${index + 1}`);
-  assert.equal(checkedItem?.group, uncheckedItem?.group);
-  assert.equal(
-    uncheckedItem?.when,
-    `view == gitmin.panel && !${metadata.visibilityContext}`,
-  );
-  assert.equal(
-    checkedItem?.when,
-    `view == gitmin.panel && ${metadata.visibilityContext}`,
-  );
-  assert.ok(
-    commandPalette.some(
-      (item) => item.command === metadata.checkedToggleCommand && item.when === "false",
-    ),
-    "internal checked variants should stay out of the Command Palette",
-  );
+  assert.equal(item?.group, `1_views@${index + 1}`);
+  assert.equal(item?.when, "view == gitmin.panel");
+  assert.equal(item?.toggled, metadata.visibilityContext);
 }
+assert.ok(
+  commands.every((item) => !item.command.endsWith(".checked")),
+  "native toggled menu items should not require duplicate checked commands",
+);
 
 const selectionHook = readFileSync(
   new URL('../webview-ui/src/hooks/useSelectionDetails.ts', import.meta.url),
