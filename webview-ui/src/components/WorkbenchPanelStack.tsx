@@ -256,7 +256,12 @@ function WorkbenchPanel({
           aria-controls={contentId}
           onClick={() => onCollapsedChange(panel.id, !panel.collapsed)}
         >
-          <span className="workbench-panel-chevron" aria-hidden="true">›</span>
+          <span
+            className={`workbench-panel-chevron codicon codicon-chevron-${
+              panel.collapsed ? 'right' : 'down'
+            }`}
+            aria-hidden="true"
+          />
           <span className="workbench-panel-title">{panel.title}</span>
           {panel.count !== undefined && panel.count > 0 && (
             <span className="workbench-panel-count">{panel.count}</span>

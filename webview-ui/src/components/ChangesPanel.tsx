@@ -3,7 +3,10 @@ import type {
   WorkingTreeGroup,
   WorkingTreeSnapshot,
 } from '../../../shared/domain';
-import type { WorkingTreeAction } from '../../../shared/workingTree';
+import {
+  workingTreeChangeCount,
+  type WorkingTreeAction,
+} from '../../../shared/workingTree';
 import { t } from '../../../shared/i18n';
 import { ChangeGroup } from './ChangeGroup';
 
@@ -49,8 +52,7 @@ export function ChangesPanel({
   onRefresh,
 }: Props) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const changeCount =
-    snapshot.conflicts.length + snapshot.staged.length + snapshot.changes.length;
+  const changeCount = workingTreeChangeCount(snapshot);
   const locked = busy || generating;
 
   const handleMessageChange = (event: ChangeEvent<HTMLTextAreaElement>) => {

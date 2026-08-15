@@ -8,7 +8,9 @@ import { FileDiffNavigator } from "../services/FileDiffNavigator";
 import { RepositorySelectionService } from "../services/RepositorySelectionService";
 import { CommitMessageGenerator } from "../services/CommitMessageGenerator";
 import { buildWebviewHtml } from "../utils/webviewHtml";
-import type { WebviewMessage } from "../../shared/messages";
+import type { ExtensionMessage, WebviewMessage } from "../../shared/messages";
+import { workingTreeChangeCount } from "../../shared/workingTree";
+import { t } from "../../shared/i18n";
 import {
   WORKBENCH_VIEW_IDS,
   WORKBENCH_VIEW_METADATA,
@@ -42,7 +44,8 @@ export class GitPanelViewProvider implements vscode.WebviewViewProvider {
 
     const handler = new MessageHandler(
       (msg) => {
-        view.webview.postMessage(msg);
+        this.updateBadge(view, msg);
+        void view.webview.postMessage(msg);
       },
       this.extensionUri,
       this.fileDiffNavigator,
@@ -71,6 +74,23 @@ export class GitPanelViewProvider implements vscode.WebviewViewProvider {
         WORKBENCH_VIEW_METADATA[id].visibilityContext,
         visibility[id],
       );
+    }
+  }
+
+  private updateBadge(view: vscode.WebviewView, message: ExtensionMessage): void {
+    if (message.type === "workingTree/loaded") {
+      const count = workingTreeChangeCount(message.snapshot);
+      view.badge = count > 0
+        ? { value: count, tooltip: t("changes.countBadge", { count }) }
+        : undefined;
+      return;
+    }
+
+    if (
+      message.type === "repositories/selectionChanged" ||
+      message.type === "repo/none"
+    ) {
+      view.badge = undefined;
     }
   }
 }

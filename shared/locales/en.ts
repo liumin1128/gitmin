@@ -66,6 +66,7 @@ export const EN_TRANSLATIONS = {
   'changes.commitStaged': 'Commit staged changes',
   'changes.commit': 'Commit',
   'changes.none': 'No changes',
+  'changes.countBadge': 'Changed files: {count}',
   'changes.stageAll': 'Stage all changes',
   'changes.unstageAll': 'Unstage all changes',
   'changes.discardAll': 'Discard all changes',

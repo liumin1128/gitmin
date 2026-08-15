@@ -67,6 +67,7 @@ export const ZH_CN_TRANSLATIONS = {
   'changes.commitStaged': '提交暂存的更改',
   'changes.commit': '提交',
   'changes.none': '没有更改',
+  'changes.countBadge': '已更改文件: {count}',
   'changes.stageAll': '暂存所有更改',
   'changes.unstageAll': '取消暂存所有更改',
   'changes.discardAll': '放弃所有更改',

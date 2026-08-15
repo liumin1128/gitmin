@@ -95,6 +95,8 @@ assert.ok(
 );
 assert.match(html, /aria-label="Collapse Repositories"/);
 assert.match(html, /aria-label="Expand Changes"/);
+assert.match(html, /workbench-panel-chevron codicon codicon-chevron-down/);
+assert.match(html, /workbench-panel-chevron codicon codicon-chevron-right/);
 assert.match(html, />Repositories</);
 assert.match(html, />Commit Details</);
 assert.match(html, /repository list/);

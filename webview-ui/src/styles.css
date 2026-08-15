@@ -502,7 +502,6 @@ body.vscode-high-contrast-light .filter-form-row > input {
 .workbench-panel-toggle {
   display: flex;
   align-items: center;
-  gap: 5px;
   flex: 1;
   min-width: 0;
   height: 100%;
@@ -525,17 +524,14 @@ body.vscode-high-contrast-light .filter-form-row > input {
   outline-offset: -1px;
 }
 .workbench-panel-chevron {
-  width: 10px;
-  flex: 0 0 10px;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  margin: 0 2px;
   color: var(--vscode-icon-foreground, var(--vscode-foreground));
-  font-size: 15px;
-  font-weight: 400;
-  line-height: 1;
-  transform: rotate(90deg);
-  transform-origin: center;
 }
-.workbench-panel.is-collapsed .workbench-panel-chevron {
-  transform: none;
+.workbench-panel:not(.is-collapsed) .workbench-panel-chevron {
+  transform: translateY(1px);
 }
 .workbench-panel-title {
   overflow: hidden;
@@ -746,16 +742,10 @@ body.vscode-high-contrast-light .filter-form-row > input {
   outline-offset: -1px;
 }
 .change-group-chevron {
-  width: 10px;
-  flex: 0 0 10px;
-  font-size: 15px;
-  font-weight: 400;
-  line-height: 1;
-  transform: rotate(90deg);
-  transform-origin: center;
-}
-.change-group.is-collapsed .change-group-chevron {
-  transform: none;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  margin: 0 2px;
 }
 .change-group-title {
   overflow: hidden;

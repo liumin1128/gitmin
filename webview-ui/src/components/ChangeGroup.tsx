@@ -60,7 +60,12 @@ export function ChangeGroup({
           aria-controls={contentId}
           onClick={() => setCollapsed((value) => !value)}
         >
-          <span className="change-group-chevron" aria-hidden="true">›</span>
+          <span
+            className={`change-group-chevron codicon codicon-chevron-${
+              collapsed ? 'right' : 'down'
+            }`}
+            aria-hidden="true"
+          />
           <span className="change-group-title">{title}</span>
           <span className="change-group-count">{changes.length}</span>
         </button>

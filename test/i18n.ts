@@ -31,6 +31,7 @@ configureLocale('zh-cn');
 assert.equal(getLocale(), 'zh-cn');
 assert.equal(localeLanguageTag(), 'zh-CN');
 assert.equal(t('panel.expand', { title: '提交' }), '展开提交');
+assert.equal(t('changes.countBadge', { count: 6 }), '已更改文件: 6');
 assert.match(
   renderToStaticMarkup(
     createElement(CommitDetailsPanel, { details: [], loading: true, error: null })

@@ -46,7 +46,7 @@ assert.match(html, /class="toolbar-icon-button" title="Stash changes" aria-label
 assert.doesNotMatch(html, />Stash<\/span>/);
 assert.equal((html.match(/class="change-group-toggle"/g) ?? []).length, 3);
 assert.match(html, /aria-label="Collapse Staged Changes"[^>]*aria-expanded="true"/);
-assert.match(html, /class="change-group-chevron"/);
+assert.match(html, /class="change-group-chevron codicon codicon-chevron-down"/);
 assert.match(html, /codicon-add/);
 assert.match(html, /codicon-remove/);
 assert.match(html, /codicon-discard/);
@@ -142,7 +142,7 @@ assert.match(styles, /\.workbench-toolbar\s*\{[^}]*height:\s*26px/s);
 assert.match(styles, /\.change-item\s*\{[^}]*min-height:\s*24px/s);
 assert.match(styles, /\.change-item\s*\{[^}]*padding:\s*0\s+6px\s+0\s+24px/s);
 assert.match(styles, /\.change-group-toggle\s*\{[^}]*padding:\s*0\s+4px\s+0\s+16px/s);
-assert.match(styles, /\.change-group\.is-collapsed\s+\.change-group-chevron\s*\{[^}]*transform:\s*none/s);
+assert.match(styles, /\.change-group-chevron\s*\{[^}]*width:\s*16px[^}]*height:\s*16px/s);
 assert.match(styles, /\.change-message-input\s*\{[^}]*resize:\s*none/s);
 assert.match(
   styles,

@@ -43,6 +43,7 @@ import type {
 import type { WebviewMessage } from '../../shared/messages';
 import type { GitAction } from '../../shared/actions';
 import { t } from '../../shared/i18n';
+import { workingTreeChangeCount } from '../../shared/workingTree';
 
 type CommitPageRequest = Extract<WebviewMessage, { type: 'commits/refresh' }>;
 
@@ -527,10 +528,7 @@ export function App() {
           {
             id: 'changes',
             title: t('view.changes'),
-            count:
-              workingTree.snapshot.conflicts.length +
-              workingTree.snapshot.staged.length +
-              workingTree.snapshot.changes.length,
+            count: workingTreeChangeCount(workingTree.snapshot),
             visible: layout.views.changes.visible,
             collapsed: layout.views.changes.collapsed,
             content: (
