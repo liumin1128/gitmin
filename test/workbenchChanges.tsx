@@ -47,11 +47,11 @@ assert.doesNotMatch(html, />Stash<\/span>/);
 assert.equal((html.match(/class="change-group-toggle"/g) ?? []).length, 3);
 assert.match(html, /aria-label="Collapse Staged Changes"[^>]*aria-expanded="true"/);
 assert.match(html, /class="change-group-chevron codicon codicon-chevron-down"/);
-assert.equal((html.match(/class="change-file-icon codicon codicon-file"/g) ?? []).length, 3);
+assert.equal((html.match(/class="file-change-row status-/g) ?? []).length, 3);
+assert.equal((html.match(/class="file-type-icon codicon codicon-file-code"/g) ?? []).length, 3);
 assert.ok(
-  html.indexOf('class="change-file-icon codicon codicon-file"') <
-    html.indexOf('class="change-path"') &&
-    html.indexOf('class="change-path"') < html.indexOf('class="file-status"'),
+  html.indexOf('class="file-type-icon') < html.indexOf('class="file-path"') &&
+    html.indexOf('class="file-path"') < html.indexOf('class="file-status"'),
   'File icon should precede the path while Git status remains at the end'
 );
 assert.match(html, /codicon-add/);
@@ -60,6 +60,17 @@ assert.match(html, /codicon-discard/);
 assert.match(html, /codicon-refresh/);
 assert.match(html, /codicon-sparkle/);
 assert.match(html, /No local changes to save/);
+const stagedGroupStart = html.indexOf('data-change-group="staged"');
+const changesGroupStart = html.indexOf('data-change-group="changes"');
+const stagedGroupHtml = html.slice(stagedGroupStart, changesGroupStart);
+assert.match(stagedGroupHtml, /codicon-remove/);
+assert.doesNotMatch(stagedGroupHtml, /codicon-discard/);
+const changesGroupHtml = html.slice(changesGroupStart);
+assert.match(changesGroupHtml, /codicon-discard/);
+assert.ok(
+  changesGroupHtml.indexOf('codicon-discard') < changesGroupHtml.indexOf('codicon-add'),
+  'Stage actions should appear to the right of discard actions'
+);
 assert.ok(
   html.indexOf('title="Stash changes"') < html.indexOf('class="change-message-controls-spacer"') &&
     html.indexOf('class="change-message-controls-spacer"') <
@@ -146,13 +157,19 @@ assert.ok(commitsSection >= 0 && filterBar > commitsSection && filterBar < commi
 const styles = readFileSync('webview-ui/src/styles.css', 'utf8');
 assert.doesNotMatch(styles, /\.commit-message-generate-control/);
 assert.match(styles, /\.workbench-toolbar\s*\{[^}]*height:\s*26px/s);
-assert.match(styles, /\.change-item\s*\{[^}]*min-height:\s*24px/s);
 assert.match(
   styles,
-  /\.change-item\s*\{[^}]*grid-template-columns:\s*16px\s+minmax\(0,\s*1fr\)\s+auto\s+auto/s
+  /\.file-change-row\s*\{[^}]*grid-template-columns:\s*16px\s+minmax\(0,\s*1fr\)\s+auto\s+14px/s
 );
-assert.match(styles, /\.change-item\s*\{[^}]*padding:\s*0\s+6px\s+0\s+8px/s);
-assert.doesNotMatch(styles, /\.change-list::before/);
+assert.match(styles, /\.file-change-row\s*\{[^}]*height:\s*22px[^}]*padding:\s*0\s+8px\s+0\s+12px/s);
+assert.match(styles, /\.file-change-row\.is-nested\s*\{[^}]*padding-left:\s*26px/s);
+assert.match(styles, /\.change-list::before\s*\{[^}]*left:\s*16px/s);
+assert.match(styles, /\.change-group-count\s*\{[^}]*border-radius:\s*9px[^}]*--vscode-badge-background/s);
+assert.match(styles, /\.change-action-button\s*\{[^}]*width:\s*20px[^}]*height:\s*20px/s);
+assert.match(
+  styles,
+  /\.change-item-actions\s+\.change-action-button\s*\{[^}]*width:\s*18px[^}]*height:\s*18px/s
+);
 assert.match(styles, /\.change-group-toggle\s*\{[^}]*padding:\s*0\s+4px\s+0\s+6px/s);
 assert.match(styles, /\.change-group-chevron\s*\{[^}]*width:\s*16px[^}]*height:\s*16px/s);
 assert.match(styles, /\.change-message-input\s*\{[^}]*resize:\s*none/s);

@@ -8,6 +8,7 @@ import {
   type WorkingTreeAction,
 } from '../../../shared/workingTree';
 import { t } from '../../../shared/i18n';
+import { FileChangeRow } from './FileChangeRow';
 import { IconButton } from './common/IconButton';
 
 interface Props {
@@ -39,6 +40,7 @@ export function ChangeGroup({
   const primaryTitle = group === 'staged'
     ? t('changes.unstageAll')
     : t('changes.stageAll');
+  const discardEnabled = group !== 'staged';
   const allPaths = changes.map((change) => change.path);
   const selectedPaths = changes
     .filter((change) => selectedKeys.has(workingTreeChangeKey(group, change.path)))
@@ -71,19 +73,21 @@ export function ChangeGroup({
           <span className="change-group-count">{changes.length}</span>
         </button>
         <div className="change-group-actions">
+          {discardEnabled && (
+            <IconButton
+              icon="discard"
+              title={t('changes.discardAll')}
+              disabled={busy}
+              className="change-action-button"
+              onClick={() => onAction('discard', group, allPaths)}
+            />
+          )}
           <IconButton
             icon={primaryIcon}
             title={primaryTitle}
             disabled={busy}
             className="change-action-button"
             onClick={() => onAction(primaryAction, group, allPaths)}
-          />
-          <IconButton
-            icon="discard"
-            title={t('changes.discardAll')}
-            disabled={busy}
-            className="change-action-button"
-            onClick={() => onAction('discard', group, allPaths)}
           />
         </div>
       </header>
@@ -94,44 +98,40 @@ export function ChangeGroup({
             const selected = selectedKeys.has(key);
             const actionPaths = selected && selectedPaths.length > 0 ? selectedPaths : [change.path];
             return (
-              <div
+              <FileChangeRow
                 key={key}
-                className={`change-item status-${change.status}${selected ? ' is-selected' : ''}`}
-                aria-selected={selected}
-                title={change.oldPath ? `${change.oldPath} -> ${change.path}` : change.path}
+                path={change.path}
+                oldPath={change.oldPath}
+                status={change.status}
+                selected={selected}
+                nested
                 onClick={(event) => {
                   onSelect(key, event);
                   onOpenDiff(group, change.path);
                 }}
-              >
-                <span
-                  className="change-file-icon codicon codicon-file"
-                  aria-hidden="true"
-                />
-                <span className="change-path">
-                  {change.oldPath && <span className="change-old-path">{change.oldPath} -&gt; </span>}
-                  {change.path}
-                </span>
-                <span className="change-item-actions" onClick={(event) => event.stopPropagation()}>
-                  <IconButton
-                    icon={primaryIcon}
-                    title={group === 'staged'
-                      ? t('changes.unstageSelected')
-                      : t('changes.stageSelected')}
-                    disabled={busy}
-                    className="change-action-button"
-                    onClick={() => onAction(primaryAction, group, actionPaths)}
-                  />
-                  <IconButton
-                    icon="discard"
-                    title={t('changes.discardSelected')}
-                    disabled={busy}
-                    className="change-action-button"
-                    onClick={() => onAction('discard', group, actionPaths)}
-                  />
-                </span>
-                <span className="file-status">{change.status}</span>
-              </div>
+                trailing={(
+                  <span className="change-item-actions" onClick={(event) => event.stopPropagation()}>
+                    {discardEnabled && (
+                      <IconButton
+                        icon="discard"
+                        title={t('changes.discardSelected')}
+                        disabled={busy}
+                        className="change-action-button"
+                        onClick={() => onAction('discard', group, actionPaths)}
+                      />
+                    )}
+                    <IconButton
+                      icon={primaryIcon}
+                      title={group === 'staged'
+                        ? t('changes.unstageSelected')
+                        : t('changes.stageSelected')}
+                      disabled={busy}
+                      className="change-action-button"
+                      onClick={() => onAction(primaryAction, group, actionPaths)}
+                    />
+                  </span>
+                )}
+              />
             );
           })}
         </div>

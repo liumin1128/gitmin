@@ -888,11 +888,27 @@ body.vscode-high-contrast-light .filter-form-row > input {
   white-space: nowrap;
 }
 .change-group-count {
-  margin-left: 6px;
-  color: var(--vscode-descriptionForeground);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: auto;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  font-size: 11px;
   font-weight: 400;
+  letter-spacing: 0;
+  line-height: 18px;
+  text-transform: none;
+  transition: opacity 0.08s ease-out;
 }
 .change-group-actions {
+  position: absolute;
+  top: 1px;
+  right: 2px;
   display: flex;
   align-items: center;
   gap: 2px;
@@ -906,52 +922,13 @@ body.vscode-high-contrast-light .filter-form-row > input {
   opacity: 1;
   visibility: visible;
 }
+.change-group-header:hover .change-group-count,
+.change-group-header:focus-within .change-group-count {
+  opacity: 0;
+}
 .change-action-button {
-  width: 22px;
-  height: 22px;
-  color: inherit;
-}
-.change-item {
-  display: grid;
-  grid-template-columns: 16px minmax(0, 1fr) auto auto;
-  gap: 4px;
-  align-items: center;
-  min-height: 24px;
-  padding: 0 6px 0 8px;
-  cursor: pointer;
-  user-select: none;
-  transition: background-color 0.06s ease-out;
-}
-.change-file-icon {
-  width: 16px;
-  height: 16px;
-  color: var(--vscode-icon-foreground, var(--vscode-descriptionForeground));
-}
-.change-item .file-status {
-  width: 14px;
-  font-size: 11px;
-  text-align: center;
-}
-.change-item:hover {
-  background: var(--vscode-list-hoverBackground);
-}
-.change-item.is-selected {
-  background: var(--vscode-list-activeSelectionBackground);
-  color: var(--vscode-list-activeSelectionForeground);
-}
-.change-item.is-selected .change-file-icon {
-  color: inherit;
-}
-.change-path {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.change-old-path {
-  color: var(--vscode-descriptionForeground);
-}
-.change-item.is-selected .change-old-path {
+  width: 20px;
+  height: 20px;
   color: inherit;
 }
 .change-item-actions {
@@ -960,10 +937,30 @@ body.vscode-high-contrast-light .filter-form-row > input {
   opacity: 0;
   transition: opacity 0.08s ease-out;
 }
-.change-item:hover .change-item-actions,
-.change-item.is-selected .change-item-actions,
-.change-item:focus-within .change-item-actions {
+.change-item-actions .change-action-button {
+  width: 18px;
+  height: 18px;
+}
+.file-change-row:hover .change-item-actions,
+.file-change-row.is-selected .change-item-actions,
+.file-change-row:focus-within .change-item-actions {
   opacity: 1;
+}
+.change-list {
+  position: relative;
+}
+.change-list::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 16px;
+  width: 1px;
+  background: var(
+    --vscode-tree-inactiveIndentGuidesStroke,
+    var(--vscode-tree-indentGuidesStroke, rgba(128, 128, 128, 0.22))
+  );
+  pointer-events: none;
 }
 .section-error {
   padding: 4px 10px;
@@ -1199,26 +1196,47 @@ body.vscode-high-contrast-light .filter-form-row > input {
   flex: 0 0 auto;
   overflow: visible;
 }
-.file-item {
+.file-change-row {
   display: grid;
-  grid-template-columns: 24px 1fr auto;
-  gap: 8px;
+  grid-template-columns: 16px minmax(0, 1fr) auto 14px;
+  gap: 4px;
   align-items: center;
-  min-height: 22px;
-  padding: 2px 12px;
+  height: 22px;
+  padding: 0 8px 0 12px;
   cursor: pointer;
   user-select: none;
   transition: background-color 0.06s ease-out;
 }
-.file-item:hover {
+.file-change-row.is-nested {
+  padding-left: 26px;
+}
+.file-change-row:hover {
   background: var(--vscode-list-hoverBackground);
 }
-.file-item.is-active {
+.file-change-row.is-active {
   background: var(--vscode-list-inactiveSelectionBackground, var(--vscode-list-activeSelectionBackground));
   color: var(--vscode-list-inactiveSelectionForeground, var(--vscode-list-activeSelectionForeground));
 }
+.file-change-row.is-selected {
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+}
+.file-type-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--vscode-icon-foreground, var(--vscode-descriptionForeground));
+}
+.file-change-row.is-active .file-type-icon,
+.file-change-row.is-selected .file-type-icon {
+  color: inherit;
+}
+.file-row-trailing {
+  display: inline-flex;
+  min-width: 0;
+}
 .file-status {
   font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 11px;
   font-weight: 600;
   text-align: center;
 }
@@ -1244,10 +1262,10 @@ body.vscode-high-contrast-light .filter-form-row > input {
   color: var(--vscode-gitDecoration-untrackedResourceForeground, #73c991);
 }
 .file-path {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.9em;
 }
 .file-stat {
   font-family: var(--vscode-editor-font-family, monospace);
@@ -1261,10 +1279,10 @@ body.vscode-high-contrast-light .filter-form-row > input {
 .stat-del {
   color: var(--vscode-gitDecoration-deletedResourceForeground, #f44336);
 }
-.file-item.is-deleted {
+.file-change-row.is-deleted {
   opacity: 0.5;
 }
-.file-item.is-deleted .file-path {
+.file-change-row.is-deleted .file-path {
   text-decoration: line-through;
 }
 .file-stat.binary {

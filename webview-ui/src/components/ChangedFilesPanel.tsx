@@ -2,8 +2,9 @@
  * Changed files panel: displays cumulative diff file list, click to open detailed diff
  */
 import { useEffect, useRef } from 'react';
-import type { DiffRange, FileChange, FileStatus } from '../../../shared/domain';
+import type { DiffRange, FileChange } from '../../../shared/domain';
 import { t } from '../../../shared/i18n';
+import { FileChangeRow } from './FileChangeRow';
 
 interface Props {
   range: DiffRange | null;
@@ -12,17 +13,6 @@ interface Props {
   loading: boolean;
   onOpenDiff: (filePath: string) => void;
 }
-
-const STATUS_LABEL: Record<FileStatus, string> = {
-  A: 'A',
-  M: 'M',
-  D: 'D',
-  R: 'R',
-  C: 'C',
-  U: 'U',
-  T: 'T',
-  '?': '?',
-};
 
 export function ChangedFilesPanel({ range, files, activeFilePath, loading, onOpenDiff }: Props) {
   if (loading) {
@@ -64,22 +54,21 @@ function ChangedFileItem({ file, active, onOpenDiff }: ItemProps) {
   }, [active]);
 
   return (
-    <div
-      ref={itemRef}
-      className={`file-item status-${file.status}${active ? ' is-active' : ''}${file.status === 'D' ? ' is-deleted' : ''}`}
-      aria-current={active ? 'true' : undefined}
+    <FileChangeRow
+      rowRef={itemRef}
+      path={file.path}
+      oldPath={file.oldPath}
+      status={file.status}
+      active={active}
       onClick={() => onOpenDiff(file.path)}
-      title={file.oldPath ? `${file.oldPath} → ${file.path}` : file.path}
-    >
-      <span className="file-status">{STATUS_LABEL[file.status]}</span>
-      <span className="file-path">{file.path}</span>
-      {!file.binary && (
+      trailing={file.binary ? (
+        <span className="file-stat binary">{t('files.binary')}</span>
+      ) : (
         <span className="file-stat">
           <span className="stat-add">+{file.insertions}</span>
           <span className="stat-del">-{file.deletions}</span>
         </span>
       )}
-      {file.binary && <span className="file-stat binary">{t('files.binary')}</span>}
-    </div>
+    />
   );
 }
