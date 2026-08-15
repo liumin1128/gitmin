@@ -47,6 +47,13 @@ assert.doesNotMatch(html, />Stash<\/span>/);
 assert.equal((html.match(/class="change-group-toggle"/g) ?? []).length, 3);
 assert.match(html, /aria-label="Collapse Staged Changes"[^>]*aria-expanded="true"/);
 assert.match(html, /class="change-group-chevron codicon codicon-chevron-down"/);
+assert.equal((html.match(/class="change-file-icon codicon codicon-file"/g) ?? []).length, 3);
+assert.ok(
+  html.indexOf('class="change-file-icon codicon codicon-file"') <
+    html.indexOf('class="change-path"') &&
+    html.indexOf('class="change-path"') < html.indexOf('class="file-status"'),
+  'File icon should precede the path while Git status remains at the end'
+);
 assert.match(html, /codicon-add/);
 assert.match(html, /codicon-remove/);
 assert.match(html, /codicon-discard/);
@@ -140,8 +147,13 @@ const styles = readFileSync('webview-ui/src/styles.css', 'utf8');
 assert.doesNotMatch(styles, /\.commit-message-generate-control/);
 assert.match(styles, /\.workbench-toolbar\s*\{[^}]*height:\s*26px/s);
 assert.match(styles, /\.change-item\s*\{[^}]*min-height:\s*24px/s);
-assert.match(styles, /\.change-item\s*\{[^}]*padding:\s*0\s+6px\s+0\s+24px/s);
-assert.match(styles, /\.change-group-toggle\s*\{[^}]*padding:\s*0\s+4px\s+0\s+16px/s);
+assert.match(
+  styles,
+  /\.change-item\s*\{[^}]*grid-template-columns:\s*16px\s+minmax\(0,\s*1fr\)\s+auto\s+auto/s
+);
+assert.match(styles, /\.change-item\s*\{[^}]*padding:\s*0\s+6px\s+0\s+8px/s);
+assert.doesNotMatch(styles, /\.change-list::before/);
+assert.match(styles, /\.change-group-toggle\s*\{[^}]*padding:\s*0\s+4px\s+0\s+6px/s);
 assert.match(styles, /\.change-group-chevron\s*\{[^}]*width:\s*16px[^}]*height:\s*16px/s);
 assert.match(styles, /\.change-message-input\s*\{[^}]*resize:\s*none/s);
 assert.match(

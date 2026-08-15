@@ -70,20 +70,22 @@ export function ChangeGroup({
           <span className="change-group-title">{title}</span>
           <span className="change-group-count">{changes.length}</span>
         </button>
-        <IconButton
-          icon={primaryIcon}
-          title={primaryTitle}
-          disabled={busy}
-          className="change-action-button"
-          onClick={() => onAction(primaryAction, group, allPaths)}
-        />
-        <IconButton
-          icon="discard"
-          title={t('changes.discardAll')}
-          disabled={busy}
-          className="change-action-button"
-          onClick={() => onAction('discard', group, allPaths)}
-        />
+        <div className="change-group-actions">
+          <IconButton
+            icon={primaryIcon}
+            title={primaryTitle}
+            disabled={busy}
+            className="change-action-button"
+            onClick={() => onAction(primaryAction, group, allPaths)}
+          />
+          <IconButton
+            icon="discard"
+            title={t('changes.discardAll')}
+            disabled={busy}
+            className="change-action-button"
+            onClick={() => onAction('discard', group, allPaths)}
+          />
+        </div>
       </header>
       {!collapsed && (
         <div id={contentId} className="change-list">
@@ -102,7 +104,10 @@ export function ChangeGroup({
                   onOpenDiff(group, change.path);
                 }}
               >
-                <span className="file-status">{change.status}</span>
+                <span
+                  className="change-file-icon codicon codicon-file"
+                  aria-hidden="true"
+                />
                 <span className="change-path">
                   {change.oldPath && <span className="change-old-path">{change.oldPath} -&gt; </span>}
                   {change.path}
@@ -125,6 +130,7 @@ export function ChangeGroup({
                     onClick={() => onAction('discard', group, actionPaths)}
                   />
                 </span>
+                <span className="file-status">{change.status}</span>
               </div>
             );
           })}

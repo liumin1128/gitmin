@@ -844,6 +844,7 @@ body.vscode-high-contrast-light .filter-form-row > input {
   min-height: 24px;
   border-bottom: 1px solid var(--vscode-panel-border);
   background: var(--vscode-sideBarSectionHeader-background, var(--vscode-sideBar-background));
+  color: var(--vscode-sideBarSectionHeader-foreground, var(--vscode-foreground));
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.4px;
@@ -852,11 +853,11 @@ body.vscode-high-contrast-light .filter-form-row > input {
 .change-group-toggle {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   flex: 1 1 auto;
   min-width: 0;
   height: 24px;
-  padding: 0 4px 0 16px;
+  padding: 0 4px 0 6px;
   border: 0;
   background: transparent;
   color: inherit;
@@ -879,7 +880,7 @@ body.vscode-high-contrast-light .filter-form-row > input {
   width: 16px;
   height: 16px;
   flex: 0 0 16px;
-  margin: 0 2px;
+  margin: 0;
 }
 .change-group-title {
   overflow: hidden;
@@ -891,19 +892,45 @@ body.vscode-high-contrast-light .filter-form-row > input {
   color: var(--vscode-descriptionForeground);
   font-weight: 400;
 }
+.change-group-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 2px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.08s ease-out;
+}
+.change-group-header:hover .change-group-actions,
+.change-group-header:focus-within .change-group-actions {
+  opacity: 1;
+  visibility: visible;
+}
 .change-action-button {
   width: 22px;
   height: 22px;
+  color: inherit;
 }
 .change-item {
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) auto;
+  grid-template-columns: 16px minmax(0, 1fr) auto auto;
+  gap: 4px;
   align-items: center;
   min-height: 24px;
-  padding: 0 6px 0 24px;
+  padding: 0 6px 0 8px;
   cursor: pointer;
   user-select: none;
   transition: background-color 0.06s ease-out;
+}
+.change-file-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--vscode-icon-foreground, var(--vscode-descriptionForeground));
+}
+.change-item .file-status {
+  width: 14px;
+  font-size: 11px;
+  text-align: center;
 }
 .change-item:hover {
   background: var(--vscode-list-hoverBackground);
@@ -911,6 +938,9 @@ body.vscode-high-contrast-light .filter-form-row > input {
 .change-item.is-selected {
   background: var(--vscode-list-activeSelectionBackground);
   color: var(--vscode-list-activeSelectionForeground);
+}
+.change-item.is-selected .change-file-icon {
+  color: inherit;
 }
 .change-path {
   min-width: 0;
@@ -1024,9 +1054,6 @@ body.vscode-high-contrast-light .filter-form-row > input {
 }
 
 @media (max-width: 499px) {
-  .change-item {
-    padding-left: 4px;
-  }
   .stash-item {
     grid-template-columns: 72px minmax(0, 1fr);
     gap: 5px;
