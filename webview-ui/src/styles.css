@@ -926,6 +926,12 @@ body.vscode-high-contrast-light .filter-form-row > input {
   flex-shrink: 0;
   overflow: visible;
 }
+.commit-summary {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+}
 .commit-graph circle {
   stroke: var(--vscode-sideBar-background, var(--vscode-editor-background));
 }
@@ -958,6 +964,8 @@ body.vscode-high-contrast-light .filter-form-row > input {
 }
 .commit-item.is-selected .commit-hash { color: inherit; }
 .commit-message {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

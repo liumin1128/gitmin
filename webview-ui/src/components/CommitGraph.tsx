@@ -20,12 +20,11 @@ const CURRENT_REF_COLOR =
 
 interface Props {
   row: GraphRow;
-  maxLanes: number;
   isUnpushed?: boolean;
 }
 
-export function CommitGraph({ row, maxLanes, isUnpushed = false }: Props) {
-  const width = commitGraphWidth(maxLanes);
+export function CommitGraph({ row, isUnpushed = false }: Props) {
+  const width = commitGraphWidth(row.laneCount);
   const commitX = commitGraphLaneX(row.commitLane);
   const commitColor = isUnpushed ? UNPUSHED_COLOR : laneColor(row.commitColor);
 

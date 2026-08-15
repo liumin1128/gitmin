@@ -24,10 +24,11 @@ function row(
 // Isolated nodes render only the node, matching VS Code's graph renderer.
 {
   const html = renderToStaticMarkup(
-    <CommitGraph row={row({ commitLane: 0, commitColor: 0 })} maxLanes={1} />
+    <CommitGraph row={row({ commitLane: 0, commitColor: 0 })} />
   );
 
   assert.match(html, /<circle/, 'should have commit dot');
+  assert.match(html, /width="22"/);
   assert.match(html, /<circle cx="11" cy="11" r="5"/);
   assert.doesNotMatch(html, /<line/);
   assert.doesNotMatch(html, /<path/);
@@ -41,7 +42,7 @@ function row(
     incomingEdges: [{ fromLane: 0, toLane: 0, color: 0 }],
     outgoingEdges: [{ fromLane: 0, toLane: 0, color: 0 }],
   });
-  const html = renderToStaticMarkup(<CommitGraph row={graphRow} maxLanes={1} />);
+  const html = renderToStaticMarkup(<CommitGraph row={graphRow} />);
 
   assert.equal((html.match(/<line/g) || []).length, 2);
   assert.doesNotMatch(html, /<path/);
@@ -54,7 +55,7 @@ function row(
     commitColor: 0,
     outgoingEdges: [{ fromLane: 0, toLane: 0, color: 0 }],
   });
-  const html = renderToStaticMarkup(<CommitGraph row={graphRow} maxLanes={1} />);
+  const html = renderToStaticMarkup(<CommitGraph row={graphRow} />);
 
   assert.match(html, /<line x1="11" y1="11" x2="11" y2="22"/);
   assert.equal((html.match(/<line/g) || []).length, 1);
@@ -68,7 +69,7 @@ function row(
     outgoingEdges: [{ fromLane: 0, toLane: 1, color: 1 }],
     laneCount: 2,
   });
-  const html = renderToStaticMarkup(<CommitGraph row={graphRow} maxLanes={2} />);
+  const html = renderToStaticMarkup(<CommitGraph row={graphRow} />);
 
   assert.match(html, /d="M 11 11 A 11 11 0 0 1 22 22 M 11 11 H 11"/);
   assert.match(html, /stroke-linecap:round/);
@@ -83,7 +84,7 @@ function row(
     incomingEdges: [{ fromLane: 1, toLane: 0, color: 1 }],
     laneCount: 2,
   });
-  const html = renderToStaticMarkup(<CommitGraph row={graphRow} maxLanes={2} />);
+  const html = renderToStaticMarkup(<CommitGraph row={graphRow} />);
 
   assert.match(html, /d="M 22 0 A 11 11 0 0 1 11 11 H 11"/);
 }
@@ -97,12 +98,12 @@ function row(
     passingEdges: [{ fromLane: 1, toLane: 0, color: 1 }],
     laneCount: 2,
   });
-  const html = renderToStaticMarkup(<CommitGraph row={graphRow} maxLanes={2} />);
+  const html = renderToStaticMarkup(<CommitGraph row={graphRow} />);
 
   assert.match(html, /d="M 22 0 V 6 A 5 5 0 0 1 17 11 H 16 A 5 5 0 0 0 11 16 V 22"/);
 }
 
-// The graph column width remains stable across rows.
+// SVG width follows the current row's active lanes instead of the list maximum.
 {
   const graphRow = row({
     commitLane: 0,
@@ -115,7 +116,7 @@ function row(
     nodeKind: 'merge',
     laneCount: 2,
   });
-  const html = renderToStaticMarkup(<CommitGraph row={graphRow} maxLanes={2} />);
+  const html = renderToStaticMarkup(<CommitGraph row={graphRow} />);
 
   assert.match(html, /width="33"/);
   assert.match(html, /height="22"/);
@@ -129,7 +130,6 @@ function row(
   const html = renderToStaticMarkup(
     <CommitGraph
       row={row({ commitLane: 0, commitColor: 'current', nodeKind: 'head' })}
-      maxLanes={1}
     />
   );
 
@@ -143,14 +143,14 @@ function row(
 // Palette colors and local-commit highlighting are preserved.
 {
   const html = renderToStaticMarkup(
-    <CommitGraph row={row({ commitLane: 0, commitColor: 0 })} maxLanes={1} />
+    <CommitGraph row={row({ commitLane: 0, commitColor: 0 })} />
   );
   assert.match(html, /fill:var\(--vscode-scmGraph-foreground1, #FFB000\)/);
 }
 
 {
   const html = renderToStaticMarkup(
-    <CommitGraph row={row({ commitLane: 0, commitColor: 7 })} maxLanes={1} />
+    <CommitGraph row={row({ commitLane: 0, commitColor: 7 })} />
   );
   assert.match(html, /fill:var\(--vscode-scmGraph-foreground3, #994F00\)/);
 }
@@ -161,7 +161,7 @@ function row(
     commitColor: 0,
     outgoingEdges: [{ fromLane: 0, toLane: 0, color: 0 }],
   });
-  const html = renderToStaticMarkup(<CommitGraph row={graphRow} maxLanes={1} isUnpushed />);
+  const html = renderToStaticMarkup(<CommitGraph row={graphRow} isUnpushed />);
 
   assert.match(html, /fill:var\(--vscode-editorWarning-foreground, #cca700\)/);
   assert.match(html, /stroke:var\(--vscode-editorWarning-foreground, #cca700\)/);
@@ -183,12 +183,12 @@ function row(
       }}
       columns={{ graph: false, hash: false, author: false, time: false, tags: true }}
       graphRow={row({ commitLane: 0, commitColor: 0 })}
-      maxLanes={1}
       selected={false}
       onClick={() => undefined}
       onContextMenu={() => undefined}
     />
   );
+  assert.match(html, /class="commit-summary"><span class="commit-message"/);
   assert.match(html, /class="commit-tag is-unpushed">HEAD -&gt; main<\/span>/);
 }
 

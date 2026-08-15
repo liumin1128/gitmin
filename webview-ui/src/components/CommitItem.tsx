@@ -13,7 +13,6 @@ interface Props {
   commit: Commit;
   columns: ColumnFlags;
   graphRow: GraphRow;
-  maxLanes: number;
   selected: boolean;
   onClick: (item: string, event: MouseEvent) => void;
   onContextMenu: (item: string, event: MouseEvent) => void;
@@ -23,7 +22,6 @@ export function CommitItem({
   commit,
   columns,
   graphRow,
-  maxLanes,
   selected,
   onClick,
   onContextMenu,
@@ -38,14 +36,12 @@ export function CommitItem({
       }}
       title={commit.message}
     >
-      {columns.graph && (
-        <CommitGraph
-          row={graphRow}
-          maxLanes={maxLanes}
-          isUnpushed={commit.isUnpushed}
-        />
-      )}
-      <span className="commit-message">{firstLine(commit.message)}</span>
+      <div className="commit-summary">
+        {columns.graph && (
+          <CommitGraph row={graphRow} isUnpushed={commit.isUnpushed} />
+        )}
+        <span className="commit-message">{firstLine(commit.message)}</span>
+      </div>
       {columns.author && <span className="commit-author">{commit.author}</span>}
       {columns.hash && <span className="commit-hash">{shortHash(commit.hash)}</span>}
       {columns.time && <span className="commit-time">{relativeTime(commit.date)}</span>}

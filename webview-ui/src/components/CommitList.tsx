@@ -7,7 +7,6 @@ import { useEffect, useMemo, useRef, type CSSProperties, type MouseEvent } from 
 import type { Commit } from '../../../shared/domain';
 import { isNearCommitListBottom } from '../../../shared/commitPagination';
 import { layoutCommits } from '../utils/commitGraph';
-import { commitGraphWidth } from '../utils/commitGraphGeometry';
 import { measurePx, shortHash, relativeTime, tagListText } from '../utils/formatters';
 import { CommitItem } from './CommitItem';
 
@@ -99,7 +98,7 @@ export function CommitList({
   onLoadMore,
 }: Props) {
   const listRef = useRef<HTMLDivElement>(null);
-  const { rows, maxLanes } = useMemo(
+  const { rows } = useMemo(
     () => layoutCommits(commits, { preserveUnresolvedParents }),
     [commits, preserveUnresolvedParents]
   );
@@ -182,8 +181,7 @@ export function CommitList({
   }
 
   const gridTemplate = [
-    columns.graph ? `${commitGraphWidth(maxLanes)}px` : null,
-    '1fr',
+    'minmax(0, 1fr)',
     columns.author ? `${Math.ceil(colWidths.authorW) + PAD}px` : null,
     columns.hash ? `${Math.ceil(colWidths.hashW) + PAD}px` : null,
     columns.time ? `${Math.ceil(colWidths.timeW) + PAD}px` : null,
@@ -202,7 +200,6 @@ export function CommitList({
           commit={c}
           columns={columns}
           graphRow={rows[i]!}
-          maxLanes={maxLanes}
           selected={isSelected(c.hash)}
           onClick={onItemClick}
           onContextMenu={onItemContextMenu}

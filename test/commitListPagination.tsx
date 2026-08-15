@@ -54,6 +54,10 @@ const graphCommits = [
     hash: 'side', shortHash: 'side', message: 'side', author: '', email: '', date: '',
     parents: [], refs: [], isUnpushed: false,
   },
+  {
+    hash: 'main-next', shortHash: 'main', message: 'main', author: '', email: '', date: '',
+    parents: [], refs: [], isUnpushed: false,
+  },
 ] satisfies Commit[];
 const paginatedGraphHtml = renderToStaticMarkup(
   <CommitList
@@ -63,10 +67,14 @@ const paginatedGraphHtml = renderToStaticMarkup(
     preserveUnresolvedParents
   />
 );
-assert.match(
-  paginatedGraphHtml,
-  /class="commit-graph" width="32"/,
-  'the list must pass pagination context into the graph layout'
+const graphWidths = Array.from(
+  paginatedGraphHtml.matchAll(/class="commit-graph[^"]*"[^>]*width="(\d+)"/g),
+  (match) => Number(match[1])
+);
+assert.deepEqual(
+  graphWidths,
+  [33, 33, 22],
+  'each graph row must use its own active-lane width'
 );
 assert.match(
   paginatedGraphHtml,
