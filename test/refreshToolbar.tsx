@@ -37,6 +37,11 @@ assert.match(
 );
 assert.match(
   styles,
+  /\.filter-bar\s*\{[^}]*position:\s*sticky[^}]*top:\s*0/s,
+  'commit filters should stay fixed while the commit list scrolls'
+);
+assert.match(
+  styles,
   /@media\s*\(max-width:\s*640px\)[\s\S]*?\.filter-bar\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)[^}]*row-gap:\s*4px/s,
   'narrow toolbar should switch directly to two rows'
 );
