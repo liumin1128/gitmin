@@ -20,6 +20,7 @@ import {
   calculatePanelHeights,
   calculatePanelMaximumHeight,
   clampPanelHeight,
+  findFillPanelId,
 } from '../utils/panelSizing';
 
 const useSynchronousLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
@@ -51,7 +52,7 @@ export function WorkbenchPanelStack({
   const [containerHeight, setContainerHeight] = useState(0);
   const [naturalHeights, setNaturalHeights] = useState<Partial<WorkbenchPanelHeights>>({});
   const visiblePanels = useMemo(() => panels.filter((panel) => panel.visible), [panels]);
-  const fillPanelId = [...visiblePanels].reverse().find((panel) => !panel.collapsed)?.id;
+  const fillPanelId = findFillPanelId(visiblePanels);
   const sizingInputs = useMemo(
     () => visiblePanels.map((panel) => ({
       id: panel.id,
@@ -101,7 +102,7 @@ export function WorkbenchPanelStack({
             panel.id,
             containerHeight
           )}
-          automaticHeight={heights[panel.id] === null}
+          automaticHeight={panel.id === fillPanelId || heights[panel.id] === null}
           resizable={panel.id !== fillPanelId}
           onCollapsedChange={onCollapsedChange}
           onHeightChange={onHeightChange}

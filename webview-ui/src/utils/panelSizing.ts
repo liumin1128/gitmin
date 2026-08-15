@@ -13,6 +13,15 @@ interface ExpandedPanel extends PanelSizingInput {
   desiredHeight: number;
 }
 
+export function findFillPanelId(
+  panels: readonly Pick<PanelSizingInput, 'id' | 'collapsed'>[]
+): string | undefined {
+  for (let index = panels.length - 1; index >= 0; index -= 1) {
+    if (!panels[index].collapsed) return panels[index].id;
+  }
+  return undefined;
+}
+
 export function clampPanelHeight(height: number, maximumHeight: number): number {
   const maximum = Math.max(PANEL_HEADER_HEIGHT, Math.round(maximumHeight));
   const minimum = Math.min(MIN_EXPANDED_PANEL_HEIGHT, maximum);
@@ -25,9 +34,14 @@ export function calculatePanelMaximumHeight(
   containerHeight: number
 ): number {
   if (containerHeight <= 0) return Number.MAX_SAFE_INTEGER;
+  const fillPanelId = findFillPanelId(panels);
   const reserved = panels.reduce((total, panel) => {
     if (panel.id === targetId) return total;
-    return total + (panel.collapsed ? PANEL_HEADER_HEIGHT : MIN_EXPANDED_PANEL_HEIGHT);
+    if (panel.collapsed) return total + PANEL_HEADER_HEIGHT;
+    if (panel.id === fillPanelId || panel.preferredHeight === null) {
+      return total + MIN_EXPANDED_PANEL_HEIGHT;
+    }
+    return total + resolveDesiredHeight(panel, panel.preferredHeight);
   }, 0);
   return Math.max(PANEL_HEADER_HEIGHT, containerHeight - reserved);
 }
@@ -39,6 +53,7 @@ export function calculatePanelHeights(
   const heights: Record<string, number> = {};
   const expanded: ExpandedPanel[] = [];
   let collapsedHeight = 0;
+  const fillPanelId = findFillPanelId(panels);
 
   panels.forEach((panel) => {
     if (panel.collapsed) {
@@ -46,13 +61,11 @@ export function calculatePanelHeights(
       collapsedHeight += PANEL_HEADER_HEIGHT;
       return;
     }
-    const requested = panel.preferredHeight ?? panel.naturalHeight;
+    const preferredHeight = panel.id === fillPanelId ? null : panel.preferredHeight;
     expanded.push({
       ...panel,
-      desiredHeight: Math.max(
-        MIN_EXPANDED_PANEL_HEIGHT,
-        Number.isFinite(requested) ? requested : DEFAULT_AUTO_PANEL_HEIGHT
-      ),
+      preferredHeight,
+      desiredHeight: resolveDesiredHeight(panel, preferredHeight),
     });
   });
 
@@ -88,6 +101,17 @@ export function calculatePanelHeights(
 
   Object.assign(heights, fitPanels(expanded, capacity, minimum));
   return heights;
+}
+
+function resolveDesiredHeight(
+  panel: PanelSizingInput,
+  preferredHeight: number | null
+): number {
+  const requested = preferredHeight ?? panel.naturalHeight;
+  return Math.max(
+    MIN_EXPANDED_PANEL_HEIGHT,
+    Number.isFinite(requested) ? requested : DEFAULT_AUTO_PANEL_HEIGHT
+  );
 }
 
 function fillLastPanel(

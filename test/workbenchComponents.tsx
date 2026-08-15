@@ -8,6 +8,7 @@ import {
 import {
   PANEL_HEADER_HEIGHT,
   calculatePanelHeights,
+  calculatePanelMaximumHeight,
   clampPanelHeight,
 } from '../webview-ui/src/utils/panelSizing';
 import { ViewVisibilityMenu } from '../webview-ui/src/components/ViewVisibilityMenu';
@@ -141,6 +142,35 @@ const fitted = calculatePanelHeights(
 assert.deepEqual(fitted, { repositories: 175, changes: PANEL_HEADER_HEIGHT, commits: 125 });
 assert.equal(clampPanelHeight(20, 250), 50);
 assert.equal(clampPanelHeight(400, 250), 250);
+
+const draggedUp = calculatePanelHeights(
+  [
+    { id: 'commits', collapsed: false, preferredHeight: 260, naturalHeight: 300 },
+    { id: 'files', collapsed: false, preferredHeight: 300, naturalHeight: 300 },
+  ],
+  600
+);
+const draggedDown = calculatePanelHeights(
+  [
+    { id: 'commits', collapsed: false, preferredHeight: 340, naturalHeight: 300 },
+    { id: 'files', collapsed: false, preferredHeight: 300, naturalHeight: 300 },
+  ],
+  600
+);
+assert.deepEqual(draggedUp, { commits: 260, files: 340 });
+assert.deepEqual(draggedDown, { commits: 340, files: 260 });
+
+const independentlySized = [
+  { id: 'changes', collapsed: false, preferredHeight: 200, naturalHeight: 200 },
+  { id: 'commits', collapsed: false, preferredHeight: 350, naturalHeight: 300 },
+  { id: 'files', collapsed: false, preferredHeight: 300, naturalHeight: 300 },
+];
+assert.equal(calculatePanelMaximumHeight(independentlySized, 'commits', 600), 350);
+assert.deepEqual(calculatePanelHeights(independentlySized, 600), {
+  changes: 200,
+  commits: 350,
+  files: 50,
+});
 
 const styles = readFileSync('webview-ui/src/styles.css', 'utf8');
 assert.match(styles, /\.workbench-panel-stack\s*\{[^}]*align-items:\s*stretch/s);
