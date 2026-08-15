@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, type CSSProperties, type MouseEvent } from 
 import type { Commit } from '../../../shared/domain';
 import { isNearCommitListBottom } from '../../../shared/commitPagination';
 import { layoutCommits } from '../utils/commitGraph';
+import { commitGraphWidth } from '../utils/commitGraphGeometry';
 import { measurePx, shortHash, relativeTime, tagListText } from '../utils/formatters';
 import { CommitItem } from './CommitItem';
 
@@ -103,7 +104,6 @@ export function CommitList({
     [commits, preserveUnresolvedParents]
   );
 
-  const LANE_W = 16;
   const PAD = 4;
 
   const colWidths = useMemo(() => {
@@ -182,7 +182,7 @@ export function CommitList({
   }
 
   const gridTemplate = [
-    columns.graph ? `${maxLanes * LANE_W}px` : null,
+    columns.graph ? `${commitGraphWidth(maxLanes)}px` : null,
     '1fr',
     columns.author ? `${Math.ceil(colWidths.authorW) + PAD}px` : null,
     columns.hash ? `${Math.ceil(colWidths.hashW) + PAD}px` : null,

@@ -5,143 +5,166 @@ import { CommitGraph } from '../webview-ui/src/components/CommitGraph.tsx';
 import { CommitItem } from '../webview-ui/src/components/CommitItem.tsx';
 import type { GraphRow } from '../webview-ui/src/utils/commitGraph.ts';
 
-function row(props: Partial<GraphRow> & { commitLane: number; commitColor: number }): GraphRow {
+function row(
+  props: Partial<GraphRow> & {
+    commitLane: number;
+    commitColor: GraphRow['commitColor'];
+  }
+): GraphRow {
   return {
-    topEdges: [],
-    bottomEdges: [],
+    nodeKind: 'node',
+    incomingEdges: [],
+    outgoingEdges: [],
+    passingEdges: [],
     laneCount: 1,
     ...props,
   };
 }
 
-// ===== Isolated node (short caps above and below dot, no topology lines) =====
+// Isolated nodes render only the node, matching VS Code's graph renderer.
 {
   const html = renderToStaticMarkup(
     <CommitGraph row={row({ commitLane: 0, commitColor: 0 })} maxLanes={1} />
   );
+
   assert.match(html, /<circle/, 'should have commit dot');
-  assert.match(
-    html,
-    /<line x1="8" y1="3" x2="8" y2="11"/,
-    'commit dot should have a short top cap'
-  );
-  assert.match(
-    html,
-    /<line x1="8" y1="11" x2="8" y2="19"/,
-    'commit dot should have a short bottom cap'
-  );
-  assert.match(html, /stroke-width:1(?:;|\")/, 'graph lines should use a thin 1px stroke');
-  assert.equal((html.match(/<line/g) || []).length, 2, 'only endpoint caps should be rendered');
-  assert.doesNotMatch(html, /<path/, 'no path when no edges');
+  assert.match(html, /<circle cx="11" cy="11" r="5"/);
+  assert.doesNotMatch(html, /<line/);
+  assert.doesNotMatch(html, /<path/);
 }
 
-// ===== Normal edge =====
+// A linear commit has one line into and one line out of its node.
 {
-  const r = row({
+  const graphRow = row({
     commitLane: 0,
     commitColor: 0,
-    topEdges: [{ fromLane: 0, toLane: 0, color: 0, type: 'normal' }],
-    bottomEdges: [{ fromLane: 0, toLane: 0, color: 0, type: 'normal' }],
+    incomingEdges: [{ fromLane: 0, toLane: 0, color: 0 }],
+    outgoingEdges: [{ fromLane: 0, toLane: 0, color: 0 }],
   });
-  const html = renderToStaticMarkup(<CommitGraph row={r} maxLanes={1} />);
-  assert.match(html, /<svg/, 'should have svg');
-  assert.match(html, /<circle/, 'should have commit dot');
-  const lineCount = (html.match(/<line/g) || []).length;
-  assert.equal(lineCount, 2, 'connected node should only have its 2 graph lines');
+  const html = renderToStaticMarkup(<CommitGraph row={graphRow} maxLanes={1} />);
+
+  assert.equal((html.match(/<line/g) || []).length, 2);
+  assert.doesNotMatch(html, /<path/);
 }
 
-// ===== Segment first node (top cap + downward real edge) =====
+// A segment tip renders only its real outgoing edge.
 {
-  const r = row({
+  const graphRow = row({
     commitLane: 0,
     commitColor: 0,
-    bottomEdges: [{ fromLane: 0, toLane: 0, color: 0, type: 'normal' }],
+    outgoingEdges: [{ fromLane: 0, toLane: 0, color: 0 }],
   });
-  const html = renderToStaticMarkup(<CommitGraph row={r} maxLanes={1} />);
-  assert.match(html, /<line x1="8" y1="3" x2="8" y2="11"/);
-  assert.equal((html.match(/<line/g) || []).length, 2, 'top cap plus bottom graph line');
+  const html = renderToStaticMarkup(<CommitGraph row={graphRow} maxLanes={1} />);
+
+  assert.match(html, /<line x1="11" y1="11" x2="11" y2="22"/);
+  assert.equal((html.match(/<line/g) || []).length, 1);
 }
 
-// ===== Branch line (path) =====
+// Secondary parents curve from the commit node into their output lane.
 {
-  const r = row({
+  const graphRow = row({
     commitLane: 0,
     commitColor: 0,
-    bottomEdges: [{ fromLane: 0, toLane: 1, color: 1, type: 'branch' }],
+    outgoingEdges: [{ fromLane: 0, toLane: 1, color: 1 }],
     laneCount: 2,
   });
-  const html = renderToStaticMarkup(<CommitGraph row={r} maxLanes={2} />);
-  assert.match(html, /<path/, 'branch edges should use path');
-  assert.match(
-    html,
-    /d="M 8 11 C 8 16\.5 24 16\.5 24 22"/,
-    'cross-lane edges should use a smooth cubic curve'
-  );
-  assert.match(html, /stroke-linecap:round/, 'rounded caps should bridge adjacent row edges');
-  assert.match(html, /stroke-linejoin:round/, 'curved edge joins should remain smooth');
+  const html = renderToStaticMarkup(<CommitGraph row={graphRow} maxLanes={2} />);
+
+  assert.match(html, /d="M 11 11 A 11 11 0 0 1 22 22 M 11 11 H 11"/);
+  assert.match(html, /stroke-linecap:round/);
+  assert.match(html, /stroke-linejoin:round/);
 }
 
-// ===== Merge line =====
+// Duplicate incoming lanes converge into one commit node.
 {
-  const r = row({
-    commitLane: 1,
-    commitColor: 1,
-    bottomEdges: [{ fromLane: 1, toLane: 0, color: 0, type: 'merge' }],
-    laneCount: 2,
-  });
-  const html = renderToStaticMarkup(<CommitGraph row={r} maxLanes={2} />);
-  assert.match(html, /<path/, 'merge edges should use path');
-}
-
-// ===== Multi-lane rendering =====
-{
-  const r = row({
+  const graphRow = row({
     commitLane: 0,
     commitColor: 0,
-    topEdges: [{ fromLane: 1, toLane: 1, color: 1, type: 'normal' }],
-    bottomEdges: [
-      { fromLane: 0, toLane: 0, color: 0, type: 'normal' },
-      { fromLane: 0, toLane: 1, color: 1, type: 'branch' },
+    incomingEdges: [{ fromLane: 1, toLane: 0, color: 1 }],
+    laneCount: 2,
+  });
+  const html = renderToStaticMarkup(<CommitGraph row={graphRow} maxLanes={2} />);
+
+  assert.match(html, /d="M 22 0 A 11 11 0 0 1 11 11 H 11"/);
+}
+
+// A lane closing compacts the remaining lanes with a rounded two-corner path.
+{
+  const graphRow = row({
+    commitLane: 0,
+    commitColor: 0,
+    incomingEdges: [{ fromLane: 0, toLane: 0, color: 0 }],
+    passingEdges: [{ fromLane: 1, toLane: 0, color: 1 }],
+    laneCount: 2,
+  });
+  const html = renderToStaticMarkup(<CommitGraph row={graphRow} maxLanes={2} />);
+
+  assert.match(html, /d="M 22 0 V 6 A 5 5 0 0 1 17 11 H 16 A 5 5 0 0 0 11 16 V 22"/);
+}
+
+// The graph column width remains stable across rows.
+{
+  const graphRow = row({
+    commitLane: 0,
+    commitColor: 0,
+    passingEdges: [{ fromLane: 1, toLane: 1, color: 1 }],
+    outgoingEdges: [
+      { fromLane: 0, toLane: 0, color: 0 },
+      { fromLane: 0, toLane: 1, color: 1 },
     ],
+    nodeKind: 'merge',
     laneCount: 2,
   });
-  const html = renderToStaticMarkup(<CommitGraph row={r} maxLanes={2} />);
-  assert.match(html, /width="32"/, 'svg width should be 2 * LANE_W');
-  assert.match(html, /height="22"/, 'svg height should be ROW_H');
+  const html = renderToStaticMarkup(<CommitGraph row={graphRow} maxLanes={2} />);
+
+  assert.match(html, /width="33"/);
+  assert.match(html, /height="22"/);
+  assert.equal((html.match(/<circle/g) || []).length, 2, 'merge nodes use two circles');
+  assert.match(html, /<circle cx="11" cy="11" r="6"/);
+  assert.match(html, /<circle cx="11" cy="11" r="3"/);
 }
 
-// ===== Color output verification =====
+// HEAD uses VS Code's current-ref color and double-ring marker.
 {
-  const r = row({ commitLane: 0, commitColor: 0 });
-  const html = renderToStaticMarkup(<CommitGraph row={r} maxLanes={1} />);
-  assert.match(html, /fill:#89d185/, 'the first graph segment should use green');
+  const html = renderToStaticMarkup(
+    <CommitGraph
+      row={row({ commitLane: 0, commitColor: 'current', nodeKind: 'head' })}
+      maxLanes={1}
+    />
+  );
+
+  assert.match(html, /class="commit-graph is-head"/);
+  assert.match(html, /<circle cx="11" cy="11" r="7"/);
+  assert.match(html, /class="commit-node-inner" cx="11" cy="11" r="2"/);
+  assert.match(html, /stroke-width:4/);
+  assert.match(html, /fill:var\(--vscode-scmGraph-historyItemRefColor/);
+}
+
+// Palette colors and local-commit highlighting are preserved.
+{
+  const html = renderToStaticMarkup(
+    <CommitGraph row={row({ commitLane: 0, commitColor: 0 })} maxLanes={1} />
+  );
+  assert.match(html, /fill:var\(--vscode-scmGraph-foreground1, #FFB000\)/);
 }
 
 {
-  const r = row({ commitLane: 0, commitColor: 7 });
-  const html = renderToStaticMarkup(<CommitGraph row={r} maxLanes={1} />);
-  assert.match(html, /fill:#f14c4c/, 'palette color 7 should wrap to red');
+  const html = renderToStaticMarkup(
+    <CommitGraph row={row({ commitLane: 0, commitColor: 7 })} maxLanes={1} />
+  );
+  assert.match(html, /fill:var\(--vscode-scmGraph-foreground3, #994F00\)/);
 }
 
 {
-  const r = row({
+  const graphRow = row({
     commitLane: 0,
     commitColor: 0,
-    bottomEdges: [{ fromLane: 0, toLane: 0, color: 0, type: 'normal' }],
+    outgoingEdges: [{ fromLane: 0, toLane: 0, color: 0 }],
   });
-  const html = renderToStaticMarkup(
-    <CommitGraph row={r} maxLanes={1} isUnpushed />
-  );
-  assert.match(
-    html,
-    /fill:var\(--vscode-editorWarning-foreground, #cca700\)/,
-    'unpushed commit dots should use the warning color'
-  );
-  assert.match(
-    html,
-    /stroke:var\(--vscode-editorWarning-foreground, #cca700\)/,
-    'unpushed commit edges should use the warning color'
-  );
+  const html = renderToStaticMarkup(<CommitGraph row={graphRow} maxLanes={1} isUnpushed />);
+
+  assert.match(html, /fill:var\(--vscode-editorWarning-foreground, #cca700\)/);
+  assert.match(html, /stroke:var\(--vscode-editorWarning-foreground, #cca700\)/);
 }
 
 {
@@ -166,11 +189,7 @@ function row(props: Partial<GraphRow> & { commitLane: number; commitColor: numbe
       onContextMenu={() => undefined}
     />
   );
-  assert.match(
-    html,
-    /class="commit-tag is-unpushed">HEAD -&gt; main<\/span>/,
-    'refs on an unpushed commit should receive the unpushed tag style'
-  );
+  assert.match(html, /class="commit-tag is-unpushed">HEAD -&gt; main<\/span>/);
 }
 
-console.log('✅ CommitGraph SVG tests passed');
+console.log('commit graph SVG tests passed');

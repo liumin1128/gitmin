@@ -926,6 +926,24 @@ body.vscode-high-contrast-light .filter-form-row > input {
   flex-shrink: 0;
   overflow: visible;
 }
+.commit-graph circle {
+  stroke: var(--vscode-sideBar-background, var(--vscode-editor-background));
+}
+.commit-graph.is-head .commit-node-inner {
+  fill: var(--vscode-sideBar-background, var(--vscode-editor-background));
+}
+.commit-item:hover .commit-graph circle {
+  stroke: var(--vscode-list-hoverBackground);
+}
+.commit-item:hover .commit-graph.is-head .commit-node-inner {
+  fill: var(--vscode-list-hoverBackground);
+}
+.commit-item.is-selected .commit-graph circle {
+  stroke: var(--vscode-list-activeSelectionBackground);
+}
+.commit-item.is-selected .commit-graph.is-head .commit-node-inner {
+  fill: var(--vscode-list-activeSelectionBackground);
+}
 .commit-item:hover {
   background: var(--vscode-list-hoverBackground);
 }

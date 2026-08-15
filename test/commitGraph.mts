@@ -1,5 +1,5 @@
 /**
- * commitGraph pure function layout tests
+ * Commit graph pure layout tests.
  * Run: node --experimental-strip-types test/commitGraph.mts
  */
 import assert from 'node:assert/strict';
@@ -9,7 +9,7 @@ import {
 } from '../webview-ui/src/utils/commitGraph.ts';
 import type { Commit } from '../shared/domain.ts';
 
-function mk(hash: string, parents: string[]): Commit {
+function mk(hash: string, parents: string[], refs: string[] = []): Commit {
   return {
     hash,
     shortHash: hash,
@@ -18,31 +18,56 @@ function mk(hash: string, parents: string[]): Commit {
     email: '',
     date: '',
     parents,
-    refs: [],
+    refs,
     isUnpushed: false,
   };
 }
 
 function laneOf(rows: { commitLane: number }[]): number[] {
-  return rows.map((r) => r.commitLane);
+  return rows.map((row) => row.commitLane);
 }
 
-// ===== Linear history =====
+function edges(edges: { fromLane: number; toLane: number }[]): string[] {
+  return edges.map((edge) => `${edge.fromLane}->${edge.toLane}`);
+}
+
+function boundaryEndpoints(
+  graphEdges: { fromLane: number; toLane: number; color: number | string }[],
+  endpoint: 'fromLane' | 'toLane'
+): string[] {
+  return graphEdges
+    .map((edge) => `${edge[endpoint]}:${edge.color}`)
+    .sort();
+}
+
+// HEAD gets the dedicated current-ref color and marker, inherited by its lane.
+{
+  const { rows } = layoutCommits([
+    mk('head', ['parent'], ['HEAD -> main']),
+    mk('parent', []),
+  ]);
+
+  assert.equal(rows[0]!.nodeKind, 'head');
+  assert.equal(rows[0]!.commitColor, 'current');
+  assert.equal(rows[1]!.commitColor, 'current');
+}
+
+// Linear history stays in one lane.
 {
   const commits = [mk('c3', ['c2']), mk('c2', ['c1']), mk('c1', [])];
   const { rows, maxLanes } = layoutCommits(commits);
+
   assert.equal(maxLanes, 1);
   assert.deepEqual(laneOf(rows), [0, 0, 0]);
-  for (const r of rows) {
-    for (const e of r.topEdges) assert.equal(e.type, 'normal');
-    for (const e of r.bottomEdges) assert.equal(e.type, 'normal');
-  }
-  assert.equal(rows[0]!.topEdges.length, 0);
-  assert.equal(rows[2]!.bottomEdges.length, 0);
+  assert.deepEqual(edges(rows[0]!.incomingEdges), []);
+  assert.deepEqual(edges(rows[0]!.outgoingEdges), ['0->0']);
+  assert.deepEqual(edges(rows[1]!.incomingEdges), ['0->0']);
+  assert.deepEqual(edges(rows[1]!.outgoingEdges), ['0->0']);
+  assert.deepEqual(edges(rows[2]!.outgoingEdges), []);
 }
 
-// ===== Branch + merge =====
-//   c3 (merge of c2, b2)
+// Merge parents occupy separate lanes and converge at their shared parent.
+//   c3
 //   |\
 //   | b2
 //   |/
@@ -50,34 +75,28 @@ function laneOf(rows: { commitLane: number }[]): number[] {
 {
   const commits = [mk('c3', ['c2', 'b2']), mk('b2', ['c2']), mk('c2', [])];
   const { rows, maxLanes } = layoutCommits(commits);
+
   assert.equal(maxLanes, 2);
-
-  // c3 row: branch
-  const c3Edges = rows[0]!.bottomEdges;
-  assert.equal(c3Edges.length, 2);
-  const branch = c3Edges.find((e) => e.type === 'branch')!;
-  assert.ok(branch);
-  assert.equal(branch.fromLane, rows[0]!.commitLane);
-
-  // b2 row: merge
-  const b2Edges = rows[1]!.bottomEdges;
-  const merge = b2Edges.find((e) => e.type === 'merge')!;
-  assert.ok(merge);
-
-  // color continuity: merge diagonal carries the side-branch color
-  // (matches b2's dot + incoming top edge), not the mainline target color
-  assert.equal(merge.color, rows[1]!.commitColor,
-    'merge edge must use the side-branch (commit) color for continuity');
-  const b2TopInto = rows[1]!.topEdges.find((e) => e.toLane === rows[1]!.commitLane)!;
-  assert.equal(b2TopInto.color, rows[1]!.commitColor,
-    'incoming top edge shares the side-branch color');
+  assert.deepEqual(edges(rows[0]!.outgoingEdges), ['0->0', '0->1']);
+  assert.equal(rows[1]!.commitLane, 1);
+  assert.deepEqual(edges(rows[1]!.passingEdges), ['0->0']);
+  assert.deepEqual(edges(rows[1]!.incomingEdges), ['1->1']);
+  assert.deepEqual(edges(rows[1]!.outgoingEdges), ['1->1']);
+  assert.equal(rows[1]!.incomingEdges[0]!.color, rows[1]!.commitColor);
+  assert.equal(rows[1]!.outgoingEdges[0]!.color, rows[1]!.commitColor);
+  assert.deepEqual(edges(rows[2]!.incomingEdges), ['0->0', '1->0']);
 }
 
-// ===== Merge into a parent lane already crossing the row =====
-//   head -------- shared
-//          merge -/
-//          |
-//          main
+// Closing a lane compacts every lane to its right instead of leaving holes.
+{
+  const commits = [mk('head', ['side', 'main']), mk('side', []), mk('main', [])];
+  const { rows } = layoutCommits(commits);
+
+  assert.deepEqual(edges(rows[1]!.passingEdges), ['1->0']);
+  assert.equal(rows[2]!.commitLane, 0);
+}
+
+// A parent already active in another lane remains separate until its node row.
 {
   const commits = [
     mk('head', ['shared']),
@@ -86,50 +105,30 @@ function laneOf(rows: { commitLane: number }[]): number[] {
     mk('main', []),
   ];
   const { rows } = layoutCommits(commits);
-  const mergeRow = rows[1]!;
 
-  assert.ok(
-    mergeRow.bottomEdges.some(
-      (e) => e.type === 'branch' && e.fromLane === 1 && e.toLane === 0
-    ),
-    'the merge commit must connect to its existing secondary-parent lane'
-  );
-  assert.ok(
-    mergeRow.bottomEdges.some(
-      (e) => e.type === 'normal' && e.fromLane === 0 && e.toLane === 0
-    ),
-    'the existing parent lane must remain continuous below the merge row'
-  );
+  assert.deepEqual(edges(rows[1]!.passingEdges), ['0->0']);
+  assert.deepEqual(edges(rows[1]!.outgoingEdges), ['1->1', '1->2']);
+  assert.deepEqual(edges(rows[2]!.incomingEdges), ['0->0', '2->0']);
+  assert.deepEqual(edges(rows[2]!.passingEdges), ['1->0']);
 }
 
-// ===== Parent not visible → end current segment =====
+// Missing parents end the visible segment.
 {
-  const commits = [mk('c2', ['c1'])];
-  const { rows } = layoutCommits(commits);
-  assert.equal(rows[0]!.bottomEdges.length, 0,
-    'missing parents must not produce a dangling edge');
+  const { rows } = layoutCommits([mk('c2', ['c1'])]);
+  assert.deepEqual(rows[0]!.outgoingEdges, []);
 }
 
-// ===== Parent beyond the loaded page -> keep its lane open =====
-//   merge -- main-next (next page)
-//      \
-//       side
+// Parents beyond an unfiltered page stay open through the page boundary.
 {
   const commits = [mk('merge', ['main-next', 'side']), mk('side', [])];
   const { rows } = layoutCommits(commits, { preserveUnresolvedParents: true });
 
-  assert.deepEqual(
-    rows[0]!.bottomEdges.map((e) => `${e.type}:${e.fromLane}->${e.toLane}`),
-    ['normal:0->0', 'branch:0->1'],
-    'the first parent lane must continue when its commit may be on the next page'
-  );
-  assert.ok(
-    rows[1]!.bottomEdges.some((e) => e.fromLane === 0 && e.toLane === 0),
-    'an unresolved parent lane must continue to the loaded page boundary'
-  );
+  assert.deepEqual(edges(rows[0]!.outgoingEdges), ['0->0', '0->1']);
+  assert.deepEqual(edges(rows[1]!.passingEdges), ['0->0']);
 }
 
-// ===== Only unfiltered pagination may keep unresolved parents =====
+// Filtering creates real gaps, so unresolved parents are only preserved for
+// an unfiltered paginated list.
 {
   assert.equal(shouldPreserveUnresolvedParents(true, {}), true);
   assert.equal(shouldPreserveUnresolvedParents(true, { branch: '__all__' }), true);
@@ -140,32 +139,26 @@ function laneOf(rows: { commitLane: number }[]): number[] {
   assert.equal(shouldPreserveUnresolvedParents(true, { dateBefore: '2026-12-31' }), false);
 }
 
-// ===== Invisible merge parent should not override visible mainline =====
+// Invisible merge parents do not create phantom lanes.
 {
   const commits = [mk('merge', ['main', 'hidden-side']), mk('main', [])];
-  const { rows } = layoutCommits(commits);
-  assert.deepEqual(
-    rows[0]!.bottomEdges.map((e) => `${e.type}:${e.fromLane}->${e.toLane}`),
-    ['normal:0->0'],
-    'only visible parent relationships should be rendered'
-  );
+  const { rows, maxLanes } = layoutCommits(commits);
+
+  assert.equal(maxLanes, 1);
+  assert.deepEqual(edges(rows[0]!.outgoingEdges), ['0->0']);
 }
 
-// ===== Unrelated histories (multiple roots, different colors, no connection) =====
+// Adjacent unrelated roots stay disconnected and receive independent colors.
 {
   const commits = [mk('r2', ['r1']), mk('r1', []), mk('s1', [])];
   const { rows } = layoutCommits(commits);
 
-  // r1 and s1 are adjacent but unrelated, should be null-safe
-  assert.ok(rows[1]!.commitColor !== rows[2]!.commitColor,
-    'unrelated roots should have different colors');
-  // r1 has no bottomEdge (root), s1 has no topEdge (new root)
-  assert.equal(rows[1]!.bottomEdges.length, 0);
-  assert.equal(rows[2]!.topEdges.length, 0);
+  assert.notEqual(rows[1]!.commitColor, rows[2]!.commitColor);
+  assert.deepEqual(rows[1]!.outgoingEdges, []);
+  assert.deepEqual(rows[2]!.incomingEdges, []);
 }
 
-// ===== Lane recycling + no color inheritance =====
-//   After branch A ends, new branch B reuses lane but gets a new color
+// A later history can reuse a lane position without inheriting its color.
 {
   const commits = [
     mk('merge', ['main', 'side']),
@@ -177,54 +170,64 @@ function laneOf(rows: { commitLane: number }[]): number[] {
   ];
   const { rows } = layoutCommits(commits);
 
-  // side branch ends after merge, its lane can be recycled
-  // other is a different history, should not inherit side's color
-  const others = rows.filter((r, i) => commits[i]!.hash === 'other');
-  const sides = rows.filter((r, i) => commits[i]!.hash === 'side');
-  assert.ok(sides.length > 0 && others.length > 0);
-  assert.notEqual(sides[0]!.commitColor, others[0]!.commitColor);
+  assert.notEqual(rows[1]!.commitColor, rows[4]!.commitColor);
 }
 
-// ===== Octopus merge (3 parents) =====
+// Octopus merges allocate one output edge per parent.
 {
   const commits = [mk('octo', ['a', 'b', 'c']), mk('c', []), mk('b', []), mk('a', [])];
   const { rows, maxLanes } = layoutCommits(commits);
-  assert.equal(rows[0]!.bottomEdges.length, 3);
-  assert.ok(maxLanes >= 3);
+
+  assert.equal(rows[0]!.outgoingEdges.length, 3);
+  assert.equal(rows[0]!.nodeKind, 'merge');
+  assert.equal(maxLanes, 3);
 }
 
-// ===== Filtered gap (middle commit filtered, no connection) =====
-//   c5 → c4 → [c3 filtered] → c2 → c1
+// A filtered middle commit splits the graph into disconnected segments.
 {
   const commits = [mk('c5', ['c4']), mk('c4', ['c3']), mk('c2', ['c1']), mk('c1', [])];
   const { rows } = layoutCommits(commits);
 
-  // c4's parent c3 is not in the list, so this color segment ends at c4
-  const c4Row = rows[1]!;
-  assert.equal(c4Row.bottomEdges.length, 0);
-
-  // c2 should not connect from c4, because there is no lane waiting for c2
-  const c2Row = rows[2]!;
-  assert.equal(c2Row.topEdges.length, 0, 'c2 should not connect to filtered c4 row');
+  assert.deepEqual(rows[1]!.outgoingEdges, []);
+  assert.deepEqual(rows[2]!.incomingEdges, []);
 }
 
-// ===== Color stability (same input → same colors) =====
+// Layout and colors are deterministic.
 {
   const commits = [mk('f', ['e']), mk('e', ['d']), mk('d', [])];
-  const r1 = layoutCommits(commits);
-  const r2 = layoutCommits(commits);
-  for (let i = 0; i < r1.rows.length; i++) {
-    assert.equal(r1.rows[i]!.commitColor, r2.rows[i]!.commitColor);
-    assert.deepEqual(r1.rows[i]!.bottomEdges.map((e) => e.color),
-      r2.rows[i]!.bottomEdges.map((e) => e.color));
+  assert.deepEqual(layoutCommits(commits), layoutCommits(commits));
+}
+
+// Every lane crossing a row boundary has exactly one matching segment on the
+// next row, including its color.
+{
+  const commits = [
+    mk('m2', ['left', 'right']),
+    mk('right', ['base']),
+    mk('left', ['base']),
+    mk('base', ['root']),
+    mk('root', []),
+  ];
+  const { rows } = layoutCommits(commits);
+
+  for (let index = 0; index < rows.length - 1; index++) {
+    const current = rows[index]!;
+    const next = rows[index + 1]!;
+    assert.deepEqual(
+      boundaryEndpoints(
+        [...current.passingEdges, ...current.outgoingEdges],
+        'toLane'
+      ),
+      boundaryEndpoints(
+        [...next.passingEdges, ...next.incomingEdges],
+        'fromLane'
+      )
+    );
   }
 }
 
-// ===== Empty input =====
 {
-  const { rows, maxLanes } = layoutCommits([]);
-  assert.equal(rows.length, 0);
-  assert.equal(maxLanes, 0);
+  assert.deepEqual(layoutCommits([]), { rows: [], maxLanes: 0 });
 }
 
-console.log('✅ commitGraph layout tests passed');
+console.log('commit graph layout tests passed');

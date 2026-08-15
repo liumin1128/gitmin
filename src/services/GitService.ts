@@ -92,7 +92,9 @@ export class GitService {
   async getAuthors(sampleSize: number = 500): Promise<string[]> {
     const output = await this.git.raw([
       'log',
-      '--all',
+      '--branches',
+      '--remotes',
+      '--tags',
       '--pretty=format:%an',
       '-n',
       String(sampleSize),
@@ -120,6 +122,7 @@ export function buildLogArgs(
     'log',
     `--pretty=format:${LOG_FORMAT}`,
     '--decorate=short',
+    '--topo-order',
     '--skip',
     String(pagination.offset),
     '-n',
@@ -128,7 +131,8 @@ export function buildLogArgs(
   if (!filters) return args;
 
   if (filters.branch === '__all__') {
-    args.push('--all');
+    // Match VS Code's graph refs and keep refs/stash out of commit history.
+    args.push('--branches', '--remotes', '--tags');
   } else if (filters.branch && filters.branch.trim()) {
     args.push(filters.branch.trim());
   }

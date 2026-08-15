@@ -1,28 +1,28 @@
 /**
- * Commit DAG layout: greedy lane assignment + color inheritance
- * - First parent inherits current lane color
- * - Other parents create independent color lanes
- * - Unrelated histories use different colors and stay disconnected
- * - Filtered histories only connect visible parents
- * - Incomplete unfiltered pages may keep unresolved parent lanes open
- * Pure function, no side effects
+ * Compact swimlane layout for a topologically ordered commit list.
+ *
+ * The state transition model is adapted from VS Code's SCM history graph:
+ * https://github.com/microsoft/vscode/blob/main/src/vs/workbench/contrib/scm/browser/scmHistory.ts
+ * See THIRD_PARTY_NOTICES.md for its MIT license notice.
  */
 import type { Commit, CommitFilters } from '../../../shared/domain';
 
-export type EdgeType = 'normal' | 'branch' | 'merge';
+export type GraphColor = number | 'current';
+export type GraphNodeKind = 'node' | 'merge' | 'head';
 
 export interface GraphEdge {
   fromLane: number;
   toLane: number;
-  color: number;
-  type: EdgeType;
+  color: GraphColor;
 }
 
 export interface GraphRow {
   commitLane: number;
-  commitColor: number;
-  topEdges: GraphEdge[];
-  bottomEdges: GraphEdge[];
+  commitColor: GraphColor;
+  nodeKind: GraphNodeKind;
+  incomingEdges: GraphEdge[];
+  outgoingEdges: GraphEdge[];
+  passingEdges: GraphEdge[];
   laneCount: number;
 }
 
@@ -33,6 +33,12 @@ export interface GraphLayout {
 
 export interface GraphLayoutOptions {
   preserveUnresolvedParents?: boolean;
+}
+
+interface ActiveLane {
+  key: number;
+  target: string;
+  color: GraphColor;
 }
 
 export function shouldPreserveUnresolvedParents(
@@ -52,158 +58,119 @@ export function layoutCommits(
   commits: Commit[],
   options: GraphLayoutOptions = {}
 ): GraphLayout {
-  const visibleHashes = new Set(commits.map((c) => c.hash));
+  const visibleHashes = new Set(commits.map((commit) => commit.hash));
   const preserveUnresolvedParents = options.preserveUnresolvedParents === true;
-  const activeLanes: (string | null)[] = [];
-  const laneColors: (number | null)[] = [];
   const rows: GraphRow[] = [];
-  let nextColorId = 0;
+  let activeLanes: ActiveLane[] = [];
+  let nextLaneKey = 0;
+  let nextColor = 0;
   let maxLanes = 0;
 
+  const createLane = (target: string, color: GraphColor): ActiveLane => ({
+    key: nextLaneKey++,
+    target,
+    color,
+  });
+
   for (const commit of commits) {
-    const before = activeLanes.slice();
-    const beforeColors = laneColors.slice();
+    const parents = commit.parents.filter(
+      (parent) => visibleHashes.has(parent) || preserveUnresolvedParents
+    );
+    const inputLanes = activeLanes;
+    const incomingLaneIndexes = findTargetLanes(inputLanes, commit.hash);
+    const commitLane = incomingLaneIndexes[0] ?? inputLanes.length;
+    const commitColor = incomingLaneIndexes.length > 0
+      ? inputLanes[commitLane]!.color
+      : isHeadCommit(commit)
+        ? 'current'
+        : nextColor++;
 
-    const waiting: number[] = [];
-    for (let i = 0; i < before.length; i++) {
-      if (before[i] === commit.hash) waiting.push(i);
-    }
+    const outputLanes: ActiveLane[] = [];
+    const parentLanes: ActiveLane[] = [];
+    let firstParentAdded = false;
 
-    let commitLane: number;
-    if (waiting.length > 0) {
-      commitLane = waiting[0]!;
-    } else {
-      commitLane = findFirstEmpty(activeLanes);
-      if (commitLane === activeLanes.length) {
-        activeLanes.push(null);
-        laneColors.push(null);
+    for (const lane of inputLanes) {
+      if (lane.target !== commit.hash) {
+        outputLanes.push(lane);
+        continue;
       }
-      laneColors[commitLane] = nextColorId++;
-    }
-    const commitColor = laneColors[commitLane]!;
 
-    const p0 = commit.parents[0] ?? null;
-    let mergeTargetLane: number | null = null;
-
-    if (p0 && (visibleHashes.has(p0) || preserveUnresolvedParents)) {
-      const existingLane = activeLanes.indexOf(p0);
-      if (existingLane >= 0 && existingLane !== commitLane) {
-        mergeTargetLane = existingLane;
-        activeLanes[commitLane] = null;
-        laneColors[commitLane] = null;
-      } else {
-        activeLanes[commitLane] = p0;
-      }
-    } else {
-      activeLanes[commitLane] = null;
-      laneColors[commitLane] = null;
-    }
-
-    for (let k = 1; k < commit.parents.length; k++) {
-      const p = commit.parents[k]!;
-      if (!visibleHashes.has(p) && !preserveUnresolvedParents) continue;
-      const existing = activeLanes.indexOf(p);
-      if (existing >= 0) continue;
-      const target = findFirstEmpty(activeLanes);
-      if (target === activeLanes.length) {
-        activeLanes.push(p);
-        laneColors.push(nextColorId++);
-      } else {
-        activeLanes[target] = p;
-        laneColors[target] = nextColorId++;
+      if (!firstParentAdded && parents[0]) {
+        const firstParentLane = createLane(parents[0], commitColor);
+        outputLanes.push(firstParentLane);
+        parentLanes.push(firstParentLane);
+        firstParentAdded = true;
       }
     }
 
-    const after = activeLanes.slice();
-    const afterColors = laneColors.slice();
-
-    const topEdges: GraphEdge[] = [];
-    for (let i = 0; i < before.length; i++) {
-      const v = before[i];
-      if (v === null) continue;
-      const color = beforeColors[i]!;
-      if (v === commit.hash) {
-        topEdges.push({ fromLane: i, toLane: commitLane, color, type: 'normal' });
-      } else {
-        topEdges.push({ fromLane: i, toLane: i, color, type: 'normal' });
-      }
+    if (!firstParentAdded && parents[0]) {
+      const firstParentLane = createLane(parents[0], commitColor);
+      outputLanes.push(firstParentLane);
+      parentLanes.push(firstParentLane);
     }
 
-    const bottomEdges: GraphEdge[] = [];
-    const handledLanes = new Set<number>();
-
-    if (
-      p0 &&
-      (visibleHashes.has(p0) || preserveUnresolvedParents) &&
-      mergeTargetLane === null
-    ) {
-      bottomEdges.push({
-        fromLane: commitLane,
-        toLane: commitLane,
-        color: commitColor,
-        type: 'normal',
-      });
-      handledLanes.add(commitLane);
+    for (let index = 1; index < parents.length; index++) {
+      const parentLane = createLane(parents[index]!, nextColor++);
+      outputLanes.push(parentLane);
+      parentLanes.push(parentLane);
     }
 
-    if (mergeTargetLane !== null) {
-      bottomEdges.push({
-        fromLane: commitLane,
-        toLane: mergeTargetLane,
-        color: commitColor,
-        type: 'merge',
-      });
-      handledLanes.add(commitLane);
-    }
+    const outputLaneByKey = new Map(
+      outputLanes.map((lane, index) => [lane.key, index] as const)
+    );
+    const passingEdges = inputLanes.flatMap((lane, fromLane) => {
+      if (lane.target === commit.hash) return [];
+      const toLane = outputLaneByKey.get(lane.key);
+      return toLane === undefined
+        ? []
+        : [{ fromLane, toLane, color: lane.color }];
+    });
+    const incomingEdges = incomingLaneIndexes.map((fromLane) => ({
+      fromLane,
+      toLane: commitLane,
+      color: inputLanes[fromLane]!.color,
+    }));
+    const outgoingEdges = parentLanes.map((lane) => ({
+      fromLane: commitLane,
+      toLane: outputLaneByKey.get(lane.key)!,
+      color: lane.color,
+    }));
 
-    for (let k = 1; k < commit.parents.length; k++) {
-      const p = commit.parents[k]!;
-      const targetLane = after.indexOf(p);
-      if (targetLane >= 0 && !handledLanes.has(targetLane)) {
-        bottomEdges.push({
-          fromLane: commitLane,
-          toLane: targetLane,
-          color: afterColors[targetLane]!,
-          type: 'branch',
-        });
-        if (before[targetLane] == null) {
-          handledLanes.add(targetLane);
-        }
-      }
-    }
-
-    for (let j = 0; j < after.length; j++) {
-      if (after[j] === null || handledLanes.has(j)) continue;
-      bottomEdges.push({
-        fromLane: j,
-        toLane: j,
-        color: afterColors[j]!,
-        type: 'normal',
-      });
-    }
-
-    const laneCount = Math.max(trimmedLength(after, before), commitLane + 1);
-    rows.push({ commitLane, commitColor, topEdges, bottomEdges, laneCount });
-    if (laneCount > maxLanes) maxLanes = laneCount;
+    const laneCount = Math.max(
+      inputLanes.length,
+      outputLanes.length,
+      commitLane + 1
+    );
+    rows.push({
+      commitLane,
+      commitColor,
+      nodeKind: isHeadCommit(commit)
+        ? 'head'
+        : commit.parents.length > 1
+          ? 'merge'
+          : 'node',
+      incomingEdges,
+      outgoingEdges,
+      passingEdges,
+      laneCount,
+    });
+    maxLanes = Math.max(maxLanes, laneCount);
+    activeLanes = outputLanes;
   }
 
   return { rows, maxLanes };
 }
 
-function findFirstEmpty(lanes: (string | null)[]): number {
-  for (let i = 0; i < lanes.length; i++) {
-    if (lanes[i] === null) return i;
+function findTargetLanes(lanes: ActiveLane[], target: string): number[] {
+  const indexes: number[] = [];
+  for (let index = 0; index < lanes.length; index++) {
+    if (lanes[index]!.target === target) indexes.push(index);
   }
-  return lanes.length;
+  return indexes;
 }
 
-function trimmedLength(after: (string | null)[], before: (string | null)[]): number {
-  let n = 0;
-  for (let i = before.length - 1; i >= 0; i--) {
-    if (before[i] !== null) { n = i + 1; break; }
-  }
-  for (let i = after.length - 1; i >= 0; i--) {
-    if (after[i] !== null) { if (i + 1 > n) n = i + 1; break; }
-  }
-  return n;
+function isHeadCommit(commit: Commit): boolean {
+  return (commit.refs ?? []).some(
+    (ref) => ref === 'HEAD' || ref.startsWith('HEAD -> ')
+  );
 }

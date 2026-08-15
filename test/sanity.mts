@@ -189,13 +189,13 @@ import { getAdjacentFileChange } from '../src/utils/diffNavigation.ts';
     ]);
     assert.equal(maxLanes, 1);
     assert.deepEqual(rows.map((r) => r.commitLane), [0, 0, 0]);
-    // Middle commit should have one top edge + one bottom edge
-    assert.equal(rows[1]!.topEdges.length, 1);
-    assert.equal(rows[1]!.bottomEdges.length, 1);
-    // Root commit has no parent → no bottom edge
-    assert.equal(rows[2]!.bottomEdges.length, 0);
-    // Tip commit has no top edge (activeLanes was empty before)
-    assert.equal(rows[0]!.topEdges.length, 0);
+    // Middle commit should have one incoming edge + one outgoing edge
+    assert.equal(rows[1]!.incomingEdges.length, 1);
+    assert.equal(rows[1]!.outgoingEdges.length, 1);
+    // Root commit has no parent -> no outgoing edge
+    assert.equal(rows[2]!.outgoingEdges.length, 0);
+    // Tip commit has no incoming edge
+    assert.equal(rows[0]!.incomingEdges.length, 0);
   }
 
   // Fork + merge: main (c → a) and side (c → b → a), c is merge
@@ -212,15 +212,19 @@ import { getAdjacentFileChange } from '../src/utils/diffNavigation.ts';
     ]);
     assert.equal(maxLanes, 2);
     assert.equal(rows[0]!.commitLane, 0);
-    // Merge row bottomEdges should include lane 0 → 0 and 0 → 1 (branch out to side)
-    const rowCEdges = rows[0]!.bottomEdges.map((e) => `${e.fromLane}->${e.toLane}`).sort();
+    // Merge row has one outgoing edge for each parent.
+    const rowCEdges = rows[0]!.outgoingEdges.map((e) => `${e.fromLane}->${e.toLane}`).sort();
     assert.deepEqual(rowCEdges, ['0->0', '0->1']);
     // b is on lane 1
     assert.equal(rows[1]!.commitLane, 1);
-    // b merges into a: a is already on lane 0, so b's parent[0]=a reuses lane 0;
-    // here lane 1 should disappear after b (after=[a, null])
-    // b row bottomEdges should include lane 0 straight down (a passes through) but not lane 1 out
-    // a is on lane 0
+    assert.deepEqual(
+      rows[1]!.passingEdges.map((e) => `${e.fromLane}->${e.toLane}`),
+      ['0->0']
+    );
+    assert.deepEqual(
+      rows[2]!.incomingEdges.map((e) => `${e.fromLane}->${e.toLane}`),
+      ['0->0', '1->0']
+    );
     assert.equal(rows[2]!.commitLane, 0);
   }
 
@@ -231,7 +235,7 @@ import { getAdjacentFileChange } from '../src/utils/diffNavigation.ts';
     ]);
     assert.equal(maxLanes, 1);
     // b's parent a is not in the list, don't draw edges that can't connect to visible commits
-    assert.equal(rows[1]!.bottomEdges.length, 0);
+    assert.equal(rows[1]!.outgoingEdges.length, 0);
   }
 
   // Empty input
