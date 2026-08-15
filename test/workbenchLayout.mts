@@ -17,6 +17,13 @@ assert.deepEqual(Object.keys(DEFAULT_WORKBENCH_LAYOUT.views), [
   'files',
   'details',
 ]);
+assert.deepEqual(
+  Object.entries(DEFAULT_WORKBENCH_LAYOUT.views)
+    .filter(([, view]) => view.visible)
+    .map(([id]) => id),
+  ['commits', 'files'],
+  'only Commits and Changed Files should be visible by default'
+);
 assert.ok(Object.values(DEFAULT_WORKBENCH_LAYOUT.heights).every((height) => height === null));
 
 const version3 = {

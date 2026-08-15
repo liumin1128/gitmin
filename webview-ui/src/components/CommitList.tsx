@@ -24,7 +24,7 @@ export const DEFAULT_COLUMNS: ColumnFlags = {
   graph: true,
   hash: false,
   author: true,
-  time: true,
+  time: false,
   tags: false,
 };
 

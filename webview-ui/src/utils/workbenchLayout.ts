@@ -30,12 +30,12 @@ export const DEFAULT_WORKBENCH_LAYOUT: WorkbenchLayoutState = {
     details: null,
   },
   views: {
-    repositories: { visible: true, collapsed: false },
-    changes: { visible: true, collapsed: false },
+    repositories: { visible: false, collapsed: false },
+    changes: { visible: false, collapsed: false },
     commits: { visible: true, collapsed: false },
-    stashes: { visible: true, collapsed: false },
+    stashes: { visible: false, collapsed: false },
     files: { visible: true, collapsed: false },
-    details: { visible: true, collapsed: false },
+    details: { visible: false, collapsed: false },
   },
 };
 

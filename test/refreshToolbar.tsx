@@ -16,7 +16,11 @@ const props = {
 const html = renderToStaticMarkup(<FilterBar {...props} />);
 const refreshIndex = html.indexOf('aria-label="Refresh commit list"');
 
-assert.equal(DEFAULT_COLUMNS.tags, false, 'tag column should be hidden by default');
+assert.deepEqual(
+  DEFAULT_COLUMNS,
+  { graph: true, hash: false, author: true, time: false, tags: false },
+  'only graph and author columns should be visible by default'
+);
 assert.notEqual(refreshIndex, -1, 'filter toolbar should render refresh action');
 assert.doesNotMatch(html, /title="Display columns"/, 'column settings are optional');
 assert.match(html, /codicon-search/, 'search should use the VS Code search icon');
