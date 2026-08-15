@@ -71,9 +71,7 @@ export function calculatePanelHeights(
   );
   const desiredTotal = expanded.reduce((total, panel) => total + panel.desiredHeight, 0);
   if (desiredTotal <= capacity) {
-    expanded.forEach((panel) => {
-      heights[panel.id] = Math.round(panel.desiredHeight);
-    });
+    Object.assign(heights, fillLastPanel(expanded, capacity));
     return heights;
   }
 
@@ -90,6 +88,22 @@ export function calculatePanelHeights(
 
   Object.assign(heights, fitPanels(expanded, capacity, minimum));
   return heights;
+}
+
+function fillLastPanel(
+  panels: readonly ExpandedPanel[],
+  capacity: number
+): Record<string, number> {
+  let consumed = 0;
+  return Object.fromEntries(
+    panels.map((panel, index) => {
+      const height = index === panels.length - 1
+        ? Math.max(PANEL_HEADER_HEIGHT, Math.round(capacity - consumed))
+        : Math.round(panel.desiredHeight);
+      consumed += height;
+      return [panel.id, height];
+    })
+  );
 }
 
 function fitPanels(

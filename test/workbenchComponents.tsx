@@ -99,7 +99,7 @@ assert.match(html, />Repositories</);
 assert.match(html, />Commit Details</);
 assert.match(html, /repository list/);
 assert.doesNotMatch(html, /hidden changes/);
-assert.match(html, /role="separator"/);
+assert.equal((html.match(/role="separator"/g) ?? []).length, 4);
 assert.match(html, /aria-orientation="horizontal"/);
 assert.match(html, /title="Manage views"/);
 
@@ -111,7 +111,7 @@ const natural = calculatePanelHeights(
   ],
   500
 );
-assert.deepEqual(natural, { repositories: 74, changes: PANEL_HEADER_HEIGHT, commits: 120 });
+assert.deepEqual(natural, { repositories: 74, changes: PANEL_HEADER_HEIGHT, commits: 400 });
 
 const manual = calculatePanelHeights(
   [
@@ -121,7 +121,7 @@ const manual = calculatePanelHeights(
   ],
   400
 );
-assert.deepEqual(manual, { repositories: 180, changes: PANEL_HEADER_HEIGHT, commits: 80 });
+assert.deepEqual(manual, { repositories: 180, changes: PANEL_HEADER_HEIGHT, commits: 194 });
 
 const fitted = calculatePanelHeights(
   [

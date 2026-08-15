@@ -50,6 +50,7 @@ export function WorkbenchPanelStack({
   const [containerHeight, setContainerHeight] = useState(0);
   const [naturalHeights, setNaturalHeights] = useState<Partial<WorkbenchPanelHeights>>({});
   const visiblePanels = useMemo(() => panels.filter((panel) => panel.visible), [panels]);
+  const fillPanelId = [...visiblePanels].reverse().find((panel) => !panel.collapsed)?.id;
   const sizingInputs = useMemo(
     () => visiblePanels.map((panel) => ({
       id: panel.id,
@@ -100,6 +101,7 @@ export function WorkbenchPanelStack({
             containerHeight
           )}
           automaticHeight={heights[panel.id] === null}
+          resizable={panel.id !== fillPanelId}
           onCollapsedChange={onCollapsedChange}
           onHeightChange={onHeightChange}
           onNaturalHeightChange={handleNaturalHeightChange}
@@ -114,6 +116,7 @@ interface PanelProps {
   height: number;
   maximumHeight: number;
   automaticHeight: boolean;
+  resizable: boolean;
   onCollapsedChange: Props['onCollapsedChange'];
   onHeightChange: Props['onHeightChange'];
   onNaturalHeightChange: (id: WorkbenchViewId, height: number) => void;
@@ -124,6 +127,7 @@ function WorkbenchPanel({
   height,
   maximumHeight,
   automaticHeight,
+  resizable,
   onCollapsedChange,
   onHeightChange,
   onNaturalHeightChange,
@@ -257,20 +261,22 @@ function WorkbenchPanel({
           <div ref={contentRef} id={contentId} className="workbench-panel-content">
             {panel.content}
           </div>
-          <div
-            className="workbench-panel-sash"
-            role="separator"
-            aria-label={`Resize ${panel.title} panel`}
-            aria-orientation="horizontal"
-            aria-valuemin={Math.round(minimumHeight)}
-            aria-valuemax={Math.round(maximumHeight)}
-            aria-valuenow={Math.round(height)}
-            title={`Resize ${panel.title} panel; double-click to fit content`}
-            tabIndex={0}
-            onPointerDown={startDragging}
-            onDoubleClick={() => onHeightChange(panel.id, null)}
-            onKeyDown={handleSashKeyDown}
-          />
+          {resizable && (
+            <div
+              className="workbench-panel-sash"
+              role="separator"
+              aria-label={`Resize ${panel.title} panel`}
+              aria-orientation="horizontal"
+              aria-valuemin={Math.round(minimumHeight)}
+              aria-valuemax={Math.round(maximumHeight)}
+              aria-valuenow={Math.round(height)}
+              title={`Resize ${panel.title} panel; double-click to fit content`}
+              tabIndex={0}
+              onPointerDown={startDragging}
+              onDoubleClick={() => onHeightChange(panel.id, null)}
+              onKeyDown={handleSashKeyDown}
+            />
+          )}
         </>
       )}
     </section>

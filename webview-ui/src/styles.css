@@ -1037,6 +1037,9 @@ body.vscode-high-contrast-light .filter-form-row > input {
   padding: 10px 12px 14px;
   border-bottom: 1px solid var(--vscode-panel-border);
 }
+.commit-detail-item:last-child {
+  border-bottom: 0;
+}
 .commit-detail-header {
   display: flex;
   align-items: baseline;
