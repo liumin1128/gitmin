@@ -1,8 +1,7 @@
 /**
  * Top-level container:
- * - Notifies extension on mount (webview/ready)
- * - Subscribes to all extension messages, manages repo/commits/diff/action state
- * - Composes useMultiSelect + useContextMenu
+ * - Owns cross-panel state (errors, busy, squash modal, context menu)
+ * - Domain data lives in dedicated hooks (useCommits/useWorkingTree/useStashes/...)
  * - Passes pure data and callbacks down to UI components
  */
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
@@ -15,6 +14,7 @@ import { useSelectionDetails } from './hooks/useSelectionDetails';
 import { useStashes } from './hooks/useStashes';
 import { useWorkingTree } from './hooks/useWorkingTree';
 import { useRepositories } from './hooks/useRepositories';
+import { useCommits } from './hooks/useCommits';
 import { FilterBar } from './components/FilterBar';
 import { CommitList, DEFAULT_COLUMNS, type ColumnFlags } from './components/CommitList';
 import { ColumnsMenu } from './components/ColumnsMenu';
@@ -27,165 +27,18 @@ import { ChangesPanel } from './components/ChangesPanel';
 import { StashList } from './components/StashList';
 import { WorkbenchToolbar } from './components/WorkbenchToolbar';
 import { RepositoryList } from './components/RepositoryList';
+import { AppStatusBars } from './components/AppStatusBars';
+import { IconButton } from './components/common/IconButton';
 import { shouldPreserveUnresolvedParents } from './utils/commitGraph';
 import { commitSelection, stashSelection } from './utils/detailSelection';
-import { COMMIT_PAGE_SIZE, type CommitPage } from '../../shared/commitPagination';
-import type {
-  Commit,
-  CommitFilters,
-  FilterOptions,
-  StashEntry,
-} from '../../shared/domain';
-import type { WebviewMessage } from '../../shared/messages';
+import type { CommitFilters, FilterOptions, StashEntry } from '../../shared/domain';
 import type { GitAction } from '../../shared/actions';
 import { t } from '../../shared/i18n';
 import { workingTreeChangeCount } from '../../shared/workingTree';
 
-type CommitPageRequest = Extract<WebviewMessage, { type: 'commits/refresh' }>;
-
-interface CommitPaginationRefs {
-  requestIdRef: { current: number };
-  nextOffsetRef: { current: number };
-  loadingMoreRef: { current: boolean };
-  pendingOffsetRef: { current: number | null };
-}
-
-interface InitialCommitLoadGate {
-  settledRef: { current: boolean };
-  queuedFiltersRef: { current: CommitFilters | null };
-}
-
-type PostCommitPageRequest = (request: CommitPageRequest) => void;
-
-export function mergeCommitPage(commits: Commit[], page: CommitPage): Commit[] {
-  return page.offset === 0 ? page.commits : [...commits, ...page.commits];
-}
-
-function startCommitPageSession(pagination: CommitPaginationRefs): number {
-  pagination.requestIdRef.current += 1;
-  pagination.nextOffsetRef.current = 0;
-  pagination.loadingMoreRef.current = true;
-  pagination.pendingOffsetRef.current = 0;
-  return pagination.requestIdRef.current;
-}
-
-export function requestCommitPage(
-  requestId: number,
-  offset: number,
-  filters: CommitFilters,
-  post: PostCommitPageRequest
-): void {
-  post({ type: 'commits/refresh', requestId, offset, limit: COMMIT_PAGE_SIZE, filters });
-}
-
-export function resetCommitPage(
-  pagination: CommitPaginationRefs,
-  filters: CommitFilters,
-  post: PostCommitPageRequest,
-  beforeRequest: () => void = () => undefined
-): number {
-  const requestId = startCommitPageSession(pagination);
-  beforeRequest();
-  requestCommitPage(requestId, 0, filters, post);
-  return requestId;
-}
-
-export function loadNextCommitPage(
-  pagination: CommitPaginationRefs,
-  hasMore: boolean,
-  filters: CommitFilters,
-  post: PostCommitPageRequest
-): boolean {
-  if (pagination.loadingMoreRef.current || !hasMore) return false;
-
-  pagination.loadingMoreRef.current = true;
-  pagination.pendingOffsetRef.current = pagination.nextOffsetRef.current;
-  requestCommitPage(
-    pagination.requestIdRef.current,
-    pagination.nextOffsetRef.current,
-    filters,
-    post
-  );
-  return true;
-}
-
-export function completeCommitPage(pagination: CommitPaginationRefs, page: CommitPage): boolean {
-  if (
-    page.requestId !== pagination.requestIdRef.current ||
-    page.offset !== pagination.pendingOffsetRef.current
-  ) {
-    return false;
-  }
-
-  pagination.nextOffsetRef.current = page.nextOffset;
-  pagination.pendingOffsetRef.current = null;
-  pagination.loadingMoreRef.current = false;
-  return true;
-}
-
-export function failCommitPage(
-  pagination: CommitPaginationRefs,
-  requestId: number
-): number | null {
-  if (requestId !== pagination.requestIdRef.current || pagination.pendingOffsetRef.current === null) {
-    return null;
-  }
-
-  const failedOffset = pagination.pendingOffsetRef.current;
-  pagination.pendingOffsetRef.current = null;
-  pagination.loadingMoreRef.current = false;
-  return failedOffset;
-}
-
-export function retryFailedCommitPage(
-  pagination: CommitPaginationRefs,
-  failedOffsetRef: { current: number | null },
-  filters: CommitFilters,
-  post: PostCommitPageRequest
-): boolean {
-  const failedOffset = failedOffsetRef.current;
-  if (pagination.loadingMoreRef.current || failedOffset === null) return false;
-
-  pagination.loadingMoreRef.current = true;
-  pagination.pendingOffsetRef.current = failedOffset;
-  failedOffsetRef.current = null;
-  requestCommitPage(pagination.requestIdRef.current, failedOffset, filters, post);
-  return true;
-}
-
-export function queueCommitReset(
-  gate: InitialCommitLoadGate,
-  filters: CommitFilters,
-  dispatchReset: (filters: CommitFilters) => void
-): boolean {
-  if (!gate.settledRef.current) {
-    gate.queuedFiltersRef.current = filters;
-    return false;
-  }
-
-  dispatchReset(filters);
-  return true;
-}
-
-export function settleInitialCommitLoad(
-  gate: InitialCommitLoadGate,
-  dispatchReset: (filters: CommitFilters) => void
-): void {
-  if (gate.settledRef.current) return;
-
-  gate.settledRef.current = true;
-  const filters = gate.queuedFiltersRef.current;
-  gate.queuedFiltersRef.current = null;
-  if (filters) dispatchReset(filters);
-}
-
 export function App() {
   const [repoError, setRepoError] = useState<string | null>(null);
-  const [commits, setCommits] = useState<Commit[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [commitPageError, setCommitPageError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [squashHashes, setSquashHashes] = useState<string[] | null>(null);
   const [selectedStash, setSelectedStash] = useState<StashEntry | null>(null);
@@ -205,29 +58,28 @@ export function App() {
   } = useWorkbenchLayout();
   const filtersReadyRef = useRef(false);
   const restoringFiltersRef = useRef(false);
-  const commitRequestIdRef = useRef(0);
-  const nextCommitOffsetRef = useRef(0);
-  const loadingMoreRef = useRef(false);
-  const pendingCommitOffsetRef = useRef<number | null>(null);
-  const failedCommitOffsetRef = useRef<number | null>(null);
-  const initialCommitLoadSettledRef = useRef(false);
-  const queuedCommitResetFiltersRef = useRef<CommitFilters | null>(null);
-  const dispatchResetRef = useRef<(filters: CommitFilters) => void>(() => undefined);
   const refreshChangesRef = useRef<() => void>(() => undefined);
   const refreshStashesRef = useRef<() => void>(() => undefined);
   const clearStashSelectionRef = useRef<() => void>(() => undefined);
+  const clearCommitSelectionRef = useRef<() => void>(() => undefined);
   const filtersRef = useRef(filters);
   filtersRef.current = filters;
-  const pagination = {
-    requestIdRef: commitRequestIdRef,
-    nextOffsetRef: nextCommitOffsetRef,
-    loadingMoreRef,
-    pendingOffsetRef: pendingCommitOffsetRef,
-  };
-  const initialLoadGate = {
-    settledRef: initialCommitLoadSettledRef,
-    queuedFiltersRef: queuedCommitResetFiltersRef,
-  };
+  const clearError = useCallback(() => setError(null), []);
+
+  const {
+    commits,
+    hasMore,
+    loadingMore,
+    commitPageError,
+    resetCommits,
+    loadNextPage: loadMoreCommits,
+    retryFailedPage: retryFailedCommitPageRequest,
+    handleRepositorySelection,
+  } = useCommits({
+    filters,
+    clearSelectionRef: clearCommitSelectionRef,
+    onLoaded: clearError,
+  });
 
   // === Message subscriptions ===
   useIpcListener('repo/info', () => {
@@ -235,26 +87,6 @@ export function App() {
   });
   useIpcListener('repo/none', (m) => {
     setRepoError(m.reason);
-  });
-  useIpcListener('commits/loaded', (m) => {
-    if (!completeCommitPage(pagination, m.page)) return;
-
-    setCommits((current) => mergeCommitPage(current, m.page));
-    setHasMore(m.page.hasMore);
-    setLoadingMore(false);
-    failedCommitOffsetRef.current = null;
-    setCommitPageError(null);
-    setError(null);
-    settleInitialCommitLoad(initialLoadGate, (filters) => dispatchResetRef.current(filters));
-  });
-  useIpcListener('commits/error', (m) => {
-    const failedOffset = failCommitPage(pagination, m.requestId);
-    if (failedOffset === null) return;
-
-    failedCommitOffsetRef.current = failedOffset;
-    setLoadingMore(false);
-    setCommitPageError(m.error);
-    settleInitialCommitLoad(initialLoadGate, (filters) => dispatchResetRef.current(filters));
   });
   useIpcListener('filters/restored', (m) => {
     restoringFiltersRef.current = true;
@@ -264,14 +96,6 @@ export function App() {
   useIpcListener('workbenchViews/menuToggle', () => {
     setViewMenuOpen((open) => !open);
   });
-  // === Lifecycle: notify on mount ===
-  useEffect(() => {
-    const requestId = startCommitPageSession(pagination);
-    postMessage({ type: 'webview/ready', requestId, limit: COMMIT_PAGE_SIZE, filters });
-    // Restored filters are only used for the initial handshake; subsequent
-    // filter changes trigger refresh via the useEffect below.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // === Multi-select ===
   const commitHashes = useMemo(() => commits.map((c) => c.hash), [commits]);
@@ -282,28 +106,7 @@ export function App() {
     selectOnly,
     clear,
   } = useMultiSelect(commitHashes);
-
-  const dispatchResetCommits = useCallback(
-    (nextFilters: CommitFilters) => {
-      clear();
-      resetCommitPage(pagination, nextFilters, postMessage, () => {
-        setCommits([]);
-        setHasMore(true);
-        setLoadingMore(false);
-        failedCommitOffsetRef.current = null;
-        setCommitPageError(null);
-      });
-    },
-    [clear]
-  );
-  dispatchResetRef.current = dispatchResetCommits;
-
-  const resetCommits = useCallback(
-    (nextFilters: CommitFilters) => {
-      queueCommitReset(initialLoadGate, nextFilters, dispatchResetCommits);
-    },
-    [dispatchResetCommits]
-  );
+  clearCommitSelectionRef.current = clear;
 
   const refreshCommitsFromWorkspace = useCallback(() => {
     resetCommits(filtersRef.current);
@@ -342,22 +145,7 @@ export function App() {
     [selectCommit]
   );
 
-  const loadMoreCommits = useCallback(() => {
-    if (loadNextCommitPage(pagination, hasMore, filtersRef.current, postMessage)) {
-      setLoadingMore(true);
-      failedCommitOffsetRef.current = null;
-      setCommitPageError(null);
-    }
-  }, [hasMore]);
-
-  const retryFailedCommitPageRequest = useCallback(() => {
-    if (retryFailedCommitPage(pagination, failedCommitOffsetRef, filtersRef.current, postMessage)) {
-      setLoadingMore(true);
-      setCommitPageError(null);
-    }
-  }, []);
-
-  // === Filter changes → re-fetch commits (skip initial mount, handled by webview/ready) ===
+  // === Filter changes → re-fetch commits (initial load is handled by useCommits) ===
   useEffect(() => {
     if (!filtersReadyRef.current) {
       filtersReadyRef.current = true;
@@ -446,29 +234,16 @@ export function App() {
   }, []);
 
   useIpcListener('repositories/selectionChanged', ({ rootPath }) => {
-    const requestId = startCommitPageSession(pagination);
     clear();
     clearStashSelectionRef.current();
     menu.close();
-    setCommits([]);
     setSelectedStash(null);
-    setHasMore(true);
-    setLoadingMore(Boolean(rootPath));
-    setCommitPageError(null);
     setError(null);
     setBusy(false);
     setSquashHashes(null);
     setFilterOptions({ branches: [], authors: [] });
-    failedCommitOffsetRef.current = null;
-    initialCommitLoadSettledRef.current = false;
-    queuedCommitResetFiltersRef.current = null;
     setRepoError(rootPath ? null : t('repository.none'));
-    if (rootPath) {
-      postMessage({ type: 'repositories/load', requestId, limit: COMMIT_PAGE_SIZE });
-    } else {
-      loadingMoreRef.current = false;
-      pendingCommitOffsetRef.current = null;
-    }
+    handleRepositorySelection(rootPath);
   });
 
   const handleRefresh = useCallback(() => {
@@ -484,13 +259,11 @@ export function App() {
         menuOpen={viewMenuOpen}
         onMenuOpenChange={setViewMenuOpen}
       />
-      {repoError && (
-        <div className="error-bar">{repoError}</div>
-      )}
-      {!repoError && (commitPageError ?? error) && (
-        <div className="error-bar">{commitPageError ?? error}</div>
-      )}
-      {!repoError && busy && <div className="busy-bar">{t('common.executing')}</div>}
+      <AppStatusBars
+        repoError={repoError}
+        error={commitPageError ?? error}
+        busy={busy}
+      />
       <WorkbenchPanelStack
         heights={layout.heights}
         onCollapsedChange={setCollapsed}
@@ -548,15 +321,11 @@ export function App() {
             visible: layout.views.commits.visible,
             collapsed: layout.views.commits.collapsed,
             actions: commitPageError ? (
-              <button
-                type="button"
-                className="toolbar-icon-button"
+              <IconButton
+                icon="refresh"
                 title={t('panel.retryCommits')}
-                aria-label={t('panel.retryCommits')}
                 onClick={retryFailedCommitPageRequest}
-              >
-                <span className="codicon codicon-refresh" aria-hidden="true" />
-              </button>
+              />
             ) : undefined,
             content: (
               <div className="commits-panel-content" data-panel-natural-height="children">

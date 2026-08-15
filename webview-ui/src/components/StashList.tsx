@@ -1,6 +1,7 @@
 import type { StashEntry } from '../../../shared/domain';
 import { t } from '../../../shared/i18n';
 import { firstLine, relativeTime } from '../utils/formatters';
+import { IconButton } from './common/IconButton';
 
 interface Props {
   entries: StashEntry[];
@@ -28,19 +29,19 @@ export function StashList({
     <div className="stashes-panel">
       <div className="stash-toolbar">
         <span className="stash-toolbar-spacer" />
-        <StashActionButton
+        <IconButton
           icon="refresh"
           title={t('stash.refresh')}
           disabled={busy}
           onClick={onRefresh}
         />
-        <StashActionButton
+        <IconButton
           icon="run"
           title={t('stash.applySelected')}
           disabled={busy || !hasSelection}
           onClick={onApply}
         />
-        <StashActionButton
+        <IconButton
           icon="trash"
           title={t('stash.deleteSelected')}
           disabled={busy || !hasSelection}
@@ -73,27 +74,5 @@ export function StashList({
         </div>
       )}
     </div>
-  );
-}
-
-interface StashActionButtonProps {
-  icon: string;
-  title: string;
-  disabled: boolean;
-  onClick: () => void;
-}
-
-function StashActionButton({ icon, title, disabled, onClick }: StashActionButtonProps) {
-  return (
-    <button
-      type="button"
-      className="toolbar-icon-button"
-      title={title}
-      aria-label={title}
-      disabled={disabled}
-      onClick={onClick}
-    >
-      <span className={`codicon codicon-${icon}`} aria-hidden="true" />
-    </button>
   );
 }

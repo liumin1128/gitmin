@@ -8,6 +8,7 @@ import {
   type WorkingTreeAction,
 } from '../../../shared/workingTree';
 import { t } from '../../../shared/i18n';
+import { IconButton } from './common/IconButton';
 
 interface Props {
   title: string;
@@ -73,12 +74,14 @@ export function ChangeGroup({
           icon={primaryIcon}
           title={primaryTitle}
           disabled={busy}
+          className="change-action-button"
           onClick={() => onAction(primaryAction, group, allPaths)}
         />
         <IconButton
           icon="discard"
           title={t('changes.discardAll')}
           disabled={busy}
+          className="change-action-button"
           onClick={() => onAction('discard', group, allPaths)}
         />
       </header>
@@ -111,12 +114,14 @@ export function ChangeGroup({
                       ? t('changes.unstageSelected')
                       : t('changes.stageSelected')}
                     disabled={busy}
+                    className="change-action-button"
                     onClick={() => onAction(primaryAction, group, actionPaths)}
                   />
                   <IconButton
                     icon="discard"
                     title={t('changes.discardSelected')}
                     disabled={busy}
+                    className="change-action-button"
                     onClick={() => onAction('discard', group, actionPaths)}
                   />
                 </span>
@@ -126,27 +131,5 @@ export function ChangeGroup({
         </div>
       )}
     </section>
-  );
-}
-
-interface IconButtonProps {
-  icon: string;
-  title: string;
-  disabled: boolean;
-  onClick: () => void;
-}
-
-function IconButton({ icon, title, disabled, onClick }: IconButtonProps) {
-  return (
-    <button
-      type="button"
-      className="toolbar-icon-button change-action-button"
-      title={title}
-      aria-label={title}
-      disabled={disabled}
-      onClick={onClick}
-    >
-      <span className={`codicon codicon-${icon}`} aria-hidden="true" />
-    </button>
   );
 }

@@ -10,7 +10,7 @@ import {
   resetCommitPage,
   retryFailedCommitPage,
   settleInitialCommitLoad,
-} from '../webview-ui/src/App';
+} from '../webview-ui/src/utils/commitPaging';
 
 const commits = [{ hash: 'one' }, { hash: 'two' }] as Commit[];
 const firstPage: CommitPage = {

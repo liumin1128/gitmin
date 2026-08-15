@@ -65,7 +65,7 @@ export function SquashModal({ commits, onConfirm, onCancel }: Props) {
           rows={Math.min(commits.length + 2, 10)}
         />
         <div className="modal-actions">
-          <button type="button" className="btn" onClick={onCancel}>
+          <button type="button" className="btn-secondary" onClick={onCancel}>
             {t('common.cancel')}
           </button>
           <button

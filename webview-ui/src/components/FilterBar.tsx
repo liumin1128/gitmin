@@ -247,10 +247,10 @@ function DatePanel({ after, before, onApply }: DatePanelProps) {
       </label>
       <div className="filter-form-actions">
         <button type="button" className="btn-secondary" onClick={() => onApply('', '')}>
-            {t('common.clear')}
-          </button>
-          <button type="button" className="btn" onClick={() => onApply(a, b)}>
-            {t('common.apply')}
+          {t('common.clear')}
+        </button>
+        <button type="button" className="btn" onClick={() => onApply(a, b)}>
+          {t('common.apply')}
         </button>
       </div>
     </div>

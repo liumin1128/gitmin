@@ -9,6 +9,7 @@ import {
 } from '../../../shared/workingTree';
 import { t } from '../../../shared/i18n';
 import { ChangeGroup } from './ChangeGroup';
+import { IconButton } from './common/IconButton';
 
 interface Props {
   snapshot: WorkingTreeSnapshot;
@@ -76,51 +77,29 @@ export function ChangesPanel({
           onChange={handleMessageChange}
         />
         <div className="change-message-controls">
-          <button
-            type="button"
-            className="toolbar-icon-button"
+          <IconButton
+            icon={generating ? 'loading' : 'sparkle'}
+            spin={generating}
             title={
-              generating
-                ? t('changes.generatingMessage')
-                : t('changes.generateMessage')
-            }
-            aria-label={
               generating
                 ? t('changes.generatingMessage')
                 : t('changes.generateMessage')
             }
             disabled={locked || !generateEnabled}
             onClick={onGenerateCommitMessage}
-          >
-            <span
-              className={
-                generating
-                  ? 'codicon codicon-loading codicon-modifier-spin'
-                  : 'codicon codicon-sparkle'
-              }
-              aria-hidden="true"
-            />
-          </button>
-          <button
-            type="button"
-            className="toolbar-icon-button"
+          />
+          <IconButton
+            icon="archive"
             title={t('changes.stash')}
-            aria-label={t('changes.stash')}
             disabled={locked || !stashEnabled}
             onClick={onStash}
-          >
-            <span className="codicon codicon-archive" aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            className="toolbar-icon-button"
+          />
+          <IconButton
+            icon="refresh"
             title={t('changes.refresh')}
-            aria-label={t('changes.refresh')}
             disabled={locked}
             onClick={onRefresh}
-          >
-            <span className="codicon codicon-refresh" aria-hidden="true" />
-          </button>
+          />
           <span className="change-message-controls-spacer" />
           <button
             type="button"
