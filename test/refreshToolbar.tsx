@@ -67,6 +67,16 @@ assert.match(
 );
 assert.match(
   styles,
+  /\.checked-menu\s+\.filter-dropdown-panel\s*\{[^}]*min-width:\s*120px[^}]*width:\s*max-content[^}]*border-radius:\s*var\(--vscode-cornerRadius-large,\s*8px\)/s,
+  'checked menus should use the compact rounded VS Code menu surface'
+);
+assert.match(
+  styles,
+  /\.checked-menu-item\s*\{[^}]*grid-template-columns:\s*16px\s+minmax\(0,\s*1fr\)[^}]*border-radius:\s*var\(--vscode-cornerRadius-small,\s*4px\)/s,
+  'checked menu items should reserve a fixed indicator gutter and rounded selection row'
+);
+assert.match(
+  styles,
   /body\.vscode-dark[^}]*\.filter-form-row\s*>\s*input[^}]*\{[^}]*color-scheme:\s*dark/s,
   'date inputs should use a dark native calendar icon in dark themes'
 );
@@ -125,6 +135,19 @@ assert.ok(
 );
 
 const appSource = readFileSync('webview-ui/src/App.tsx', 'utf8');
+const columnsMenuSource = readFileSync(
+  'webview-ui/src/components/ColumnsMenu.tsx',
+  'utf8'
+);
+const viewVisibilityMenuSource = readFileSync(
+  'webview-ui/src/components/ViewVisibilityMenu.tsx',
+  'utf8'
+);
+assert.match(columnsMenuSource, /import \{ CheckedMenu \}/);
+assert.match(columnsMenuSource, /<CheckedMenu/);
+assert.match(viewVisibilityMenuSource, /import \{ CheckedMenu \}/);
+assert.match(viewVisibilityMenuSource, /<CheckedMenu/);
+
 const filterBarStart = appSource.indexOf('<FilterBar');
 const commitListStart = appSource.indexOf('<CommitList', filterBarStart);
 assert.notEqual(filterBarStart, -1);

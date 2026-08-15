@@ -15,11 +15,5 @@
   "command.selectCommitMessageModel.title": "GitMin: Select Commit Message Model",
   "command.setCustomModelApiKey.title": "GitMin: Set Custom Model API Key",
   "command.previousFileDiff.title": "GitMin: Previous File Diff",
-  "command.nextFileDiff.title": "GitMin: Next File Diff",
-  "view.repositories": "Repositories",
-  "view.changes": "Changes",
-  "view.commits": "Commits",
-  "view.stashes": "Stashes",
-  "view.changedFiles": "Changed Files",
-  "view.commitDetails": "Commit Details"
+  "command.nextFileDiff.title": "GitMin: Next File Diff"
 }

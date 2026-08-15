@@ -17,7 +17,6 @@ import type {
 import type { GitAction } from './actions';
 import type { CommitPage } from './commitPagination';
 import type { WorkingTreeAction } from './workingTree';
-import type { WorkbenchViewId, WorkbenchViewVisibility } from './workbenchViews';
 import type { RepositorySnapshot } from './repositories';
 
 export type RefreshTarget = 'changes' | 'commits' | 'stashes';
@@ -33,7 +32,6 @@ export type WebviewMessage =
   | { type: 'webview/ready'; filters?: CommitFilters; requestId: number; limit: number }
   | { type: 'repositories/select'; rootPath: string }
   | { type: 'repositories/load'; requestId: number; limit: number }
-  | { type: 'workbenchViews/visibility'; visibility: WorkbenchViewVisibility }
   | {
       type: 'commits/refresh';
       requestId: number;
@@ -75,7 +73,6 @@ export type ExtensionMessage =
   | { type: 'repositories/loaded'; snapshot: RepositorySnapshot }
   | { type: 'repositories/selectionChanged'; rootPath: string | null }
   | { type: 'repositories/error'; error: string }
-  | { type: 'workbenchViews/toggle'; id: WorkbenchViewId }
   | { type: 'repo/none'; reason: string }
   | { type: 'commits/loaded'; page: CommitPage }
   | { type: 'commits/error'; requestId: number; error: string }

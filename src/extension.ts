@@ -8,10 +8,6 @@ import { CopilotModelSelector } from "./services/CopilotModelSelector";
 import { CommitMessageGenerator } from "./services/CommitMessageGenerator";
 import { CustomModelCredentials } from "./services/CustomModelCredentials";
 import { OpenAICompatibleClient } from "./services/OpenAICompatibleClient";
-import {
-  WORKBENCH_VIEW_IDS,
-  WORKBENCH_VIEW_METADATA,
-} from "../shared/workbenchViews";
 import { openGitMinSettings } from "./configuration";
 import { configureLocale } from "../shared/i18n";
 
@@ -67,12 +63,6 @@ export function activate(context: vscode.ExtensionContext) {
     ),
     vscode.commands.registerCommand("gitmin.nextFileDiff", () =>
       fileDiffNavigator.navigate(1),
-    ),
-    ...WORKBENCH_VIEW_IDS.map((id) =>
-      vscode.commands.registerCommand(
-        WORKBENCH_VIEW_METADATA[id].toggleCommand,
-        () => viewProvider.toggleWorkbenchView(id),
-      ),
     ),
   );
 }

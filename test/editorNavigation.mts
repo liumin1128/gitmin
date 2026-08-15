@@ -1,15 +1,12 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import {
-  WORKBENCH_VIEW_IDS,
-  WORKBENCH_VIEW_METADATA,
-} from "../shared/workbenchViews.ts";
 
 const manifest = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf8"),
 );
 const commands = manifest.contributes.commands as Array<{
   command: string;
+  title: string;
   icon?: string;
 }>;
 const editorTitle = manifest.contributes.menus["editor/title"] as Array<{
@@ -20,7 +17,6 @@ const viewTitle = manifest.contributes.menus["view/title"] as Array<{
   command: string;
   group: string;
   when: string;
-  toggled?: string;
 }>;
 const gitminView = manifest.contributes.views.gitmin[0] as {
   id: string;
@@ -48,25 +44,14 @@ assert.deepEqual(editorNavigation.map((item) => item.group), [
 ]);
 
 assert.equal(gitminView.name, "GitMin", "the merged sidebar title should only show GitMin");
-for (const [index, id] of WORKBENCH_VIEW_IDS.entries()) {
-  const metadata = WORKBENCH_VIEW_METADATA[id];
-  const items = viewTitle.filter(
-    (item) => item.command === metadata.toggleCommand,
-  );
-
-  assert.equal(items.length, 1, `${metadata.labelKey} should have one native toggle item`);
-  const [item] = items;
-  assert.equal(
-    commands.filter((command) => command.command === metadata.toggleCommand).length,
-    1,
-  );
-  assert.equal(item?.group, `1_views@${index + 1}`);
-  assert.equal(item?.when, "view == gitmin.panel");
-  assert.equal(item?.toggled, metadata.visibilityContext);
-}
 assert.ok(
-  commands.every((item) => !item.command.endsWith(".checked")),
-  "native toggled menu items should not require duplicate checked commands",
+  commands.every((item) => !item.command.startsWith("gitmin.toggle")),
+  "view visibility is owned by the shared webview menu, not duplicate native commands",
+);
+assert.deepEqual(
+  viewTitle.map((item) => item.command),
+  ["gitmin.openPanel", "gitmin.openSettings"],
+  "the native title menu should only contain non-checkbox commands",
 );
 
 const selectionHook = readFileSync(
@@ -85,10 +70,24 @@ const webviewHtml = readFileSync(
   new URL('../src/utils/webviewHtml.ts', import.meta.url),
   'utf8',
 );
+const viewProvider = readFileSync(
+  new URL('../src/panels/GitPanelViewProvider.ts', import.meta.url),
+  'utf8',
+);
 assert.match(selectionHook, /type:\s*'selectionDetails\/clear'/);
 assert.match(messageHandler, /case "selectionDetails\/clear"/);
 assert.match(messageHandler, /fileDiffNavigator\.clear\(\)/);
-assert.match(appSource, /showWorkbenchToolbar\s*=\s*document\.body\.dataset\.gitminHost\s*===\s*'panel'/);
+assert.match(
+  appSource,
+  /<div className="app">\s*<WorkbenchToolbar/s,
+  "the shared visibility menu should render in both webview hosts",
+);
+assert.doesNotMatch(appSource, /workbenchViews\/(?:toggle|visibility)/);
 assert.match(webviewHtml, /data-gitmin-host="\$\{host\}"/);
+assert.ok(
+  viewProvider.indexOf('onDidReceiveMessage') < viewProvider.indexOf('view.webview.html ='),
+  'the extension must listen before the webview posts its initial ready message',
+);
+assert.doesNotMatch(viewProvider, /workbenchViews\//);
 
 console.log("editor navigation manifest checks passed");

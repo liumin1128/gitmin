@@ -27,10 +27,6 @@ import { ChangesPanel } from './components/ChangesPanel';
 import { StashList } from './components/StashList';
 import { WorkbenchToolbar } from './components/WorkbenchToolbar';
 import { RepositoryList } from './components/RepositoryList';
-import {
-  WORKBENCH_VIEW_IDS,
-  type WorkbenchViewVisibility,
-} from '../../shared/workbenchViews';
 import { shouldPreserveUnresolvedParents } from './utils/commitGraph';
 import { commitSelection, stashSelection } from './utils/detailSelection';
 import { COMMIT_PAGE_SIZE, type CommitPage } from '../../shared/commitPagination';
@@ -204,10 +200,8 @@ export function App() {
     layout,
     setPanelHeight,
     setVisible,
-    toggleVisible,
     setCollapsed,
   } = useWorkbenchLayout();
-  const showWorkbenchToolbar = document.body.dataset.gitminHost === 'panel';
   const filtersReadyRef = useRef(false);
   const restoringFiltersRef = useRef(false);
   const commitRequestIdRef = useRef(0);
@@ -266,17 +260,6 @@ export function App() {
     setFilters(m.filters);
   });
   useIpcListener('filters/options', (m) => setFilterOptions(m.options));
-  useIpcListener('workbenchViews/toggle', (m) => {
-    toggleVisible(m.id);
-  });
-
-  useEffect(() => {
-    if (showWorkbenchToolbar) return;
-    const visibility = Object.fromEntries(
-      WORKBENCH_VIEW_IDS.map((id) => [id, layout.views[id].visible])
-    ) as WorkbenchViewVisibility;
-    postMessage({ type: 'workbenchViews/visibility', visibility });
-  }, [layout.views, showWorkbenchToolbar]);
   // === Lifecycle: notify on mount ===
   useEffect(() => {
     const requestId = startCommitPageSession(pagination);
@@ -491,12 +474,10 @@ export function App() {
 
   return (
     <div className="app">
-      {showWorkbenchToolbar && (
-        <WorkbenchToolbar
-          views={layout.views}
-          onVisibleChange={(id, visible) => setVisible(id, visible)}
-        />
-      )}
+      <WorkbenchToolbar
+        views={layout.views}
+        onVisibleChange={(id, visible) => setVisible(id, visible)}
+      />
       {repoError && (
         <div className="error-bar">{repoError}</div>
       )}

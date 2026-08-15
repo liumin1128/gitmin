@@ -219,18 +219,20 @@ html, body, #root {
   outline-offset: -1px;
 }
 
-.columns-menu .filter-dropdown-btn,
-.view-visibility-menu .filter-dropdown-btn {
+.checked-menu .filter-dropdown-btn {
   justify-content: center;
   width: 24px;
   padding: 0;
   font-size: 15px;
 }
-.columns-menu .filter-dropdown-panel,
-.view-visibility-menu .filter-dropdown-panel {
+.checked-menu .filter-dropdown-panel {
   right: 0;
   left: auto;
-  min-width: 170px;
+  min-width: 120px;
+  width: max-content;
+  max-width: min(320px, calc(100vw - 8px));
+  padding: 4px;
+  border-radius: var(--vscode-cornerRadius-large, 8px);
 }
 
 /* VS Code-style checked menu item */
@@ -240,8 +242,9 @@ html, body, #root {
   align-items: center;
   width: 100%;
   min-height: 24px;
-  padding: 2px 10px 2px 6px;
+  padding: 0 8px 0 4px;
   border: 0;
+  border-radius: var(--vscode-cornerRadius-small, 4px);
   background: transparent;
   color: inherit;
   font: inherit;
@@ -259,10 +262,14 @@ html, body, #root {
   box-shadow: inset 0 0 0 1px var(--vscode-focusBorder);
 }
 .checked-menu-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
   color: currentColor;
   font-size: 12px;
   line-height: 1;
-  text-align: center;
 }
 .checked-menu-label {
   overflow: hidden;

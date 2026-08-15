@@ -15,11 +15,5 @@
   "command.selectCommitMessageModel.title": "GitMin: 选择提交消息模型",
   "command.setCustomModelApiKey.title": "GitMin: 设置自定义模型 API 密钥",
   "command.previousFileDiff.title": "GitMin: 上一个文件差异",
-  "command.nextFileDiff.title": "GitMin: 下一个文件差异",
-  "view.repositories": "存储库",
-  "view.changes": "更改",
-  "view.commits": "提交",
-  "view.stashes": "贮藏",
-  "view.changedFiles": "已更改文件",
-  "view.commitDetails": "提交详细信息"
+  "command.nextFileDiff.title": "GitMin: 下一个文件差异"
 }

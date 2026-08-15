@@ -4,8 +4,7 @@
  */
 import type { ColumnFlags } from './CommitList';
 import { t, type TranslationKey } from '../../../shared/i18n';
-import { CheckedMenuItem } from './CheckedMenuItem';
-import { FilterDropdown } from './FilterDropdown';
+import { CheckedMenu } from './CheckedMenu';
 
 interface Props {
   columns: ColumnFlags;
@@ -21,26 +20,18 @@ const ITEMS: Array<{ key: keyof ColumnFlags; labelKey: TranslationKey }> = [
 ];
 
 export function ColumnsMenu({ columns, onChange }: Props) {
+  const options = ITEMS.map(({ key, labelKey }) => ({
+    key,
+    label: t(labelKey),
+    checked: columns[key],
+  }));
+
   return (
-    <FilterDropdown
-      label={<span className="codicon codicon-more" aria-hidden="true" />}
+    <CheckedMenu
       title={t('column.display')}
-      hideCaret
       className="columns-menu"
-    >
-      {() => (
-        <div className="filter-list" role="menu">
-          {ITEMS.map(({ key, labelKey }) => (
-            <CheckedMenuItem
-              key={key}
-              checked={columns[key]}
-              onChange={(checked) => onChange({ ...columns, [key]: checked })}
-            >
-              {t(labelKey)}
-            </CheckedMenuItem>
-          ))}
-        </div>
-      )}
-    </FilterDropdown>
+      options={options}
+      onChange={(key, checked) => onChange({ ...columns, [key]: checked })}
+    />
   );
 }
