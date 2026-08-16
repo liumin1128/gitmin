@@ -24,16 +24,33 @@ export class GitService {
     this.git = simpleGit(rootPath);
   }
 
+  /** Whether HEAD points to a commit yet (false for a freshly initialized repo). */
+  async hasCommits(): Promise<boolean> {
+    try {
+      const output = await this.git.raw(['rev-list', '-n', '1', 'HEAD']);
+      return output.trim().length > 0;
+    } catch {
+      return false;
+    }
+  }
+
   /** Fetch recent commits, optionally filtered (excluding search) */
   async getLog(
     opts: { offset?: number; limit?: number; filters?: CommitFilters } = {}
   ): Promise<Commit[]> {
     const { offset, limit } = normalizeLogPagination(opts.limit ?? 100, opts.offset ?? 0);
     const args = buildLogArgs(limit, offset, opts.filters);
-    const [output, unpushedHashes] = await Promise.all([
-      this.git.raw(args),
-      this.getUnpushedCommitHashes(opts.filters?.branch),
-    ]);
+    let output: string;
+    let unpushedHashes: Set<string> = new Set();
+    try {
+      [output, unpushedHashes] = await Promise.all([
+        this.git.raw(args),
+        this.getUnpushedCommitHashes(opts.filters?.branch),
+      ]);
+    } catch (error) {
+      if (isEmptyRepositoryLogError(error)) return [];
+      throw error;
+    }
     return parseLogOutput(output).map((commit) => ({
       ...commit,
       isUnpushed: unpushedHashes.has(commit.hash),
@@ -147,6 +164,16 @@ export function buildLogArgs(
     args.push(`--before=${filters.dateBefore}`);
   }
   return args;
+}
+
+/**
+ * `git log` fails in a freshly initialized repository because HEAD does not
+ * point to a commit yet. Treat that specific case as an empty history instead
+ * of surfacing a fatal error to the UI.
+ */
+function isEmptyRepositoryLogError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes('does not have any commits yet');
 }
 
 export function normalizeLogPagination(

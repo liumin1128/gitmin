@@ -14,6 +14,15 @@ async function main() {
 
   try {
     await git.init();
+
+    // A freshly initialized repo has no commits yet; GitService should report
+    // empty history and commit-less HEAD instead of surfacing a fatal error.
+    const emptyGitService = new GitService(root);
+    assert.equal(await emptyGitService.hasCommits(), false);
+    assert.deepEqual(await emptyGitService.getLog(), []);
+    assert.deepEqual(await emptyGitService.getBranches(), []);
+    assert.deepEqual(await emptyGitService.getAuthors(), []);
+
     await git.addConfig('user.name', 'GitMin Test');
     await git.addConfig('user.email', 'gitmin@example.test');
     await writeFile(join(root, 'tracked.txt'), 'initial\n');

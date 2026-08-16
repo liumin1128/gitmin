@@ -183,6 +183,7 @@
     "test:working-tree": "node --experimental-strip-types test/workingTree.mts && node test/runTsxTest.mjs test/gitWorkspaceServices.mts",
     "test:stashes": "node --experimental-strip-types test/stashParser.mts",
     "test:workbench-changes": "node --experimental-strip-types test/detailSelection.mts && node --experimental-strip-types test/workingTreeDiff.mts && node --experimental-strip-types test/workingTree.mts && node test/runTsxTest.mjs test/commitMessage.mts && node test/runTsxTest.mjs test/customModelClient.ts && node test/runTsxTest.mjs test/workbenchChanges.tsx",
+    "test:badge-flow": "node test/runBadgeFlowTest.mjs test/badgeFlow.mts",
     "test:repositories": "node test/runTsxTest.mjs test/repositories.mts && node test/runTsxTest.mjs test/repositoryList.tsx",
     "test:i18n": "node test/runTsxTest.mjs test/i18n.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.webview.json --noEmit",

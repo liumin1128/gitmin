@@ -233,12 +233,18 @@ export class MessageHandler implements vscode.Disposable {
       await this.persistFilters(filters);
       if (!this.isReservedCommitRequest(ready)) return;
     }
+    const hasCommits = await this.git.hasCommits();
+    if (
+      generation !== this.repositoryGeneration ||
+      this.isReservedCommitRequest(ready) === false
+    )
+      return;
     this.post({
       type: "repo/info",
       info: {
         rootPath: repo.rootPath,
         currentBranch: repo.currentBranch,
-        hasCommits: true,
+        hasCommits,
       },
     });
     this.post({ type: "filters/restored", filters });
@@ -591,6 +597,12 @@ export class MessageHandler implements vscode.Disposable {
       }
       if (generation !== this.repositoryGeneration) return;
       this.post({ type: "action/result", action, ok: true });
+      if (action.startsWith("reset-")) {
+        // Reset moves HEAD/index, so the working tree changes even though
+        // no commit was created; ask the webview to reload it, otherwise
+        // the changes panel and the activity-bar badge go stale.
+        this.post({ type: "workingTree/changed" });
+      }
       if (action === "copy-hash") {
         vscode.window.showInformationMessage(t("notice.hashesCopied", { count: hashes.length }));
       }
