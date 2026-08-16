@@ -88,7 +88,7 @@ export function FilterDropdown({
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        <span>{label}</span>
+        <span className="filter-dropdown-label">{label}</span>
         {!hideCaret && <span className="filter-dropdown-caret">▾</span>}
       </button>
       {active && onClear && (

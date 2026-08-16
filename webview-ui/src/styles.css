@@ -141,6 +141,12 @@ body,
   outline: 1px solid var(--vscode-focusBorder);
   outline-offset: -1px;
 }
+.toolbar-icon-button > .codicon,
+.checked-menu .filter-dropdown-label > .codicon {
+  width: 16px;
+  height: 16px;
+  line-height: 16px;
+}
 
 /* ===== Global workbench toolbar ===== */
 .workbench-toolbar {
@@ -495,6 +501,14 @@ body.vscode-high-contrast-light .filter-form-row > input {
   width: 24px;
   padding: 0;
   font-size: 15px;
+}
+.checked-menu .filter-dropdown-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  line-height: 16px;
 }
 .checked-menu .filter-dropdown-panel {
   right: 0;
