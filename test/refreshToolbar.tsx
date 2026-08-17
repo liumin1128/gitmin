@@ -71,6 +71,16 @@ assert.match(
 );
 assert.match(
   styles,
+  /\.filter-list-item\s*\{[^}]*flex:\s*0\s+0\s+auto/s,
+  'long filter lists should scroll without shrinking option rows'
+);
+assert.match(
+  styles,
+  /\.filter-list-sep\s*\{[^}]*flex:\s*0\s+0\s+auto/s,
+  'long filter lists should keep separators at their intended height'
+);
+assert.match(
+  styles,
   /\.checked-menu\s+\.filter-dropdown-panel\s*\{[^}]*min-width:\s*120px[^}]*width:\s*max-content[^}]*border-radius:\s*var\(--vscode-cornerRadius-large,\s*8px\)/s,
   'checked menus should use the compact rounded VS Code menu surface'
 );

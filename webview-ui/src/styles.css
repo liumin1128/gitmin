@@ -417,6 +417,7 @@ body[data-gitmin-host='view'] .view-visibility-menu .filter-dropdown-panel {
 }
 .filter-list-item {
   display: block;
+  flex: 0 0 auto;
   width: 100%;
   text-align: left;
   background: transparent;
@@ -439,6 +440,7 @@ body[data-gitmin-host='view'] .view-visibility-menu .filter-dropdown-panel {
   font-weight: 600;
 }
 .filter-list-sep {
+  flex: 0 0 auto;
   height: 1px;
   background: var(--vscode-menu-separatorBackground, var(--vscode-panel-border));
   margin: 4px 0;
