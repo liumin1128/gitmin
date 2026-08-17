@@ -1097,6 +1097,7 @@ body.vscode-high-contrast-light .filter-form-row > input {
   user-select: none;
   font-size: inherit;
   line-height: 22px;
+  white-space: nowrap;
   transition: background-color 0.06s ease-out;
 }
 @media (max-width: 499px) {
@@ -1168,9 +1169,13 @@ body.vscode-high-contrast-light .filter-form-row > input {
   color: inherit;
 }
 .commit-time {
+  min-width: 0;
+  overflow: hidden;
   color: var(--vscode-descriptionForeground);
   font-size: 0.9em;
   text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .commit-item.is-selected .commit-time {
   color: inherit;

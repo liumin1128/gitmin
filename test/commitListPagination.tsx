@@ -113,4 +113,12 @@ assert.match(
   'pagination should observe the commit-list-only scroll container'
 );
 
+const styles = readFileSync('webview-ui/src/styles.css', 'utf8');
+const commitItemRule = styles.match(/\.commit-item\s*\{([^}]*)\}/)?.[1] ?? '';
+const commitTimeRule = styles.match(/\.commit-time\s*\{([^}]*)\}/)?.[1] ?? '';
+assert.match(commitItemRule, /white-space:\s*nowrap/, 'commit rows must never wrap');
+assert.match(commitTimeRule, /overflow:\s*hidden/);
+assert.match(commitTimeRule, /text-overflow:\s*ellipsis/);
+assert.match(commitTimeRule, /white-space:\s*nowrap/);
+
 console.log('commit list pagination component checks passed');
