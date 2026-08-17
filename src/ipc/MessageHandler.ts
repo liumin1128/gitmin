@@ -33,6 +33,11 @@ import {
 import { WorkspaceMessageController } from "./WorkspaceMessageController";
 import { CommitMessageGenerator } from "../services/CommitMessageGenerator";
 import { t } from "../../shared/i18n";
+import {
+  COMMIT_COLUMNS_STATE_KEY,
+  parsePersistedCommitColumns,
+  type CommitColumnFlags,
+} from "../../shared/commitColumns";
 
 export type PostMessage = (msg: ExtensionMessage) => void;
 
@@ -97,6 +102,12 @@ export class MessageHandler implements vscode.Disposable {
     try {
       switch (msg.type) {
         case "webview/ready": {
+          this.post({
+            type: "columns/restored",
+            columns: parsePersistedCommitColumns(
+              this.workspaceState.get<unknown>(COMMIT_COLUMNS_STATE_KEY),
+            ),
+          });
           const request = this.normalizeCommitRequest({ ...msg, offset: 0 });
           if (!this.reserveCommitRequest(request)) return;
           await this.repositorySelection.initialize();
@@ -132,6 +143,9 @@ export class MessageHandler implements vscode.Disposable {
         }
         case "filters/refresh":
           await this.loadFilterOptions();
+          break;
+        case "columns/update":
+          await this.persistColumns(msg.columns);
           break;
         case "commitDetails/request":
           await this.loadCommitDetails(msg.hashes);
@@ -314,6 +328,17 @@ export class MessageHandler implements vscode.Disposable {
       );
     } catch (error) {
       console.error("[gitmin] persist filters error:", error);
+    }
+  }
+
+  private async persistColumns(columns: CommitColumnFlags): Promise<void> {
+    try {
+      await this.workspaceState.update(
+        COMMIT_COLUMNS_STATE_KEY,
+        parsePersistedCommitColumns(columns),
+      );
+    } catch (error) {
+      console.error("[gitmin] persist columns error:", error);
     }
   }
 

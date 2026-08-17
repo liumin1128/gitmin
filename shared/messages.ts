@@ -18,6 +18,7 @@ import type { GitAction } from './actions';
 import type { CommitPage } from './commitPagination';
 import type { WorkingTreeAction } from './workingTree';
 import type { RepositorySnapshot } from './repositories';
+import type { CommitColumnFlags } from './commitColumns';
 
 export type RefreshTarget = 'changes' | 'commits' | 'stashes';
 export type GitWorkspaceOperation =
@@ -40,6 +41,7 @@ export type WebviewMessage =
       filters?: CommitFilters;
     }
   | { type: 'filters/refresh' }
+  | { type: 'columns/update'; columns: CommitColumnFlags }
   | { type: 'commitDetails/request'; hashes: string[] }
   | { type: 'diff/request'; hashes: string[] }
   | { type: 'file/openDiff'; range: DiffRange; filePath: string }
@@ -78,6 +80,7 @@ export type ExtensionMessage =
   | { type: 'commits/loaded'; page: CommitPage }
   | { type: 'commits/error'; requestId: number; error: string }
   | { type: 'filters/restored'; filters: CommitFilters }
+  | { type: 'columns/restored'; columns: CommitColumnFlags }
   | { type: 'filters/options'; options: FilterOptions }
   | { type: 'commitDetails/loaded'; hashes: string[]; details: CommitDetails[] }
   | { type: 'commitDetails/error'; hashes: string[]; error: string }

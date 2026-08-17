@@ -10,13 +10,14 @@ import { useMultiSelect } from './hooks/useMultiSelect';
 import { useContextMenu } from './hooks/useContextMenu';
 import { useWorkbenchLayout } from './hooks/useWorkbenchLayout';
 import { usePersistedFilters } from './hooks/usePersistedFilters';
+import { usePersistedCommitColumns } from './hooks/usePersistedCommitColumns';
 import { useSelectionDetails } from './hooks/useSelectionDetails';
 import { useStashes } from './hooks/useStashes';
 import { useWorkingTree } from './hooks/useWorkingTree';
 import { useRepositories } from './hooks/useRepositories';
 import { useCommits } from './hooks/useCommits';
 import { FilterBar } from './components/FilterBar';
-import { CommitList, DEFAULT_COLUMNS, type ColumnFlags } from './components/CommitList';
+import { CommitList } from './components/CommitList';
 import { ColumnsMenu } from './components/ColumnsMenu';
 import { ChangedFilesPanel } from './components/ChangedFilesPanel';
 import { CommitDetailsPanel } from './components/CommitDetailsPanel';
@@ -44,11 +45,11 @@ export function App() {
   const [selectedStash, setSelectedStash] = useState<StashEntry | null>(null);
   const repositories = useRepositories();
   const { filters, setFilters } = usePersistedFilters();
+  const { columns, setColumns } = usePersistedCommitColumns();
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     branches: [],
     authors: [],
   });
-  const [columns, setColumns] = useState<ColumnFlags>(DEFAULT_COLUMNS);
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
   const {
     layout,

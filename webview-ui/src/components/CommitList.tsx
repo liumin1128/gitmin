@@ -5,6 +5,10 @@
  */
 import { useEffect, useMemo, useRef, type CSSProperties, type MouseEvent } from 'react';
 import type { Commit } from '../../../shared/domain';
+import {
+  DEFAULT_COMMIT_COLUMNS,
+  type CommitColumnFlags,
+} from '../../../shared/commitColumns';
 import { t } from '../../../shared/i18n';
 import { isNearCommitListBottom } from '../../../shared/commitPagination';
 import { layoutCommits } from '../utils/commitGraph';
@@ -12,21 +16,8 @@ import { measurePx, shortHash, relativeTime, tagListText } from '../utils/format
 import { CommitItem } from './CommitItem';
 
 /** Column visibility; message always visible so not listed */
-export interface ColumnFlags {
-  graph: boolean;
-  hash: boolean;
-  author: boolean;
-  time: boolean;
-  tags: boolean;
-}
-
-export const DEFAULT_COLUMNS: ColumnFlags = {
-  graph: true,
-  hash: false,
-  author: true,
-  time: false,
-  tags: false,
-};
+export type ColumnFlags = CommitColumnFlags;
+export const DEFAULT_COLUMNS = DEFAULT_COMMIT_COLUMNS;
 
 export function shouldLoadMore(
   hasMore: boolean,
