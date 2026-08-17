@@ -7,7 +7,7 @@
       "request": "launch",
       "args": [
         "--extensionDevelopmentPath=${workspaceFolder}",
-        "/Users/liumin/Desktop/work/sm-wmplogic"
+        "/Users/liumin/Desktop/other/deepseek-harness"
       ],
       "outFiles": ["${workspaceFolder}/out/**/*.js"],
       "preLaunchTask": "npm: build"
