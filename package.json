@@ -2,7 +2,7 @@
   "name": "gitmin",
   "displayName": "GitMin",
   "description": "%extension.description%",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "publisher": "liumin",
   "repository": {
     "type": "git",
