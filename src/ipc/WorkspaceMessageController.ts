@@ -42,7 +42,9 @@ export class WorkspaceMessageController implements vscode.Disposable {
   private latestWorkingTreeRequestId = 0;
   private latestStashRequestId = 0;
   private latestSelectionRequestId = 0;
+  private workingTreeReadGeneration = 0;
   private repositoryChangeTimer: NodeJS.Timeout | null = null;
+  private disposed = false;
   private readonly disposables: vscode.Disposable[] = [];
 
   constructor(
@@ -62,26 +64,42 @@ export class WorkspaceMessageController implements vscode.Disposable {
     const repository = await getRepository(this.rootPath);
     if (!repository) return;
     this.disposables.push(
-      repository.state.onDidChange(() => this.scheduleWorkingTreeChanged())
+      repository.state.onDidChange(() => this.scheduleWorkingTreeRefresh())
     );
   }
 
   dispose(): void {
+    this.disposed = true;
     if (this.repositoryChangeTimer) clearTimeout(this.repositoryChangeTimer);
     this.workingTreeDiffNavigator.dispose();
     this.disposables.forEach((disposable) => disposable.dispose());
   }
 
   async loadWorkingTree(requestId: number): Promise<void> {
-    this.latestWorkingTreeRequestId = Math.max(this.latestWorkingTreeRequestId, requestId);
+    if (requestId < this.latestWorkingTreeRequestId) return;
+    this.latestWorkingTreeRequestId = requestId;
+    const generation = ++this.workingTreeReadGeneration;
     try {
       const snapshot = await this.workingTree.getSnapshot();
-      if (requestId !== this.latestWorkingTreeRequestId) return;
+      if (!this.isCurrentWorkingTreeRead(generation)) return;
       this.workingTreeCache = snapshot;
       this.post({ type: 'workingTree/loaded', requestId, snapshot });
     } catch (error) {
-      if (requestId !== this.latestWorkingTreeRequestId) return;
+      if (!this.isCurrentWorkingTreeRead(generation)) return;
       this.post({ type: 'workingTree/error', requestId, error: errorMessage(error) });
+    }
+  }
+
+  async refreshWorkingTree(): Promise<void> {
+    const generation = ++this.workingTreeReadGeneration;
+    try {
+      const snapshot = await this.workingTree.getSnapshot();
+      if (!this.isCurrentWorkingTreeRead(generation)) return;
+      this.workingTreeCache = snapshot;
+      this.post({ type: 'workingTree/changed', snapshot });
+    } catch (error) {
+      if (!this.isCurrentWorkingTreeRead(generation)) return;
+      console.error('[gitmin] refresh working tree error:', errorMessage(error));
     }
   }
 
@@ -285,12 +303,16 @@ export class WorkspaceMessageController implements vscode.Disposable {
     }
   }
 
-  private scheduleWorkingTreeChanged(): void {
+  private scheduleWorkingTreeRefresh(): void {
     if (this.repositoryChangeTimer) clearTimeout(this.repositoryChangeTimer);
     this.repositoryChangeTimer = setTimeout(() => {
       this.repositoryChangeTimer = null;
-      this.post({ type: 'workingTree/changed' });
+      void this.refreshWorkingTree();
     }, 100);
+  }
+
+  private isCurrentWorkingTreeRead(generation: number): boolean {
+    return !this.disposed && generation === this.workingTreeReadGeneration;
   }
 
   private validateWorkingTreePaths(group: WorkingTreeGroup, paths: string[]): string[] {

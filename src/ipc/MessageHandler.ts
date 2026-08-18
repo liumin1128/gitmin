@@ -623,10 +623,8 @@ export class MessageHandler implements vscode.Disposable {
       if (generation !== this.repositoryGeneration) return;
       this.post({ type: "action/result", action, ok: true });
       if (action.startsWith("reset-")) {
-        // Reset moves HEAD/index, so the working tree changes even though
-        // no commit was created; ask the webview to reload it, otherwise
-        // the changes panel and the activity-bar badge go stale.
-        this.post({ type: "workingTree/changed" });
+        // Reset moves HEAD/index, so read the resulting git status directly.
+        await this.workspaceController?.refreshWorkingTree();
       }
       if (action === "copy-hash") {
         vscode.window.showInformationMessage(t("notice.hashesCopied", { count: hashes.length }));

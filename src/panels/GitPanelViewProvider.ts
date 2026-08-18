@@ -58,7 +58,10 @@ export class GitPanelViewProvider implements vscode.WebviewViewProvider {
   }
 
   private updateBadge(view: vscode.WebviewView, message: ExtensionMessage): void {
-    if (message.type === "workingTree/loaded") {
+    if (
+      message.type === "workingTree/loaded" ||
+      message.type === "workingTree/changed"
+    ) {
       const count = workingTreeChangeCount(message.snapshot);
       view.badge = count > 0
         ? { value: count, tooltip: t("changes.countBadge", { count }) }

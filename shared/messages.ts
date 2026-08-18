@@ -89,7 +89,7 @@ export type ExtensionMessage =
   | { type: 'diff/error'; error: string }
   | { type: 'workingTree/loaded'; requestId: number; snapshot: WorkingTreeSnapshot }
   | { type: 'workingTree/error'; requestId: number; error: string }
-  | { type: 'workingTree/changed' }
+  | { type: 'workingTree/changed'; snapshot: WorkingTreeSnapshot }
   | {
       type: 'workingTree/actionResult';
       requestId: number;

@@ -43,6 +43,16 @@ export function useWorkingTree({ onRefreshCommits, onRefreshStashes }: Options) 
   );
   const selection = useMultiSelect(itemKeys);
 
+  const applySnapshot = useCallback(
+    (nextSnapshot: WorkingTreeSnapshot) => {
+      setSnapshot(nextSnapshot);
+      setLoading(false);
+      setError(null);
+      selection.clear();
+    },
+    [selection.clear]
+  );
+
   const refresh = useCallback(() => {
     const requestId = ++loadRequestIdRef.current;
     setLoading(true);
@@ -64,13 +74,12 @@ export function useWorkingTree({ onRefreshCommits, onRefreshStashes }: Options) 
     setNotice(null);
     selection.clear();
   });
-  useIpcListener('workingTree/changed', refresh);
+  useIpcListener('workingTree/changed', (response) => {
+    applySnapshot(response.snapshot);
+  });
   useIpcListener('workingTree/loaded', (response) => {
     if (response.requestId !== loadRequestIdRef.current) return;
-    setSnapshot(response.snapshot);
-    setLoading(false);
-    setError(null);
-    selection.clear();
+    applySnapshot(response.snapshot);
   });
   useIpcListener('workingTree/error', (response) => {
     if (response.requestId !== loadRequestIdRef.current) return;
