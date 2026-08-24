@@ -18,20 +18,16 @@ const detail: CommitDetails = {
 };
 
 assert.match(
-  renderToStaticMarkup(<CommitDetailsPanel details={[]} loading={false} error={null} />),
+  renderToStaticMarkup(<CommitDetailsPanel details={[]} loading={false} />),
   /Select commits or a stash/
 );
 assert.match(
-  renderToStaticMarkup(<CommitDetailsPanel details={[]} loading error={null} />),
+  renderToStaticMarkup(<CommitDetailsPanel details={[]} loading />),
   /Loading commit details/
-);
-assert.match(
-  renderToStaticMarkup(<CommitDetailsPanel details={[]} loading={false} error="load failed" />),
-  /load failed/
 );
 
 const html = renderToStaticMarkup(
-  <CommitDetailsPanel details={[detail, { ...detail, hash: 'second-hash', shortHash: 'second' }]} loading={false} error={null} />
+  <CommitDetailsPanel details={[detail, { ...detail, hash: 'second-hash', shortHash: 'second' }]} loading={false} />
 );
 assert.equal((html.match(/class="commit-detail-item"/g) || []).length, 2);
 assert.match(html, /feat: add detailed view/);

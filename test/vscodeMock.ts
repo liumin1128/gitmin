@@ -26,7 +26,10 @@ export const window = {
   showWarningMessage: async () => undefined,
   showErrorMessage: async () => undefined,
   showInformationMessage: async () => undefined,
+  withProgress: async (_options: unknown, task: () => Promise<unknown>) => task(),
 };
+
+export const ProgressLocation = { Notification: 15 };
 
 export const commands = {
   executeCommand: async () => undefined,

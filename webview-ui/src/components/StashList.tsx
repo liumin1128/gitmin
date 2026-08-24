@@ -7,7 +7,6 @@ interface Props {
   entries: StashEntry[];
   selectedHash: string | null;
   busy: boolean;
-  error: string | null;
   onSelect: (entry: StashEntry) => void;
   onRefresh: () => void;
   onApply: () => void;
@@ -18,7 +17,6 @@ export function StashList({
   entries,
   selectedHash,
   busy,
-  error,
   onSelect,
   onRefresh,
   onApply,
@@ -48,7 +46,6 @@ export function StashList({
           onClick={onDelete}
         />
       </div>
-      {error && <div className="section-error">{error}</div>}
       {entries.length === 0 ? (
         <div className="empty-hint">{t('stash.none')}</div>
       ) : (

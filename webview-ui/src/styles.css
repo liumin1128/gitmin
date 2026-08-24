@@ -1,5 +1,5 @@
 /* Reuse VS Code theme CSS variables, auto-adapt light/dark/hc.
-   Sections: base · buttons · toolbar · filter bar · dropdown/menus · banners ·
+   Sections: base · buttons · toolbar · filter bar · dropdown/menus ·
    workbench panels · repositories · changes · stashes · commits · files ·
    details · context menu · modal */
 
@@ -563,35 +563,6 @@ body.vscode-high-contrast-light .filter-form-row > input {
   white-space: nowrap;
 }
 
-/* ===== Status banners ===== */
-.error-bar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--vscode-inputValidation-errorBackground);
-  color: var(--vscode-inputValidation-errorForeground, var(--vscode-foreground));
-  border-bottom: 1px solid var(--vscode-inputValidation-errorBorder);
-  padding: 4px 12px;
-  font-size: 12px;
-  line-height: 18px;
-}
-.error-bar .codicon,
-.busy-bar .codicon {
-  flex: 0 0 auto;
-  font-size: 14px;
-}
-.busy-bar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  font-size: 12px;
-  line-height: 18px;
-  background: var(--vscode-statusBarItem-warningBackground, #6b5b1f);
-  color: var(--vscode-statusBarItem-warningForeground, #fff);
-  border-bottom: 1px solid var(--vscode-panel-border);
-}
-
 /* ===== VS Code-style workbench panels ===== */
 .workbench-panel-stack {
   display: flex;
@@ -978,22 +949,6 @@ body.vscode-high-contrast-light .filter-form-row > input {
   );
   pointer-events: none;
 }
-.section-error {
-  padding: 4px 10px;
-  border-bottom: 1px solid var(--vscode-inputValidation-errorBorder);
-  background: var(--vscode-inputValidation-errorBackground);
-  color: var(--vscode-inputValidation-errorForeground, var(--vscode-errorForeground));
-  font-size: 12px;
-  line-height: 18px;
-}
-.section-notice {
-  padding: 4px 10px;
-  border-bottom: 1px solid var(--vscode-panel-border);
-  color: var(--vscode-descriptionForeground);
-  font-size: 12px;
-  line-height: 18px;
-}
-
 @media (max-width: 640px) {
   .change-message-row {
     flex-direction: column;
@@ -1382,11 +1337,6 @@ body.vscode-high-contrast-light .filter-form-row > input {
   flex-wrap: wrap;
   gap: 4px 8px;
 }
-.commit-details-error {
-  padding: 12px;
-  color: var(--vscode-errorForeground);
-}
-
 /* ===== Empty hint ===== */
 .empty-hint {
   padding: 24px 16px;

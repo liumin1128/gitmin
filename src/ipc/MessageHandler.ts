@@ -38,6 +38,7 @@ import {
   parsePersistedCommitColumns,
   type CommitColumnFlags,
 } from "../../shared/commitColumns";
+import { toNativeNotification } from "../utils/extensionMessageNotification";
 
 export type PostMessage = (msg: ExtensionMessage) => void;
 
@@ -70,7 +71,7 @@ export class MessageHandler implements vscode.Disposable {
   private readonly disposables: vscode.Disposable[] = [];
 
   constructor(
-    private readonly post: PostMessage,
+    private readonly send: PostMessage,
     private readonly extensionUri: vscode.Uri,
     private readonly fileDiffNavigator: FileDiffNavigator,
     private readonly workspaceState: vscode.Memento,
@@ -90,6 +91,20 @@ export class MessageHandler implements vscode.Disposable {
         this.handleRepositorySelectionChange(change),
       ),
     );
+  }
+
+  private post(message: ExtensionMessage): void {
+    this.send(message);
+    const notification = toNativeNotification(message);
+    if (!notification) return;
+
+    if (notification.level === "error") {
+      void vscode.window.showErrorMessage(notification.message);
+    } else if (notification.level === "warning") {
+      void vscode.window.showWarningMessage(notification.message);
+    } else {
+      void vscode.window.showInformationMessage(notification.message);
+    }
   }
 
   dispose(): void {
@@ -593,33 +608,41 @@ export class MessageHandler implements vscode.Disposable {
 
     try {
       if (generation !== this.repositoryGeneration) return;
-      switch (action) {
-        case "copy-hash":
-          await ops.copyHash(hashes);
-          break;
-        case "revert":
-          await ops.revert(hashes, commits);
-          break;
-        case "squash":
-          await ops.squash(
-            hashes,
-            commits,
-            msg.squashMessage ?? "squash",
-          );
-          break;
-        case "drop":
-          await ops.drop(hashes, commits);
-          break;
-        case "reset-soft":
-        case "reset-mixed":
-        case "reset-hard": {
-          if (hashes.length !== 1)
-            throw new Error(t("error.resetSingleSelection"));
-          const mode = action.slice("reset-".length) as ResetMode;
-          await ops.reset(mode, hashes[0]!);
-          break;
-        }
-      }
+      await vscode.window.withProgress(
+        {
+          location: vscode.ProgressLocation.Notification,
+          title: t("common.executing"),
+        },
+        async () => {
+          switch (action) {
+            case "copy-hash":
+              await ops.copyHash(hashes);
+              break;
+            case "revert":
+              await ops.revert(hashes, commits);
+              break;
+            case "squash":
+              await ops.squash(
+                hashes,
+                commits,
+                msg.squashMessage ?? "squash",
+              );
+              break;
+            case "drop":
+              await ops.drop(hashes, commits);
+              break;
+            case "reset-soft":
+            case "reset-mixed":
+            case "reset-hard": {
+              if (hashes.length !== 1)
+                throw new Error(t("error.resetSingleSelection"));
+              const mode = action.slice("reset-".length) as ResetMode;
+              await ops.reset(mode, hashes[0]!);
+              break;
+            }
+          }
+        },
+      );
       if (generation !== this.repositoryGeneration) return;
       this.post({ type: "action/result", action, ok: true });
       if (action.startsWith("reset-")) {
@@ -633,7 +656,6 @@ export class MessageHandler implements vscode.Disposable {
       if (generation !== this.repositoryGeneration) return;
       const err = e instanceof Error ? e.message : String(e);
       this.post({ type: "action/result", action, ok: false, message: err });
-      vscode.window.showErrorMessage(t("error.gitOperation", { message: err }));
     }
   }
 }

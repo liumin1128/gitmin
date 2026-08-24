@@ -1,6 +1,6 @@
 /**
  * Top-level container:
- * - Owns cross-panel state (errors, busy, squash modal, context menu)
+ * - Owns cross-panel state (squash modal, context menu)
  * - Domain data lives in dedicated hooks (useCommits/useWorkingTree/useStashes/...)
  * - Passes pure data and callbacks down to UI components
  */
@@ -28,7 +28,6 @@ import { ChangesPanel } from './components/ChangesPanel';
 import { StashList } from './components/StashList';
 import { WorkbenchToolbar } from './components/WorkbenchToolbar';
 import { RepositoryList } from './components/RepositoryList';
-import { AppStatusBars } from './components/AppStatusBars';
 import { IconButton } from './components/common/IconButton';
 import { shouldPreserveUnresolvedParents } from './utils/commitGraph';
 import { commitSelection, stashSelection } from './utils/detailSelection';
@@ -38,9 +37,6 @@ import { t } from '../../shared/i18n';
 import { workingTreeChangeCount } from '../../shared/workingTree';
 
 export function App() {
-  const [repoError, setRepoError] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
   const [squashHashes, setSquashHashes] = useState<string[] | null>(null);
   const [selectedStash, setSelectedStash] = useState<StashEntry | null>(null);
   const repositories = useRepositories();
@@ -65,7 +61,6 @@ export function App() {
   const clearCommitSelectionRef = useRef<() => void>(() => undefined);
   const filtersRef = useRef(filters);
   filtersRef.current = filters;
-  const clearError = useCallback(() => setError(null), []);
 
   const {
     commits,
@@ -79,16 +74,9 @@ export function App() {
   } = useCommits({
     filters,
     clearSelectionRef: clearCommitSelectionRef,
-    onLoaded: clearError,
   });
 
   // === Message subscriptions ===
-  useIpcListener('repo/info', () => {
-    setRepoError(null);
-  });
-  useIpcListener('repo/none', (m) => {
-    setRepoError(m.reason);
-  });
   useIpcListener('filters/restored', (m) => {
     restoringFiltersRef.current = true;
     setFilters(m.filters);
@@ -160,14 +148,7 @@ export function App() {
   }, [filters, resetCommits]);
 
   useIpcListener('action/result', (m) => {
-    setBusy(false);
-    if (!m.ok) {
-      setError(m.message ?? t('common.operationFailed'));
-      return;
-    }
-
-    setError(null);
-    if (m.action !== 'copy-hash') resetCommits(filtersRef.current);
+    if (m.ok && m.action !== 'copy-hash') resetCommits(filtersRef.current);
   });
 
   // Whether selected commits are contiguous (Squash requires)
@@ -202,8 +183,6 @@ export function App() {
         setSquashHashes([...selected]);
         return;
       }
-      setBusy(true);
-      setError(null);
       postMessage({ type: 'action/execute', action, hashes: [...selected] });
     },
     [selected, menu]
@@ -218,8 +197,6 @@ export function App() {
   const handleSquashConfirm = useCallback(
     (message: string) => {
       setSquashHashes(null);
-      setBusy(true);
-      setError(null);
       postMessage({
         type: 'action/execute',
         action: 'squash',
@@ -239,11 +216,8 @@ export function App() {
     clearStashSelectionRef.current();
     menu.close();
     setSelectedStash(null);
-    setError(null);
-    setBusy(false);
     setSquashHashes(null);
     setFilterOptions({ branches: [], authors: [] });
-    setRepoError(rootPath ? null : t('repository.none'));
     handleRepositorySelection(rootPath);
   });
 
@@ -259,11 +233,6 @@ export function App() {
         onVisibleChange={(id, visible) => setVisible(id, visible)}
         menuOpen={viewMenuOpen}
         onMenuOpenChange={setViewMenuOpen}
-      />
-      <AppStatusBars
-        repoError={repoError}
-        error={commitPageError ?? error}
-        busy={busy}
       />
       <WorkbenchPanelStack
         heights={layout.heights}
@@ -281,7 +250,6 @@ export function App() {
                 repositories={repositories.repositories}
                 selectedRootPath={repositories.selectedRootPath}
                 pendingRootPath={repositories.pendingRootPath}
-                error={repositories.error}
                 onSelect={repositories.select}
               />
             ),
@@ -299,8 +267,6 @@ export function App() {
                 selectedKeys={workingTree.selectedKeys}
                 busy={workingTree.busy}
                 generating={workingTree.generating}
-                error={workingTree.error}
-                notice={workingTree.notice}
                 commitEnabled={workingTree.commitEnabled}
                 generateEnabled={workingTree.generateEnabled}
                 stashEnabled={workingTree.stashEnabled}
@@ -365,7 +331,6 @@ export function App() {
                 entries={stashes.entries}
                 selectedHash={stashes.selected?.hash ?? null}
                 busy={stashes.busy}
-                error={stashes.error}
                 onSelect={stashes.select}
                 onRefresh={stashes.refresh}
                 onApply={stashes.apply}
@@ -408,7 +373,6 @@ export function App() {
               <CommitDetailsPanel
                 details={selectionDetails.details}
                 loading={selectionDetails.loading}
-                error={selectionDetails.error}
               />
             ),
           },

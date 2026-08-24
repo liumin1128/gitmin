@@ -4,7 +4,6 @@ interface Props {
   repositories: RepositorySummary[];
   selectedRootPath: string | null;
   pendingRootPath: string | null;
-  error: string | null;
   onSelect: (rootPath: string) => void;
 }
 
@@ -12,12 +11,10 @@ export function RepositoryList({
   repositories,
   selectedRootPath,
   pendingRootPath,
-  error,
   onSelect,
 }: Props) {
   return (
     <div className="repository-list">
-      {error && <div className="section-error">{error}</div>}
       {repositories.map((repository) => {
         const selected = repository.rootPath === selectedRootPath;
         const pending = pendingRootPath !== null;

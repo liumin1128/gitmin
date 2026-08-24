@@ -25,11 +25,9 @@ interface Options {
   filters: CommitFilters;
   /** Invoked before every reset; App wires it to the commit multi-select clear */
   clearSelectionRef: { current: () => void };
-  /** Invoked when a page loads successfully; App wires it to clear the action error */
-  onLoaded: () => void;
 }
 
-export function useCommits({ filters, clearSelectionRef, onLoaded }: Options) {
+export function useCommits({ filters, clearSelectionRef }: Options) {
   const [commits, setCommits] = useState<Commit[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -43,8 +41,6 @@ export function useCommits({ filters, clearSelectionRef, onLoaded }: Options) {
   const queuedFiltersRef = useRef<CommitFilters | null>(null);
   const filtersRef = useRef(filters);
   filtersRef.current = filters;
-  const onLoadedRef = useRef(onLoaded);
-  onLoadedRef.current = onLoaded;
 
   const pagination = useMemo<CommitPaginationRefs>(
     () => ({ requestIdRef, nextOffsetRef, loadingMoreRef, pendingOffsetRef }),
@@ -84,7 +80,6 @@ export function useCommits({ filters, clearSelectionRef, onLoaded }: Options) {
     setLoadingMore(false);
     failedOffsetRef.current = null;
     setCommitPageError(null);
-    onLoadedRef.current();
     settleInitialCommitLoad(gate, resetDirect);
   });
   useIpcListener('commits/error', (m) => {

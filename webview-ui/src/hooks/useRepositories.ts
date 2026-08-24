@@ -6,7 +6,6 @@ export function useRepositories() {
   const [repositories, setRepositories] = useState<RepositorySummary[]>([]);
   const [selectedRootPath, setSelectedRootPath] = useState<string | null>(null);
   const [pendingRootPath, setPendingRootPath] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   useIpcListener('repositories/loaded', ({ snapshot }) => {
     setRepositories(snapshot.repositories);
@@ -17,16 +16,13 @@ export function useRepositories() {
         ? pending
         : null;
     });
-    setError(null);
   });
-  useIpcListener('repositories/error', (message) => {
+  useIpcListener('repositories/error', () => {
     setPendingRootPath(null);
-    setError(message.error);
   });
 
   const select = useCallback((rootPath: string) => {
     setPendingRootPath(rootPath);
-    setError(null);
     postMessage({ type: 'repositories/select', rootPath });
   }, []);
 
@@ -34,7 +30,6 @@ export function useRepositories() {
     repositories,
     selectedRootPath,
     pendingRootPath,
-    error,
     select,
   };
 }

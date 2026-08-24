@@ -186,6 +186,7 @@
     "test:badge-flow": "node test/runBadgeFlowTest.mjs test/badgeFlow.mts",
     "test:repositories": "node test/runTsxTest.mjs test/repositories.mts && node test/runTsxTest.mjs test/repositoryList.tsx",
     "test:i18n": "node test/runTsxTest.mjs test/i18n.ts",
+    "test:notifications": "node test/runTsxTest.mjs test/extensionMessageNotification.mts",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.webview.json --noEmit",
     "vscode:prepublish": "npm run build"
   },

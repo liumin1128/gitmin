@@ -10,12 +10,10 @@ import {
 interface Props {
   details: CommitDetails[];
   loading: boolean;
-  error: string | null;
 }
 
-export function CommitDetailsPanel({ details, loading, error }: Props) {
+export function CommitDetailsPanel({ details, loading }: Props) {
   if (loading) return <div className="empty-hint">{t('details.loading')}</div>;
-  if (error) return <div className="commit-details-error">{error}</div>;
   if (details.length === 0) {
     return <div className="empty-hint">{t('details.select')}</div>;
   }

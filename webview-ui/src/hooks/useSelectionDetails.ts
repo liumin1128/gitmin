@@ -13,7 +13,6 @@ export function useSelectionDetails(selection: DetailSelection | null) {
   const [details, setDetails] = useState<CommitDetails[]>([]);
   const [activeFilePath, setActiveFilePath] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const requestIdRef = useRef(0);
   const selectionKey = useMemo(() => {
     if (!selection) return '';
@@ -25,7 +24,6 @@ export function useSelectionDetails(selection: DetailSelection | null) {
   useEffect(() => {
     const requestId = ++requestIdRef.current;
     setActiveFilePath(null);
-    setError(null);
     if (!selection) {
       setRange(null);
       setFiles([]);
@@ -47,7 +45,6 @@ export function useSelectionDetails(selection: DetailSelection | null) {
     setDetails(response.details);
     setActiveFilePath(null);
     setLoading(false);
-    setError(null);
   });
   useIpcListener('selectionDetails/error', (response) => {
     if (response.requestId !== requestIdRef.current) return;
@@ -56,7 +53,6 @@ export function useSelectionDetails(selection: DetailSelection | null) {
     setDetails([]);
     setActiveFilePath(null);
     setLoading(false);
-    setError(response.error);
   });
   useIpcListener('diff/activeFile', (response) => setActiveFilePath(response.filePath));
 
@@ -74,7 +70,6 @@ export function useSelectionDetails(selection: DetailSelection | null) {
     details,
     activeFilePath,
     loading,
-    error,
     openDiff,
   };
 }

@@ -1,7 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import type { StashEntry } from '../../../shared/domain';
 import { postMessage, useIpcListener } from './useIpc';
-import { t } from '../../../shared/i18n';
 
 interface Options {
   onSelectionChange: (entry: StashEntry | null) => void;
@@ -13,7 +12,6 @@ export function useStashes({ onSelectionChange, onRefreshChanges }: Options) {
   const [selected, setSelected] = useState<StashEntry | null>(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const loadRequestIdRef = useRef(0);
   const actionRequestIdRef = useRef(0);
   const selectedRef = useRef<StashEntry | null>(null);
@@ -22,7 +20,6 @@ export function useStashes({ onSelectionChange, onRefreshChanges }: Options) {
   const refresh = useCallback(() => {
     const requestId = ++loadRequestIdRef.current;
     setLoading(true);
-    setError(null);
     postMessage({ type: 'stashes/request', requestId });
   }, []);
 
@@ -48,14 +45,12 @@ export function useStashes({ onSelectionChange, onRefreshChanges }: Options) {
     setEntries([]);
     setLoading(false);
     setBusy(false);
-    setError(null);
     clearSelection();
   });
   useIpcListener('stashes/loaded', (response) => {
     if (response.requestId !== loadRequestIdRef.current) return;
     setEntries(response.entries);
     setLoading(false);
-    setError(null);
     const current = selectedRef.current;
     if (!current) return;
     const next = response.entries.find((entry) => entry.hash === current.hash) ?? null;
@@ -68,20 +63,12 @@ export function useStashes({ onSelectionChange, onRefreshChanges }: Options) {
   useIpcListener('stashes/error', (response) => {
     if (response.requestId !== loadRequestIdRef.current) return;
     setLoading(false);
-    setError(response.error);
   });
   useIpcListener('workingTree/actionResult', (response) => {
     if (response.operation !== 'apply-stash' && response.operation !== 'delete-stash') return;
     if (response.requestId !== actionRequestIdRef.current) return;
     setBusy(false);
-    if (!response.ok) {
-      if (response.message !== 'Cancelled') {
-        setError(response.message ?? t('common.operationFailed'));
-      }
-    } else {
-      setError(null);
-      if (response.operation === 'delete-stash') clearSelection();
-    }
+    if (response.ok && response.operation === 'delete-stash') clearSelection();
     if (response.refresh.includes('changes')) onRefreshChanges();
     if (response.refresh.includes('stashes')) refresh();
   });
@@ -91,7 +78,6 @@ export function useStashes({ onSelectionChange, onRefreshChanges }: Options) {
       const entry = selectedRef.current;
       if (!entry) return;
       setBusy(true);
-      setError(null);
       postMessage({
         type: 'stashes/action',
         requestId: ++actionRequestIdRef.current,
@@ -108,7 +94,6 @@ export function useStashes({ onSelectionChange, onRefreshChanges }: Options) {
     selected,
     loading,
     busy,
-    error,
     refresh,
     select,
     clearSelection,

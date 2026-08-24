@@ -16,8 +16,6 @@ const baseProps: Parameters<typeof ChangesPanel>[0] = {
   message: 'ship it',
   selectedKeys: new Set(),
   busy: false,
-  error: null,
-  notice: 'No local changes to save',
   generating: false,
   commitEnabled: true,
   generateEnabled: true,
@@ -59,7 +57,6 @@ assert.match(html, /codicon-remove/);
 assert.match(html, /codicon-discard/);
 assert.match(html, /codicon-refresh/);
 assert.match(html, /codicon-sparkle/);
-assert.match(html, /No local changes to save/);
 const stagedGroupStart = html.indexOf('data-change-group="staged"');
 const changesGroupStart = html.indexOf('data-change-group="changes"');
 const stagedGroupHtml = html.slice(stagedGroupStart, changesGroupStart);
@@ -119,7 +116,6 @@ const stashHtml = renderToStaticMarkup(
     entries={stashEntries}
     selectedHash="abc123"
     busy={false}
-    error={null}
     onSelect={() => undefined}
     onRefresh={() => undefined}
     onApply={() => undefined}
@@ -138,7 +134,6 @@ const noStashSelectionHtml = renderToStaticMarkup(
     entries={stashEntries}
     selectedHash={null}
     busy={false}
-    error={null}
     onSelect={() => undefined}
     onRefresh={() => undefined}
     onApply={() => undefined}
@@ -155,6 +150,7 @@ const commitList = appSource.indexOf('<CommitList', commitsSection);
 assert.ok(commitsSection >= 0 && filterBar > commitsSection && filterBar < commitList);
 
 const styles = readFileSync('webview-ui/src/styles.css', 'utf8');
+assert.doesNotMatch(styles, /\.(?:error-bar|busy-bar|section-error|section-notice)\s*\{/);
 assert.doesNotMatch(styles, /\.commit-message-generate-control/);
 assert.match(styles, /\.workbench-toolbar\s*\{[^}]*height:\s*26px/s);
 assert.match(

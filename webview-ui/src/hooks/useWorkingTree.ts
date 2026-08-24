@@ -9,7 +9,6 @@ import {
 } from '../../../shared/workingTree';
 import { postMessage, useIpcListener } from './useIpc';
 import { useMultiSelect } from './useMultiSelect';
-import { t } from '../../../shared/i18n';
 
 const EMPTY_SNAPSHOT: WorkingTreeSnapshot = {
   conflicts: [],
@@ -28,8 +27,6 @@ export function useWorkingTree({ onRefreshCommits, onRefreshStashes }: Options) 
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const loadRequestIdRef = useRef(0);
   const actionRequestIdRef = useRef(0);
   const generationRequestIdRef = useRef(0);
@@ -47,7 +44,6 @@ export function useWorkingTree({ onRefreshCommits, onRefreshStashes }: Options) 
     (nextSnapshot: WorkingTreeSnapshot) => {
       setSnapshot(nextSnapshot);
       setLoading(false);
-      setError(null);
       selection.clear();
     },
     [selection.clear]
@@ -56,7 +52,6 @@ export function useWorkingTree({ onRefreshCommits, onRefreshStashes }: Options) 
   const refresh = useCallback(() => {
     const requestId = ++loadRequestIdRef.current;
     setLoading(true);
-    setError(null);
     postMessage({ type: 'workingTree/request', requestId });
   }, []);
 
@@ -70,8 +65,6 @@ export function useWorkingTree({ onRefreshCommits, onRefreshStashes }: Options) 
     setLoading(false);
     setBusy(false);
     setGenerating(false);
-    setError(null);
-    setNotice(null);
     selection.clear();
   });
   useIpcListener('workingTree/changed', (response) => {
@@ -84,23 +77,13 @@ export function useWorkingTree({ onRefreshCommits, onRefreshStashes }: Options) 
   useIpcListener('workingTree/error', (response) => {
     if (response.requestId !== loadRequestIdRef.current) return;
     setLoading(false);
-    setError(response.error);
   });
   useIpcListener('workingTree/actionResult', (response) => {
     if (!['stage', 'unstage', 'discard', 'commit', 'stash'].includes(response.operation)) return;
     if (response.requestId !== actionRequestIdRef.current) return;
     setBusy(false);
-    if (!response.ok) {
-      setNotice(null);
-      if (response.message !== 'Cancelled') {
-        setError(response.message ?? t('common.operationFailed'));
-      }
-    } else {
-      setError(null);
+    if (response.ok) {
       if (response.operation === 'commit' || response.operation === 'stash') setMessage('');
-      setNotice(
-        response.operation === 'stash' ? response.message ?? t('changes.stashed') : null
-      );
     }
     if (response.refresh.includes('changes')) refresh();
     if (response.refresh.includes('commits')) onRefreshCommits();
@@ -109,21 +92,11 @@ export function useWorkingTree({ onRefreshCommits, onRefreshStashes }: Options) 
   useIpcListener('workingTree/commitMessageResult', (response) => {
     if (response.requestId !== generationRequestIdRef.current) return;
     setGenerating(false);
-    if (!response.ok) {
-      if (!response.cancelled) {
-        setError(response.error ?? t('error.commitMessageGeneration'));
-      }
-      return;
-    }
-    setMessage(response.message ?? '');
-    setError(null);
-    setNotice(null);
+    if (response.ok) setMessage(response.message ?? '');
   });
 
   const nextActionId = useCallback(() => {
     setBusy(true);
-    setError(null);
-    setNotice(null);
     return ++actionRequestIdRef.current;
   }, []);
 
@@ -147,8 +120,6 @@ export function useWorkingTree({ onRefreshCommits, onRefreshStashes }: Options) 
   const generateCommitMessage = useCallback(() => {
     const requestId = ++generationRequestIdRef.current;
     setGenerating(true);
-    setError(null);
-    setNotice(null);
     postMessage({ type: 'workingTree/generateCommitMessage', requestId });
   }, []);
 
@@ -160,10 +131,7 @@ export function useWorkingTree({ onRefreshCommits, onRefreshStashes }: Options) 
     postMessage({ type: 'workingTree/openDiff', group, path });
   }, []);
 
-  const updateMessage = useCallback((nextMessage: string) => {
-    setMessage(nextMessage);
-    setNotice(null);
-  }, []);
+  const updateMessage = useCallback((nextMessage: string) => setMessage(nextMessage), []);
 
   return {
     snapshot,
@@ -171,8 +139,6 @@ export function useWorkingTree({ onRefreshCommits, onRefreshStashes }: Options) 
     loading,
     busy,
     generating,
-    error,
-    notice,
     selectedKeys: selection.selected,
     commitEnabled: canCommit(message, snapshot),
     generateEnabled: canGenerateCommitMessage(snapshot),
