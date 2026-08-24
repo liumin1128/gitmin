@@ -8,9 +8,7 @@ import { FileDiffNavigator } from "../services/FileDiffNavigator";
 import { RepositorySelectionService } from "../services/RepositorySelectionService";
 import { CommitMessageGenerator } from "../services/CommitMessageGenerator";
 import { buildWebviewHtml } from "../utils/webviewHtml";
-import type { ExtensionMessage, WebviewMessage } from "../../shared/messages";
-import { workingTreeChangeCount } from "../../shared/workingTree";
-import { t } from "../../shared/i18n";
+import type { WebviewMessage } from "../../shared/messages";
 
 export class GitPanelViewProvider implements vscode.WebviewViewProvider {
   public static readonly VIEW_ID = "gitmin.panel";
@@ -37,7 +35,6 @@ export class GitPanelViewProvider implements vscode.WebviewViewProvider {
 
     const handler = new MessageHandler(
       (msg) => {
-        this.updateBadge(view, msg);
         void view.webview.postMessage(msg);
       },
       this.extensionUri,
@@ -55,25 +52,5 @@ export class GitPanelViewProvider implements vscode.WebviewViewProvider {
       sub.dispose();
       handler.dispose();
     });
-  }
-
-  private updateBadge(view: vscode.WebviewView, message: ExtensionMessage): void {
-    if (
-      message.type === "workingTree/loaded" ||
-      message.type === "workingTree/changed"
-    ) {
-      const count = workingTreeChangeCount(message.snapshot);
-      view.badge = count > 0
-        ? { value: count, tooltip: t("changes.countBadge", { count }) }
-        : undefined;
-      return;
-    }
-
-    if (
-      message.type === "repositories/selectionChanged" ||
-      message.type === "repo/none"
-    ) {
-      view.badge = undefined;
-    }
   }
 }
