@@ -54,7 +54,16 @@ async function main() {
     await workingTree.stage(['tracked.txt']);
     await workingTree.commit('service commit');
     assert.equal((await git.log({ maxCount: 1 })).latest?.message, 'service commit');
-    let commits = await new GitService(root).getLog();
+    const gitService = new GitService(root);
+    const latestHash = await git.revparse('HEAD');
+    const abortController = new AbortController();
+    abortController.abort();
+    await assert.rejects(
+      () => gitService.getCommitDetails([latestHash], abortController.signal),
+      /abort/i
+    );
+
+    let commits = await gitService.getLog();
     assert.equal(commits[0]?.isUnpushed, true);
     assert.equal(commits[1]?.isUnpushed, false);
 

@@ -203,9 +203,13 @@ export class MessageHandler implements vscode.Disposable {
           );
           break;
         case "selectionDetails/clear":
-          this.fileDiffNavigator.clear();
-          this.diffCache = null;
-          this.post({ type: "diff/activeFile", filePath: null });
+          if (this.workspaceController) {
+            this.workspaceController.clearSelectionDetails(msg.requestId);
+          } else {
+            this.fileDiffNavigator.clear();
+            this.diffCache = null;
+            this.post({ type: "diff/activeFile", filePath: null });
+          }
           break;
         case "action/execute":
           await this.handleAction(msg);
@@ -243,8 +247,8 @@ export class MessageHandler implements vscode.Disposable {
         if (this.repositoryGeneration === generation) this.post(message);
       },
       this.fileDiffNavigator,
-      (range, files) => {
-        this.diffCache = { range, files };
+      (cache) => {
+        this.diffCache = cache;
       },
     );
     await this.workspaceController.initialize();

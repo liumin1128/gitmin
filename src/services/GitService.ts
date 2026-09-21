@@ -20,7 +20,7 @@ import { COMMIT_PAGE_SIZE } from '../../shared/commitPagination';
 export class GitService {
   private readonly git: SimpleGit;
 
-  constructor(rootPath: string) {
+  constructor(private readonly rootPath: string) {
     this.git = simpleGit(rootPath);
   }
 
@@ -73,9 +73,12 @@ export class GitService {
     }
   }
 
-  async getCommitDetails(hashes: string[]): Promise<CommitDetails[]> {
+  async getCommitDetails(
+    hashes: string[],
+    signal?: AbortSignal
+  ): Promise<CommitDetails[]> {
     if (hashes.length === 0) return [];
-    const output = await this.git.raw([
+    const output = await this.gitClient(signal).raw([
       'log',
       '--no-walk=unsorted',
       `--pretty=format:${COMMIT_DETAILS_FORMAT}`,
@@ -85,13 +88,22 @@ export class GitService {
   }
 
   /** Cumulative diff file list (with A/M/D/R status + line counts) */
-  async getDiffSummary(base: string, head: string): Promise<FileChange[]> {
+  async getDiffSummary(
+    base: string,
+    head: string,
+    signal?: AbortSignal
+  ): Promise<FileChange[]> {
     const range = `${base}..${head}`;
+    const git = this.gitClient(signal);
     const [nameStatusOut, numstatOut] = await Promise.all([
-      this.git.raw(['diff', '--name-status', range]),
-      this.git.raw(['diff', '--numstat', range]),
+      git.raw(['diff', '--name-status', range]),
+      git.raw(['diff', '--numstat', range]),
     ]);
     return mergeFileChanges(parseNameStatus(nameStatusOut), parseNumstat(numstatOut));
+  }
+
+  private gitClient(signal?: AbortSignal): SimpleGit {
+    return signal ? simpleGit({ baseDir: this.rootPath, abort: signal }) : this.git;
   }
 
   /** Local + remote branch names (deduped, no HEAD alias) */

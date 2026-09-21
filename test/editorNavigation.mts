@@ -66,6 +66,10 @@ const messageHandler = readFileSync(
   new URL('../src/ipc/MessageHandler.ts', import.meta.url),
   'utf8',
 );
+const workspaceController = readFileSync(
+  new URL('../src/ipc/WorkspaceMessageController.ts', import.meta.url),
+  'utf8',
+);
 const appSource = readFileSync(
   new URL('../webview-ui/src/App.tsx', import.meta.url),
   'utf8',
@@ -79,8 +83,15 @@ const viewProvider = readFileSync(
   'utf8',
 );
 assert.match(selectionHook, /type:\s*'selectionDetails\/clear'/);
+assert.match(selectionHook, /selectionDetails\/filesLoaded/);
+assert.match(selectionHook, /selectionDetails\/detailsLoaded/);
+assert.match(selectionHook, /filesLoading/);
+assert.match(selectionHook, /detailsLoading/);
 assert.match(messageHandler, /case "selectionDetails\/clear"/);
 assert.match(messageHandler, /fileDiffNavigator\.clear\(\)/);
+assert.match(workspaceController, /selectionAbortController\?\.abort\(\)/);
+assert.match(workspaceController, /type:\s*'selectionDetails\/filesLoaded'/);
+assert.match(workspaceController, /type:\s*'selectionDetails\/detailsLoaded'/);
 assert.match(
   appSource,
   /<div className="app">\s*<WorkbenchToolbar/s,

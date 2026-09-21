@@ -39,7 +39,7 @@ export class StashService {
     return parseStashList(output);
   }
 
-  async getDetails(entry: StashEntry): Promise<StashDetails> {
+  async getDetails(entry: StashEntry, signal?: AbortSignal): Promise<StashDetails> {
     await this.assertCurrent(entry);
     const range: DiffRange = {
       base: entry.parentHash,
@@ -47,8 +47,8 @@ export class StashService {
       contiguous: true,
     };
     const [files, details] = await Promise.all([
-      this.gitService.getDiffSummary(range.base, range.head),
-      this.gitService.getCommitDetails([entry.hash]),
+      this.gitService.getDiffSummary(range.base, range.head, signal),
+      this.gitService.getCommitDetails([entry.hash], signal),
     ]);
     return { entry, range, files, details };
   }

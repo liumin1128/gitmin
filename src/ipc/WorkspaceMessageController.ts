@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import type {
   Commit,
-  CommitDetails,
   DetailSelection,
   DiffRange,
   FileChange,
@@ -27,7 +26,9 @@ import { computeDiffRange } from '../utils/diffRange';
 import { t } from '../../shared/i18n';
 
 type PostMessage = (message: ExtensionMessage) => void;
-type SetDiffCache = (range: DiffRange, files: FileChange[]) => void;
+type SelectionDiffCache = { range: DiffRange; files: FileChange[] } | null;
+type SetDiffCache = (cache: SelectionDiffCache) => void;
+type SelectionDetailsTarget = 'files' | 'details' | 'all';
 
 export class WorkspaceMessageController implements vscode.Disposable {
   private readonly workingTree: WorkingTreeService;
@@ -42,6 +43,7 @@ export class WorkspaceMessageController implements vscode.Disposable {
   private latestWorkingTreeRequestId = 0;
   private latestStashRequestId = 0;
   private latestSelectionRequestId = 0;
+  private selectionAbortController: AbortController | null = null;
   private workingTreeReadGeneration = 0;
   private repositoryChangeTimer: NodeJS.Timeout | null = null;
   private disposed = false;
@@ -70,6 +72,8 @@ export class WorkspaceMessageController implements vscode.Disposable {
 
   dispose(): void {
     this.disposed = true;
+    this.selectionAbortController?.abort();
+    this.selectionAbortController = null;
     if (this.repositoryChangeTimer) clearTimeout(this.repositoryChangeTimer);
     this.workingTreeDiffNavigator.dispose();
     this.disposables.forEach((disposable) => disposable.dispose());
@@ -258,49 +262,177 @@ export class WorkspaceMessageController implements vscode.Disposable {
     selection: DetailSelection,
     commits: Commit[]
   ): Promise<void> {
-    this.latestSelectionRequestId = Math.max(this.latestSelectionRequestId, requestId);
-    try {
-      let range: DiffRange;
-      let files: FileChange[];
-      let details: CommitDetails[];
+    if (requestId <= this.latestSelectionRequestId) return;
+    this.latestSelectionRequestId = requestId;
+    this.selectionAbortController?.abort();
+    const abortController = new AbortController();
+    this.selectionAbortController = abortController;
+    this.clearSelectionDiff();
 
+    try {
       if (selection.kind === 'commits') {
         const commitRange = computeDiffRange(selection.hashes, commits);
         if (!commitRange) throw new Error(t('error.selectedCommitsUnavailable'));
-        range = commitRange;
-        [files, details] = await Promise.all([
-          this.git.getDiffSummary(range.base, range.head),
-          this.git.getCommitDetails(selection.hashes),
+        await Promise.all([
+          this.loadSelectionFiles(
+            requestId,
+            selection,
+            commitRange,
+            abortController
+          ),
+          this.loadSelectionCommitDetails(
+            requestId,
+            selection,
+            selection.hashes,
+            abortController
+          ),
         ]);
       } else {
         const entry = this.findCachedStash(selection.selector, selection.hash);
-        const stashDetails = await this.stashes.getDetails(entry);
-        range = stashDetails.range;
-        files = stashDetails.files;
-        details = stashDetails.details;
+        const stashDetails = await this.stashes.getDetails(
+          entry,
+          abortController.signal
+        );
+        if (!this.isCurrentSelectionRequest(requestId, abortController)) return;
+        this.publishSelectionFiles(
+          requestId,
+          selection,
+          stashDetails.range,
+          stashDetails.files
+        );
+        this.post({
+          type: 'selectionDetails/detailsLoaded',
+          requestId,
+          selection,
+          details: stashDetails.details,
+        });
       }
-
-      if (requestId !== this.latestSelectionRequestId) return;
-      this.fileDiffNavigator.clear();
-      this.setDiffCache(range, files);
-      this.post({ type: 'diff/activeFile', filePath: null });
-      this.post({
-        type: 'selectionDetails/loaded',
+    } catch (error) {
+      this.publishSelectionError(
         requestId,
         selection,
-        range,
-        files,
+        'all',
+        error,
+        abortController
+      );
+    } finally {
+      if (this.selectionAbortController === abortController) {
+        this.selectionAbortController = null;
+      }
+    }
+  }
+
+  clearSelectionDetails(requestId: number): void {
+    if (requestId <= this.latestSelectionRequestId) return;
+    this.latestSelectionRequestId = requestId;
+    this.selectionAbortController?.abort();
+    this.selectionAbortController = null;
+    this.clearSelectionDiff();
+  }
+
+  private async loadSelectionFiles(
+    requestId: number,
+    selection: DetailSelection,
+    range: DiffRange,
+    abortController: AbortController
+  ): Promise<void> {
+    try {
+      const files = await this.git.getDiffSummary(
+        range.base,
+        range.head,
+        abortController.signal
+      );
+      if (!this.isCurrentSelectionRequest(requestId, abortController)) return;
+      this.publishSelectionFiles(requestId, selection, range, files);
+    } catch (error) {
+      this.publishSelectionError(
+        requestId,
+        selection,
+        'files',
+        error,
+        abortController
+      );
+    }
+  }
+
+  private async loadSelectionCommitDetails(
+    requestId: number,
+    selection: DetailSelection,
+    hashes: string[],
+    abortController: AbortController
+  ): Promise<void> {
+    try {
+      const details = await this.git.getCommitDetails(
+        hashes,
+        abortController.signal
+      );
+      if (!this.isCurrentSelectionRequest(requestId, abortController)) return;
+      this.post({
+        type: 'selectionDetails/detailsLoaded',
+        requestId,
+        selection,
         details,
       });
     } catch (error) {
-      if (requestId !== this.latestSelectionRequestId) return;
-      this.post({
-        type: 'selectionDetails/error',
+      this.publishSelectionError(
         requestId,
         selection,
-        error: errorMessage(error),
-      });
+        'details',
+        error,
+        abortController
+      );
     }
+  }
+
+  private publishSelectionFiles(
+    requestId: number,
+    selection: DetailSelection,
+    range: DiffRange,
+    files: FileChange[]
+  ): void {
+    this.setDiffCache({ range, files });
+    this.post({
+      type: 'selectionDetails/filesLoaded',
+      requestId,
+      selection,
+      range,
+      files,
+    });
+  }
+
+  private publishSelectionError(
+    requestId: number,
+    selection: DetailSelection,
+    target: SelectionDetailsTarget,
+    error: unknown,
+    abortController: AbortController
+  ): void {
+    if (!this.isCurrentSelectionRequest(requestId, abortController)) return;
+    this.post({
+      type: 'selectionDetails/error',
+      requestId,
+      selection,
+      target,
+      error: errorMessage(error),
+    });
+  }
+
+  private isCurrentSelectionRequest(
+    requestId: number,
+    abortController: AbortController
+  ): boolean {
+    return (
+      !this.disposed &&
+      !abortController.signal.aborted &&
+      requestId === this.latestSelectionRequestId &&
+      abortController === this.selectionAbortController
+    );
+  }
+
+  private clearSelectionDiff(): void {
+    this.fileDiffNavigator.clear();
+    this.setDiffCache(null);
+    this.post({ type: 'diff/activeFile', filePath: null });
   }
 
   private scheduleWorkingTreeRefresh(): void {

@@ -12,7 +12,8 @@ export function useSelectionDetails(selection: DetailSelection | null) {
   const [files, setFiles] = useState<FileChange[]>([]);
   const [details, setDetails] = useState<CommitDetails[]>([]);
   const [activeFilePath, setActiveFilePath] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [filesLoading, setFilesLoading] = useState(false);
+  const [detailsLoading, setDetailsLoading] = useState(false);
   const requestIdRef = useRef(0);
   const selectionKey = useMemo(() => {
     if (!selection) return '';
@@ -24,35 +25,46 @@ export function useSelectionDetails(selection: DetailSelection | null) {
   useEffect(() => {
     const requestId = ++requestIdRef.current;
     setActiveFilePath(null);
+    setRange(null);
+    setFiles([]);
+    setDetails([]);
     if (!selection) {
-      setRange(null);
-      setFiles([]);
-      setDetails([]);
-      setLoading(false);
-      postMessage({ type: 'selectionDetails/clear' });
+      setFilesLoading(false);
+      setDetailsLoading(false);
+      postMessage({ type: 'selectionDetails/clear', requestId });
       return;
     }
-    setLoading(true);
+    setFilesLoading(true);
+    setDetailsLoading(true);
     postMessage({ type: 'selectionDetails/request', requestId, selection });
     // The normalized selection key is the request identity.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectionKey]);
 
-  useIpcListener('selectionDetails/loaded', (response) => {
+  useIpcListener('selectionDetails/filesLoaded', (response) => {
     if (response.requestId !== requestIdRef.current) return;
     setRange(response.range);
     setFiles(response.files);
-    setDetails(response.details);
     setActiveFilePath(null);
-    setLoading(false);
+    setFilesLoading(false);
+  });
+  useIpcListener('selectionDetails/detailsLoaded', (response) => {
+    if (response.requestId !== requestIdRef.current) return;
+    setDetails(response.details);
+    setDetailsLoading(false);
   });
   useIpcListener('selectionDetails/error', (response) => {
     if (response.requestId !== requestIdRef.current) return;
-    setRange(null);
-    setFiles([]);
-    setDetails([]);
-    setActiveFilePath(null);
-    setLoading(false);
+    if (response.target === 'files' || response.target === 'all') {
+      setRange(null);
+      setFiles([]);
+      setActiveFilePath(null);
+      setFilesLoading(false);
+    }
+    if (response.target === 'details' || response.target === 'all') {
+      setDetails([]);
+      setDetailsLoading(false);
+    }
   });
   useIpcListener('diff/activeFile', (response) => setActiveFilePath(response.filePath));
 
@@ -69,7 +81,8 @@ export function useSelectionDetails(selection: DetailSelection | null) {
     files,
     details,
     activeFilePath,
-    loading,
+    filesLoading,
+    detailsLoading,
     openDiff,
   };
 }

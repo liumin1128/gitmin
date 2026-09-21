@@ -66,7 +66,7 @@ export type WebviewMessage =
       hash: string;
     }
   | { type: 'selectionDetails/request'; requestId: number; selection: DetailSelection }
-  | { type: 'selectionDetails/clear' }
+  | { type: 'selectionDetails/clear'; requestId: number }
   | { type: 'action/execute'; action: GitAction; hashes: string[]; squashMessage?: string };
 
 // ===== Extension -> Webview =====
@@ -110,17 +110,23 @@ export type ExtensionMessage =
   | { type: 'stashes/loaded'; requestId: number; entries: StashEntry[] }
   | { type: 'stashes/error'; requestId: number; error: string }
   | {
-      type: 'selectionDetails/loaded';
+      type: 'selectionDetails/filesLoaded';
       requestId: number;
       selection: DetailSelection;
       range: DiffRange;
       files: FileChange[];
+    }
+  | {
+      type: 'selectionDetails/detailsLoaded';
+      requestId: number;
+      selection: DetailSelection;
       details: CommitDetails[];
     }
   | {
       type: 'selectionDetails/error';
       requestId: number;
       selection: DetailSelection;
+      target: 'files' | 'details' | 'all';
       error: string;
     }
   | { type: 'action/result'; action: GitAction; ok: boolean; message?: string };

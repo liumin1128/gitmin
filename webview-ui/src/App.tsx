@@ -358,7 +358,7 @@ export function App() {
                 range={selectionDetails.range}
                 files={selectionDetails.files}
                 activeFilePath={selectionDetails.activeFilePath}
-                loading={selectionDetails.loading}
+                loading={selectionDetails.filesLoading}
                 onOpenDiff={selectionDetails.openDiff}
               />
             ),
@@ -372,7 +372,7 @@ export function App() {
             content: (
               <CommitDetailsPanel
                 details={selectionDetails.details}
-                loading={selectionDetails.loading}
+                loading={selectionDetails.detailsLoading}
               />
             ),
           },
