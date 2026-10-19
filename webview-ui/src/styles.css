@@ -572,7 +572,8 @@ body.vscode-high-contrast-light .filter-form-row > input {
   justify-content: flex-start;
   min-height: 0;
   min-width: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 .workbench-panel {
   position: relative;

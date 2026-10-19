@@ -2,7 +2,7 @@
   "name": "gitmin",
   "displayName": "GitMin",
   "description": "%extension.description%",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "publisher": "liumin",
   "repository": {
     "type": "git",
@@ -186,6 +186,8 @@
     "test:repositories": "node test/runTsxTest.mjs test/repositories.mts && node test/runTsxTest.mjs test/repositoryList.tsx",
     "test:i18n": "node test/runTsxTest.mjs test/i18n.ts",
     "test:notifications": "node test/runTsxTest.mjs test/extensionMessageNotification.mts",
+    "test:selection-details": "node test/runStubbedTest.mjs test/selectionDetailsFlow.ts",
+    "test:webview-visual": "node test/webviewVisualCheck.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.webview.json --noEmit",
     "vscode:prepublish": "npm run build"
   },

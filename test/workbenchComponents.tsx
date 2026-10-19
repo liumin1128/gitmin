@@ -77,6 +77,7 @@ const html = renderToStaticMarkup(
     <WorkbenchPanelStack
       panels={panels}
       heights={heights}
+      lastResizedPanel={null}
       onCollapsedChange={() => undefined}
       onHeightChange={() => undefined}
     />
@@ -119,7 +120,7 @@ const natural = calculatePanelHeights(
   ],
   500
 );
-assert.deepEqual(natural, { repositories: 74, changes: PANEL_HEADER_HEIGHT, commits: 400 });
+assert.deepEqual(natural, { repositories: 84, changes: PANEL_HEADER_HEIGHT, commits: 390 });
 
 const manual = calculatePanelHeights(
   [
@@ -139,8 +140,8 @@ const fitted = calculatePanelHeights(
   ],
   326
 );
-assert.deepEqual(fitted, { repositories: 175, changes: PANEL_HEADER_HEIGHT, commits: 125 });
-assert.equal(clampPanelHeight(20, 250), 50);
+assert.deepEqual(fitted, { repositories: 169, changes: PANEL_HEADER_HEIGHT, commits: 131 });
+assert.equal(clampPanelHeight(20, 250), 84);
 assert.equal(clampPanelHeight(400, 250), 250);
 
 const draggedUp = calculatePanelHeights(
@@ -158,22 +159,87 @@ const draggedDown = calculatePanelHeights(
   600
 );
 assert.deepEqual(draggedUp, { commits: 260, files: 340 });
-assert.deepEqual(draggedDown, { commits: 340, files: 260 });
+assert.deepEqual(draggedDown, { commits: 318, files: 282 });
+assert.deepEqual(
+  calculatePanelHeights(
+    [
+      { id: 'commits', collapsed: false, preferredHeight: 340, naturalHeight: 300 },
+      { id: 'files', collapsed: false, preferredHeight: null, naturalHeight: 300 },
+    ],
+    600,
+    'commits'
+  ),
+  { commits: 340, files: 260 },
+  'the last resized panel reaches its requested height'
+);
+
+const draggedToMaximum = [
+  { id: 'commits', collapsed: false, preferredHeight: 516, naturalHeight: 300 },
+  { id: 'files', collapsed: false, preferredHeight: null, naturalHeight: 300 },
+];
+assert.equal(calculatePanelMaximumHeight(draggedToMaximum, 'commits', 600), 516);
+assert.deepEqual(calculatePanelHeights(draggedToMaximum, 600, 'commits'), {
+  commits: 516,
+  files: 84,
+});
 
 const independentlySized = [
   { id: 'changes', collapsed: false, preferredHeight: 200, naturalHeight: 200 },
   { id: 'commits', collapsed: false, preferredHeight: 350, naturalHeight: 300 },
   { id: 'files', collapsed: false, preferredHeight: 300, naturalHeight: 300 },
 ];
-assert.equal(calculatePanelMaximumHeight(independentlySized, 'commits', 600), 350);
+assert.equal(calculatePanelMaximumHeight(independentlySized, 'commits', 600), 432);
 assert.deepEqual(calculatePanelHeights(independentlySized, 600), {
-  changes: 200,
-  commits: 350,
-  files: 50,
+  changes: 151,
+  commits: 238,
+  files: 211,
 });
+
+// A panel dragged far beyond the available room must not starve the trailing
+// panels down to a blank strip (reported for Changed Files / Commit Details).
+const crowded = calculatePanelHeights(
+  [
+    { id: 'repositories', collapsed: true, preferredHeight: 26, naturalHeight: 56 },
+    { id: 'changes', collapsed: false, preferredHeight: 177, naturalHeight: 220 },
+    { id: 'commits', collapsed: false, preferredHeight: 835, naturalHeight: 835 },
+    { id: 'stashes', collapsed: false, preferredHeight: null, naturalHeight: 149 },
+    { id: 'files', collapsed: false, preferredHeight: null, naturalHeight: 70 },
+    { id: 'details', collapsed: false, preferredHeight: null, naturalHeight: 204 },
+  ],
+  1200
+);
+assert.deepEqual(crowded, {
+  repositories: 26,
+  changes: 152,
+  commits: 634,
+  stashes: 131,
+  files: 84,
+  details: 173,
+});
+assert.ok(
+  crowded.files - PANEL_HEADER_HEIGHT >= 44 &&
+    crowded.details - PANEL_HEADER_HEIGHT >= 120,
+  'trailing panels keep room for their content instead of collapsing to the header'
+);
+assert.ok(
+  Object.values(crowded).reduce((total, height) => total + height, 0) === 1200,
+  'panel heights fill the stack exactly'
+);
+
+const compactPanels = ['changes', 'commits', 'stashes', 'files', 'details'].map((id) => ({
+  id,
+  collapsed: false,
+  preferredHeight: null,
+  naturalHeight: 120,
+}));
+const compact = calculatePanelHeights(compactPanels, 400);
+assert.ok(Object.values(compact).every((height) => height === 84));
+assert.equal(calculatePanelMaximumHeight(compactPanels, 'commits', 400), 84);
+assert.equal(Object.values(compact).reduce((total, height) => total + height, 0), 420);
 
 const styles = readFileSync('webview-ui/src/styles.css', 'utf8');
 assert.match(styles, /\.workbench-panel-stack\s*\{[^}]*align-items:\s*stretch/s);
+assert.match(styles, /\.workbench-panel-stack\s*\{[^}]*overflow-y:\s*auto/s);
 assert.match(styles, /\.workbench-panel\s*\{[^}]*flex:\s*0\s+0\s+var\(--panel-height\)/s);
 assert.match(styles, /\.workbench-panel-content\s*\{[^}]*overflow:\s*auto/s);
 assert.doesNotMatch(styles, /\.view-section\s*\{/);

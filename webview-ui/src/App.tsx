@@ -236,6 +236,7 @@ export function App() {
       />
       <WorkbenchPanelStack
         heights={layout.heights}
+        lastResizedPanel={layout.lastResizedPanel}
         onCollapsedChange={setCollapsed}
         onHeightChange={setPanelHeight}
         panels={[

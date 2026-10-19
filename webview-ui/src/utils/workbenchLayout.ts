@@ -2,6 +2,7 @@ import {
   WORKBENCH_VIEW_IDS,
   type WorkbenchViewId,
 } from '../../../shared/workbenchViews.ts';
+import { MIN_EXPANDED_PANEL_HEIGHT } from './panelSizing.ts';
 
 export { WORKBENCH_VIEW_IDS };
 export type { WorkbenchViewId };
@@ -16,6 +17,7 @@ export type WorkbenchPanelHeights = Record<WorkbenchViewId, number | null>;
 export interface WorkbenchLayoutState {
   version: 4;
   heights: WorkbenchPanelHeights;
+  lastResizedPanel: WorkbenchViewId | null;
   views: Record<WorkbenchViewId, WorkbenchViewState>;
 }
 
@@ -29,6 +31,7 @@ export const DEFAULT_WORKBENCH_LAYOUT: WorkbenchLayoutState = {
     files: null,
     details: null,
   },
+  lastResizedPanel: null,
   views: {
     repositories: { visible: false, collapsed: false },
     changes: { visible: false, collapsed: false },
@@ -45,6 +48,7 @@ function defaultLayout(): WorkbenchLayoutState {
   return {
     version: 4,
     heights: { ...DEFAULT_WORKBENCH_LAYOUT.heights },
+    lastResizedPanel: null,
     views: Object.fromEntries(
       WORKBENCH_VIEW_IDS.map((id) => [id, { ...DEFAULT_WORKBENCH_LAYOUT.views[id] }])
     ) as Record<WorkbenchViewId, WorkbenchViewState>,
@@ -63,6 +67,15 @@ function isPanelHeight(value: unknown): value is number | null {
   );
 }
 
+/**
+ * A stored height below the expanded minimum shows nothing but the panel
+ * header, which reads as a blank panel. Treat such values as automatic so the
+ * panel falls back to its content height instead of staying empty.
+ */
+function normalizePanelHeight(height: number | null): number | null {
+  return height !== null && height < MIN_EXPANDED_PANEL_HEIGHT ? null : height;
+}
+
 function isPanelHeights(value: unknown): value is WorkbenchPanelHeights {
   if (!value || typeof value !== 'object') return false;
   const heights = value as Record<string, unknown>;
@@ -74,44 +87,54 @@ export function parseWorkbenchLayout(value: unknown): WorkbenchLayoutState {
   const state = value as {
     version?: unknown;
     heights?: unknown;
+    lastResizedPanel?: unknown;
     views?: Record<string, unknown>;
   };
+  const storedHeights = state.heights;
+  const storedViews = state.views;
 
   if (
     state.version === 4 &&
-    isPanelHeights(state.heights) &&
-    state.views &&
-    WORKBENCH_VIEW_IDS.every((id) => isViewState(state.views?.[id]))
+    isPanelHeights(storedHeights) &&
+    storedViews &&
+    WORKBENCH_VIEW_IDS.every((id) => isViewState(storedViews[id]))
   ) {
+    const heights = Object.fromEntries(
+      WORKBENCH_VIEW_IDS.map((id) => [id, normalizePanelHeight(storedHeights[id])])
+    ) as WorkbenchPanelHeights;
+    const lastResizedPanel = WORKBENCH_VIEW_IDS.find(
+      (id) => id === state.lastResizedPanel && heights[id] !== null
+    ) ?? null;
     return {
       version: 4,
-      heights: { ...state.heights },
+      heights,
+      lastResizedPanel,
       views: Object.fromEntries(
-        WORKBENCH_VIEW_IDS.map((id) => [id, { ...(state.views![id] as WorkbenchViewState) }])
+        WORKBENCH_VIEW_IDS.map((id) => [id, { ...(storedViews[id] as WorkbenchViewState) }])
       ) as Record<WorkbenchViewId, WorkbenchViewState>,
     };
   }
 
-  if (state.version === 3 && state.views) {
+  if (state.version === 3 && storedViews) {
     const next = defaultLayout();
     WORKBENCH_VIEW_IDS.forEach((id) => {
-      if (isViewState(state.views?.[id])) next.views[id] = { ...state.views[id] };
+      if (isViewState(storedViews[id])) next.views[id] = { ...storedViews[id] };
     });
     return next;
   }
 
-  if (state.version === 2 && state.views) {
+  if (state.version === 2 && storedViews) {
     const next = defaultLayout();
     VERSION_2_VIEW_IDS.forEach((id) => {
-      if (isViewState(state.views?.[id])) next.views[id] = { ...state.views[id] };
+      if (isViewState(storedViews[id])) next.views[id] = { ...storedViews[id] };
     });
     return next;
   }
 
-  if (state.version === 1 && state.views) {
+  if (state.version === 1 && storedViews) {
     const next = defaultLayout();
     for (const id of ['commits', 'files', 'details'] as const) {
-      if (isViewState(state.views[id])) next.views[id] = { ...state.views[id] };
+      if (isViewState(storedViews[id])) next.views[id] = { ...storedViews[id] };
     }
     return next;
   }
@@ -125,7 +148,14 @@ export function setWorkbenchPanelHeight(
   height: number | null
 ): WorkbenchLayoutState {
   if (!isPanelHeight(height)) return state;
-  return { ...state, heights: { ...state.heights, [id]: height } };
+  const nextHeight = normalizePanelHeight(height);
+  let lastResizedPanel = state.lastResizedPanel;
+  if (nextHeight !== null) lastResizedPanel = id;
+  else if (lastResizedPanel === id) lastResizedPanel = null;
+  if (state.heights[id] === nextHeight && state.lastResizedPanel === lastResizedPanel) {
+    return state;
+  }
+  return { ...state, heights: { ...state.heights, [id]: nextHeight }, lastResizedPanel };
 }
 
 export function setViewVisible(

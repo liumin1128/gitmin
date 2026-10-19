@@ -53,10 +53,46 @@ assert.ok(Object.values(migratedVersion3.heights).every((height) => height === n
 
 const updated = setWorkbenchPanelHeight(migratedVersion3, 'commits', 280);
 assert.equal(updated.heights.commits, 280);
-assert.equal(setWorkbenchPanelHeight(updated, 'commits', null).heights.commits, null);
+assert.equal(updated.lastResizedPanel, 'commits');
+const resetHeight = setWorkbenchPanelHeight(updated, 'commits', null);
+assert.equal(resetHeight.heights.commits, null);
+assert.equal(resetHeight.lastResizedPanel, null);
 assert.equal(setWorkbenchPanelHeight(updated, 'commits', -1), updated);
 assert.equal(setViewVisible(updated, 'stashes', true).views.stashes.visible, true);
 assert.equal(setViewCollapsed(updated, 'changes', true).views.changes.collapsed, true);
 assert.equal(migratedVersion3.heights.commits, null, 'updates must be immutable');
+
+// A stored height below the expanded minimum only shows the panel header, which
+// reads as a blank Changed Files / Commit Details panel; it must fall back to
+// automatic sizing instead of being kept.
+const squeezed = parseWorkbenchLayout({
+  version: 4,
+  heights: {
+    repositories: 26,
+    changes: 177,
+    commits: 835,
+    stashes: null,
+    files: 26,
+    details: 50,
+  },
+  views: DEFAULT_WORKBENCH_LAYOUT.views,
+});
+assert.equal(squeezed.heights.files, null, 'sub-minimum heights become automatic');
+assert.equal(squeezed.heights.details, null, 'sub-minimum heights become automatic');
+assert.equal(squeezed.heights.commits, 835, 'usable heights are preserved');
+assert.equal(squeezed.lastResizedPanel, null, 'older layouts have no resize priority');
+assert.equal(setWorkbenchPanelHeight(updated, 'commits', 30).heights.commits, null);
+
+const restored = parseWorkbenchLayout({
+  ...updated,
+  lastResizedPanel: 'commits',
+});
+assert.equal(restored.lastResizedPanel, 'commits');
+assert.equal(parseWorkbenchLayout({ ...restored, lastResizedPanel: 'invalid' }).lastResizedPanel, null);
+assert.equal(
+  parseWorkbenchLayout({ ...restored, heights: { ...restored.heights, commits: 30 } }).lastResizedPanel,
+  null,
+  'a discarded height cannot retain resize priority'
+);
 
 console.log('workbench layout checks passed');

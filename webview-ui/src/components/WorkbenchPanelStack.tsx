@@ -38,6 +38,7 @@ export interface WorkbenchPanelDefinition {
 interface Props {
   panels: WorkbenchPanelDefinition[];
   heights: WorkbenchPanelHeights;
+  lastResizedPanel: WorkbenchViewId | null;
   onCollapsedChange: (id: WorkbenchViewId, collapsed: boolean) => void;
   onHeightChange: (id: WorkbenchViewId, height: number | null) => void;
 }
@@ -45,6 +46,7 @@ interface Props {
 export function WorkbenchPanelStack({
   panels,
   heights,
+  lastResizedPanel,
   onCollapsedChange,
   onHeightChange,
 }: Props) {
@@ -63,8 +65,8 @@ export function WorkbenchPanelStack({
     [heights, naturalHeights, visiblePanels]
   );
   const resolvedHeights = useMemo(
-    () => calculatePanelHeights(sizingInputs, containerHeight),
-    [containerHeight, sizingInputs]
+    () => calculatePanelHeights(sizingInputs, containerHeight, lastResizedPanel),
+    [containerHeight, lastResizedPanel, sizingInputs]
   );
 
   const measureContainer = useCallback(() => {

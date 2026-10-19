@@ -1,5 +1,11 @@
 export const PANEL_HEADER_HEIGHT = 26;
-export const MIN_EXPANDED_PANEL_HEIGHT = 50;
+/**
+ * Smallest height an expanded panel may keep: a header plus roughly three
+ * content rows. Panels squeezed below this read as blank (the empty hint and
+ * the first row fall outside the visible area), which is what users report
+ * when one large panel claims the whole column.
+ */
+export const MIN_EXPANDED_PANEL_HEIGHT = 84;
 export const DEFAULT_AUTO_PANEL_HEIGHT = 120;
 
 export interface PanelSizingInput {
@@ -34,21 +40,18 @@ export function calculatePanelMaximumHeight(
   containerHeight: number
 ): number {
   if (containerHeight <= 0) return Number.MAX_SAFE_INTEGER;
-  const fillPanelId = findFillPanelId(panels);
   const reserved = panels.reduce((total, panel) => {
     if (panel.id === targetId) return total;
     if (panel.collapsed) return total + PANEL_HEADER_HEIGHT;
-    if (panel.id === fillPanelId || panel.preferredHeight === null) {
-      return total + MIN_EXPANDED_PANEL_HEIGHT;
-    }
-    return total + resolveDesiredHeight(panel, panel.preferredHeight);
+    return total + MIN_EXPANDED_PANEL_HEIGHT;
   }, 0);
-  return Math.max(PANEL_HEADER_HEIGHT, containerHeight - reserved);
+  return Math.max(MIN_EXPANDED_PANEL_HEIGHT, containerHeight - reserved);
 }
 
 export function calculatePanelHeights(
   panels: readonly PanelSizingInput[],
-  containerHeight: number
+  containerHeight: number,
+  lastResizedPanelId?: string | null
 ): Record<string, number> {
   const heights: Record<string, number> = {};
   const expanded: ExpandedPanel[] = [];
@@ -78,27 +81,36 @@ export function calculatePanelHeights(
   }
 
   const capacity = Math.max(0, containerHeight - collapsedHeight);
-  const minimum = Math.min(
-    MIN_EXPANDED_PANEL_HEIGHT,
-    Math.max(PANEL_HEADER_HEIGHT, capacity / expanded.length)
-  );
+  const minimum = MIN_EXPANDED_PANEL_HEIGHT;
+  if (capacity < minimum * expanded.length) {
+    // Let the stack scroll instead of squeezing expanded panels below their minimum.
+    expanded.forEach((panel) => {
+      heights[panel.id] = minimum;
+    });
+    return heights;
+  }
+
   const desiredTotal = expanded.reduce((total, panel) => total + panel.desiredHeight, 0);
   if (desiredTotal <= capacity) {
     Object.assign(heights, fillLastPanel(expanded, capacity));
     return heights;
   }
 
-  const manual = expanded.filter((panel) => panel.preferredHeight !== null);
-  const automatic = expanded.filter((panel) => panel.preferredHeight === null);
-  const manualTotal = manual.reduce((total, panel) => total + panel.desiredHeight, 0);
-  if (manualTotal + automatic.length * minimum <= capacity) {
-    manual.forEach((panel) => {
-      heights[panel.id] = Math.round(panel.desiredHeight);
-    });
-    Object.assign(heights, fitPanels(automatic, capacity - manualTotal, minimum));
+  const lastResizedPanel = expanded.find(
+    (panel) => panel.id === lastResizedPanelId && panel.preferredHeight !== null
+  );
+  if (lastResizedPanel) {
+    const maximum = capacity - minimum * (expanded.length - 1);
+    const height = Math.min(Math.round(lastResizedPanel.desiredHeight), maximum);
+    heights[lastResizedPanel.id] = height;
+    Object.assign(
+      heights,
+      fitPanels(expanded.filter((panel) => panel.id !== lastResizedPanel.id), capacity - height, minimum)
+    );
     return heights;
   }
 
+  // Without a resize priority, share the shortage across panels.
   Object.assign(heights, fitPanels(expanded, capacity, minimum));
   return heights;
 }
@@ -136,23 +148,21 @@ function fitPanels(
   minimum: number
 ): Record<string, number> {
   if (panels.length === 0) return {};
-  const availableExtra = Math.max(0, capacity - minimum * panels.length);
+  const extraBudget = capacity - minimum * panels.length;
   const desiredExtra = panels.reduce(
     (total, panel) => total + Math.max(0, panel.desiredHeight - minimum),
     0
   );
+  const scale = desiredExtra > 0 ? Math.min(1, extraBudget / desiredExtra) : 0;
+
+  const heights: Record<string, number> = {};
   let consumed = 0;
-  return Object.fromEntries(
-    panels.map((panel, index) => {
-      const isLast = index === panels.length - 1;
-      const extra = desiredExtra > 0
-        ? (Math.max(0, panel.desiredHeight - minimum) / desiredExtra) * availableExtra
-        : availableExtra / panels.length;
-      const height = isLast
-        ? Math.max(PANEL_HEADER_HEIGHT, capacity - consumed)
-        : Math.max(PANEL_HEADER_HEIGHT, Math.round(minimum + extra));
-      consumed += height;
-      return [panel.id, height];
-    })
-  );
+  panels.forEach((panel, index) => {
+    const height = index === panels.length - 1
+      ? capacity - consumed
+      : Math.floor(minimum + Math.max(0, panel.desiredHeight - minimum) * scale);
+    heights[panel.id] = height;
+    consumed += height;
+  });
+  return heights;
 }
