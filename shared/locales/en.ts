@@ -27,7 +27,7 @@ export const EN_TRANSLATIONS = {
 
   'panel.retryCommits': 'Retry loading commits',
   'panel.nonContiguous':
-    'Selected commits are not contiguous; the diff range includes changes from unselected commits',
+    'Only files changed by selected commits are listed; comparing a file across non-contiguous commits may include intervening changes',
   'panel.manageViews': 'Manage views',
   'panel.expand': 'Expand {title}',
   'panel.collapse': 'Collapse {title}',

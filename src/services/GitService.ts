@@ -16,6 +16,8 @@ import {
   parseCommitDetailsOutput,
 } from '../utils/commitDetailsParser';
 import { COMMIT_PAGE_SIZE } from '../../shared/commitPagination';
+import { EMPTY_TREE_HASH } from '../utils/diffRange';
+import { mergeSelectedCommitChanges } from '../utils/selectedCommitChanges';
 
 export class GitService {
   private readonly git: SimpleGit;
@@ -93,11 +95,53 @@ export class GitService {
     head: string,
     signal?: AbortSignal
   ): Promise<FileChange[]> {
-    const range = `${base}..${head}`;
+    return this.readDiffSummary(this.gitClient(signal), base, head);
+  }
+
+  /** Collect only selected commits, keeping the before/after revisions per file. */
+  async getSelectedCommitChanges(
+    hashes: string[],
+    commits: Commit[],
+    signal?: AbortSignal
+  ): Promise<FileChange[]> {
+    const selected = new Set(hashes);
     const git = this.gitClient(signal);
+    const summaries = new Map<string, Promise<FileChange[]>>();
+    const readSummary = (base: string, head: string) => {
+      const key = `${base}..${head}`;
+      let summary = summaries.get(key);
+      if (!summary) {
+        summary = this.readDiffSummary(git, base, head);
+        summaries.set(key, summary);
+      }
+      return summary;
+    };
+    const changes = await Promise.all(
+      commits.filter((commit) => selected.has(commit.hash)).reverse().map(async (commit) => {
+        const range = { base: commit.parents[0] ?? EMPTY_TREE_HASH, head: commit.hash };
+        return { range, files: await readSummary(range.base, range.head) };
+      })
+    );
+    const files = mergeSelectedCommitChanges(changes);
+
+    return Promise.all(files.map(async (file) => {
+      const { base, head } = file.diffRange!;
+      const summary = await readSummary(base, head);
+      const stats = summary.find((change) => change.path === file.path);
+      return {
+        ...file,
+        insertions: stats?.insertions ?? 0,
+        deletions: stats?.deletions ?? 0,
+        binary: stats?.binary ?? file.binary,
+      };
+    }));
+  }
+
+  private async readDiffSummary(git: SimpleGit, base: string, head: string): Promise<FileChange[]> {
+    const range = `${base}..${head}`;
     const [nameStatusOut, numstatOut] = await Promise.all([
-      git.raw(['diff', '--name-status', range]),
-      git.raw(['diff', '--numstat', range]),
+      git.raw(['diff', '--name-status', '-z', range]),
+      git.raw(['diff', '--numstat', '-z', range]),
     ]);
     return mergeFileChanges(parseNameStatus(nameStatusOut), parseNumstat(numstatOut));
   }

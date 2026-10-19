@@ -100,22 +100,23 @@ export class FileDiffNavigator implements vscode.Disposable {
 
     const file = session.files.find((item) => item.path === filePath);
     if (!file) return;
+    const range = file.diffRange ?? session.range;
     const rootUri = vscode.Uri.file(session.repoRoot);
     const originalUri = this.toUri(
       api,
       rootUri,
       file,
       "left",
-      session.range.base,
+      range.base,
     );
     const modifiedUri = this.toUri(
       api,
       rootUri,
       file,
       "right",
-      session.range.head,
+      range.head,
     );
-    const title = `${file.path} (${session.range.base.slice(0, 7)}..${session.range.head.slice(0, 7)})`;
+    const title = `${file.path} (${range.base.slice(0, 7)}..${range.head.slice(0, 7)})`;
 
     this.activeResources = new Set([
       originalUri.toString(),

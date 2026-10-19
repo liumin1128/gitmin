@@ -187,6 +187,7 @@
     "test:i18n": "node test/runTsxTest.mjs test/i18n.ts",
     "test:notifications": "node test/runTsxTest.mjs test/extensionMessageNotification.mts",
     "test:selection-details": "node test/runStubbedTest.mjs test/selectionDetailsFlow.ts",
+    "test:selected-commits": "node test/runTsxTest.mjs test/selectedCommitChanges.mts",
     "test:webview-visual": "node test/webviewVisualCheck.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.webview.json --noEmit",
     "vscode:prepublish": "npm run build"

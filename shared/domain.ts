@@ -52,6 +52,8 @@ export interface FileChange {
   insertions: number;
   deletions: number;
   binary: boolean;
+  /** Per-file revisions when changes are collected from selected commits. */
+  diffRange?: Pick<DiffRange, 'base' | 'head'>;
 }
 
 export type WorkingTreeGroup = 'conflicts' | 'staged' | 'changes';

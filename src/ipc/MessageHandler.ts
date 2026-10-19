@@ -548,7 +548,7 @@ export class MessageHandler implements vscode.Disposable {
     this.diffCache = null;
     this.post({ type: "diff/activeFile", filePath: null });
     try {
-      const files = await git.getDiffSummary(range.base, range.head);
+      const files = await git.getSelectedCommitChanges(hashes, this.commitsCache);
       if (generation !== this.repositoryGeneration) return;
       this.diffCache = { range, files };
       this.post({ type: "diff/loaded", range, files });

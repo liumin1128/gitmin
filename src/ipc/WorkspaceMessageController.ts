@@ -278,6 +278,7 @@ export class WorkspaceMessageController implements vscode.Disposable {
             requestId,
             selection,
             commitRange,
+            commits,
             abortController
           ),
           this.loadSelectionCommitDetails(
@@ -332,14 +333,15 @@ export class WorkspaceMessageController implements vscode.Disposable {
 
   private async loadSelectionFiles(
     requestId: number,
-    selection: DetailSelection,
+    selection: Extract<DetailSelection, { kind: 'commits' }>,
     range: DiffRange,
+    commits: Commit[],
     abortController: AbortController
   ): Promise<void> {
     try {
-      const files = await this.git.getDiffSummary(
-        range.base,
-        range.head,
+      const files = await this.git.getSelectedCommitChanges(
+        selection.hashes,
+        commits,
         abortController.signal
       );
       if (!this.isCurrentSelectionRequest(requestId, abortController)) return;

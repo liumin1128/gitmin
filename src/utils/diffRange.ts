@@ -34,7 +34,8 @@ export function diffSideRef(
  *   - N=1: base = commit.parents[0] (empty tree for root), head = commit
  *   - N>1: Find the "oldest" commit in the selection (highest index in list), base = its parent;
  *          "newest" commit (lowest index), head = its hash
- *   - contiguous: Whether selected indices are consecutive (for UI hint about unselected commits)
+ *   - contiguous: Whether selected commits form a direct first-parent chain,
+ *                 even when the log has been filtered by author or search.
  */
 export function computeDiffRange(
   selectedHashes: string[],
@@ -59,7 +60,10 @@ export function computeDiffRange(
 
   const base = oldest.parents[0] ?? EMPTY_TREE_HASH;
   const head = newest.hash;
-  const contiguous = maxIdx - minIdx + 1 === indices.length;
+  const selected = [...new Set(indices)].sort((a, b) => a - b).map((i) => allCommits[i]!);
+  const contiguous = selected.every((commit, i) =>
+    i === selected.length - 1 || commit.parents[0] === selected[i + 1]!.hash
+  );
 
   return { base, head, contiguous };
 }

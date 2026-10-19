@@ -28,7 +28,7 @@ export const ZH_CN_TRANSLATIONS = {
   'common.operationFailed': '操作失败',
 
   'panel.retryCommits': '重试加载提交',
-  'panel.nonContiguous': '所选提交不连续，差异范围包含未选中提交的更改',
+  'panel.nonContiguous': '仅列出所选提交涉及的文件；同一文件跨不连续提交对比时，可能包含中间提交的改动',
   'panel.manageViews': '管理视图',
   'panel.expand': '展开{title}',
   'panel.collapse': '折叠{title}',

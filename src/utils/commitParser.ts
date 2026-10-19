@@ -54,6 +54,19 @@ export interface StatusEntry {
 
 export function parseNameStatus(output: string): Map<string, StatusEntry> {
   const map = new Map<string, StatusEntry>();
+  if (output.includes('\0')) {
+    const fields = output.split('\0');
+    for (let i = 0; i < fields.length - 1;) {
+      const status = fields[i++]![0] as FileStatus;
+      const path = fields[i++]!;
+      if (status === 'R' || status === 'C') {
+        map.set(fields[i++]!, { status, oldPath: path });
+      } else {
+        map.set(path, { status });
+      }
+    }
+    return map;
+  }
   for (const line of output.split("\n")) {
     if (!line.trim()) continue;
     const parts = line.split("\t");
@@ -90,6 +103,29 @@ export interface NumstatEntry {
 
 export function parseNumstat(output: string): Map<string, NumstatEntry> {
   const map = new Map<string, NumstatEntry>();
+  if (output.includes('\0')) {
+    const fields = output.split('\0');
+    for (let i = 0; i < fields.length - 1; i++) {
+      const record = fields[i]!;
+      const firstTab = record.indexOf('\t');
+      const secondTab = record.indexOf('\t', firstTab + 1);
+      const insStr = record.slice(0, firstTab);
+      const delStr = record.slice(firstTab + 1, secondTab);
+      let path = record.slice(secondTab + 1);
+      // With -z, a rename is: counts<TAB><NUL>oldPath<NUL>newPath<NUL>.
+      if (!path) {
+        i += 2;
+        path = fields[i]!;
+      }
+      const binary = insStr === '-' && delStr === '-';
+      map.set(path, {
+        insertions: binary ? 0 : parseInt(insStr, 10) || 0,
+        deletions: binary ? 0 : parseInt(delStr, 10) || 0,
+        binary,
+      });
+    }
+    return map;
+  }
   for (const line of output.split("\n")) {
     if (!line.trim()) continue;
     const parts = line.split("\t");

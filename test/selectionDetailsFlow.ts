@@ -44,13 +44,17 @@ class FakeWebview {
   }
 
   clickCommit(hash: string): void {
+    this.selectCommits([hash]);
+  }
+
+  selectCommits(hashes: string[]): void {
     const requestId = ++this.selectionRequestId;
     this.filesLoading = true;
     this.detailsLoading = true;
     send({
       type: 'selectionDetails/request',
       requestId,
-      selection: { kind: 'commits', hashes: [hash] },
+      selection: { kind: 'commits', hashes },
     });
   }
 
@@ -122,11 +126,22 @@ async function main() {
     await writeFile(join(root, 'a.txt'), 'one\n');
     await git.add(['a.txt']);
     await git.commit('first');
+    const initialHash = (await git.revparse('HEAD')).trim();
 
     await writeFile(join(root, 'b.txt'), 'two\n');
     await writeFile(join(root, 'a.txt'), 'one\ntwo\n');
     await git.add(['a.txt', 'b.txt']);
     await git.commit('second');
+    const olderHash = (await git.revparse('HEAD')).trim();
+
+    await writeFile(join(root, 'a.txt'), 'one\ntwo\nother author\n');
+    await writeFile(join(root, 'foreign.txt'), 'unselected\n');
+    await git.add(['a.txt', 'foreign.txt']);
+    await git.commit('unselected', { '--author': 'Other Author <other@example.test>' });
+
+    await writeFile(join(root, 'b.txt'), 'two\nthree\n');
+    await git.add(['b.txt']);
+    await git.commit('latest');
 
     const repository = {
       rootUri: vscode.Uri.file(root),
@@ -135,9 +150,13 @@ async function main() {
         onDidChange: new vscode.EventEmitter().event,
       },
     };
+    const openedRevisions: Array<{ path: string; ref: string }> = [];
     const gitApi = {
       repositories: [repository],
-      toGitUri: (uri: vscode.Uri) => uri,
+      toGitUri: (uri: vscode.Uri, ref: string) => {
+        openedRevisions.push({ path: uri.fsPath, ref });
+        return uri;
+      },
       onDidOpenRepository: new vscode.EventEmitter().event,
       onDidCloseRepository: new vscode.EventEmitter().event,
       getAPI: () => gitApi,
@@ -181,8 +200,39 @@ async function main() {
     assert.equal(webview.details.length, 1, 'commit details should load for the clicked commit');
     assert.ok(webview.files.length > 0, 'changed files should load for the clicked commit');
 
+    await host.handler.handle({
+      type: 'commits/refresh',
+      requestId: ++webview.commitRequestId,
+      offset: 0,
+      limit: 100,
+      filters: { author: 'GitMin Test' },
+    });
+    webview.selectCommits([head.hash, olderHash]);
+    for (let i = 0; i < 250 && (webview.filesLoading || webview.detailsLoading); i++) {
+      await delay(20);
+    }
+    assert.equal(webview.filesLoading, false);
+    assert.equal(webview.detailsLoading, false);
+    assert.equal(webview.lastError, null);
+    assert.equal(webview.details.length, 2);
+    assert.equal(webview.range?.contiguous, false);
+    assert.deepEqual(webview.files.map((file) => file.path), ['a.txt', 'b.txt']);
+
+    await host.handler.handle({ type: 'file/openDiff', range: webview.range!, filePath: 'a.txt' });
+    assert.deepEqual(openedRevisions, [
+      { path: join(root, 'a.txt'), ref: initialHash },
+      { path: join(root, 'a.txt'), ref: olderHash },
+    ], 'opening a file must exclude changes made after its last selected commit');
+
+    // The older IPC entry point must use the same selected-commit semantics.
+    await host.handler.handle({ type: 'diff/request', hashes: [head.hash, olderHash] });
+    const legacyDiff = host.posted.findLast((message) => message.type === 'diff/loaded');
+    assert.equal(legacyDiff?.type, 'diff/loaded');
+    assert.deepEqual(legacyDiff.files.map((file) => file.path), ['a.txt', 'b.txt']);
+
     console.log('selection details flow checks passed');
   } finally {
+    host.handler?.dispose();
     await rm(root, { recursive: true, force: true });
   }
 }
